@@ -1,7 +1,6 @@
 ---
 title: "Pengenalan Github Actions"
 date: 2021-08-24T04:49:42+08:00
-draft: true
 ---
 
 Github Actions (GA) adalah servis automation yang ditawarkan oleh Github untuk semua penggunanya. Jika anda mempunyai repository public di Github, anda boleh mula menggunakan Github Actions pada saat ini tanpa perlu membayar apa-apa pun!
