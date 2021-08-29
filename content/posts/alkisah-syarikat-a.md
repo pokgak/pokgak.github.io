@@ -1,7 +1,6 @@
 ---
 title: "Alkisah Syarikat A"
 date: 2021-08-26T18:24:00+08:00
-draft: true
 ---
 
 *Berikut adalah cerita fiksyen untuk menggambarkan permasalahan yang perlu dihadapi setiap kali kita ingin menyebarkan (deploy) aplikasi baru untuk pengguna tanpa teknologi cloud computing.*

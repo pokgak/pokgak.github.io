@@ -1,7 +1,6 @@
 ---
 title: "Apa itu Cloud Computing?"
 date: 2021-08-25T23:47:19+08:00
-draft: true
 ---
 
 Perkataan "cloud" rasanya tak asing lagi dalam kamus anak muda zaman sekarang tapi kebanyakannya merujuk kepada "cloud storage" iaitu servis penyimpanan data online. Kali ini saya ingin menerangkan konsep cloud computing dari sudut seorang programmer.
