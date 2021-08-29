@@ -1,7 +1,468 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 26 Aug 2021 18:24:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Alkisah Syarikat A</title><link>https://pokgak.xyz/posts/alkisah-syarikat-a/</link><pubDate>Thu, 26 Aug 2021 18:24:00 +0800</pubDate><guid>https://pokgak.xyz/posts/alkisah-syarikat-a/</guid><description>Berikut adalah cerita fiksyen untuk menggambarkan permasalahan yang perlu dihadapi setiap kali kita ingin menyebarkan (deploy) aplikasi baru untuk pengguna tanpa teknologi cloud computing.
-Syarikat A telah berjaya membangunkan aplikasi baru yang mereka yakin akan mengubah dunia tetapi mereka belum punyai infrastruktur untuk menyebarkan (deploy) aplikasi tersebut.
-Konfigurasi Syarikat A ingin memesan server tersebut daripada vendor B, tapi sebelum itu, perlu ditentukan dahulu konfigurasi server tersebut. Berapakah jumlah RAM diperlukan, CPU apakah yang sesuai dengan beban profail (load profile) aplikasi tersebut, berapa banyak simpanan yang akan digunakan.</description></item><item><title>Apa itu Cloud Computing?</title><link>https://pokgak.xyz/posts/cloud-computing/</link><pubDate>Wed, 25 Aug 2021 23:47:19 +0800</pubDate><guid>https://pokgak.xyz/posts/cloud-computing/</guid><description>Perkataan &amp;ldquo;cloud&amp;rdquo; rasanya tak asing lagi dalam kamus anak muda zaman sekarang tapi kebanyakannya merujuk kepada &amp;ldquo;cloud storage&amp;rdquo; iaitu servis penyimpanan data online. Kali ini saya ingin menerangkan konsep cloud computing dari sudut seorang programmer.
-Apa itu cloud? &amp;lsquo;The cloud is just someone else&amp;rsquo;s computer&amp;rsquo;, adalah salah satu meme yang banyak ditemui online. Hakikatnya begitulah, gambar yang diupload ke iCloud, website Twitter yang anda akses setiap hari, video yang anda tonton di YouTube, semuanya dilayan (hosted) oleh komputer-komputer yang tersusun di data center besar di seluruh dunia.</description></item><item><title>Animasi interaktif berdasarkan data CITF menggunakan Plotly</title><link>https://pokgak.xyz/posts/graf-interaktif-citf-plotly/</link><pubDate>Wed, 25 Aug 2021 04:59:55 +0800</pubDate><guid>https://pokgak.xyz/posts/graf-interaktif-citf-plotly/</guid><description>Saya gemar melayari subreddit r/dataisbeautiful dan melihat graf hasil buatan pengguna Reddit lain di sana. Salah satu jenis graf yang saya paling minat adalah apabila graf itu seolah-olah animasi, berubah selaras mengikut jangka masa waktu yang semakin bertambah. Kita boleh melihat perkembangan sesuatu data itu dari mula hingga ke akhir.
-Contoh post terbaru di subreddit itu yang mempunyai graf sebegini adalah seperti graf di bawah yang memaparkan Kadar vaksinasi sebahagian daripada negara-negara di seluruh dunia (sayang Malaysia tidak dimasukkan sekali di sini):</description></item><item><title>Pengenalan Github Actions</title><link>https://pokgak.xyz/posts/pengenalan-github-actions/</link><pubDate>Tue, 24 Aug 2021 04:49:42 +0800</pubDate><guid>https://pokgak.xyz/posts/pengenalan-github-actions/</guid><description>Github Actions (GA) adalah servis automation yang ditawarkan oleh Github untuk semua penggunanya. Jika anda mempunyai repository public di Github, anda boleh mula menggunakan Github Actions pada saat ini tanpa perlu membayar apa-apa pun!
-Bagaimana untuk mula dengan Github Actions? Untuk mula menggunakan Github Actions, anda boleh pergi ke mana-mana repository public yang anda miliki dan seterusnya pergi ke tab Actions.
-Jika anda belum pernah setup mana-mana workflow di repository tersebut, anda akan melihat pilihan templates siap yang boleh digunakan untuk pelbagai jenis projek.</description></item></channel></rss>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 26 Aug 2021 18:24:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Alkisah Syarikat A</title><link>https://pokgak.xyz/posts/alkisah-syarikat-a/</link><pubDate>Thu, 26 Aug 2021 18:24:00 +0800</pubDate><guid>https://pokgak.xyz/posts/alkisah-syarikat-a/</guid><description>
+&lt;p>&lt;em>Berikut adalah cerita fiksyen untuk menggambarkan permasalahan yang perlu dihadapi setiap kali kita ingin menyebarkan (deploy) aplikasi baru untuk pengguna tanpa teknologi cloud computing.&lt;/em>&lt;/p>
+&lt;p>Syarikat A telah berjaya membangunkan aplikasi baru yang mereka yakin akan mengubah dunia tetapi mereka belum punyai infrastruktur untuk menyebarkan (deploy) aplikasi tersebut.&lt;/p>
+&lt;h3 id="konfigurasi">
+&lt;a href="#konfigurasi" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Konfigurasi
+&lt;/h3>
+&lt;p>Syarikat A ingin memesan server tersebut daripada vendor B, tapi sebelum itu, perlu ditentukan dahulu konfigurasi server tersebut. Berapakah jumlah RAM diperlukan, CPU apakah yang sesuai dengan beban profail (load profile) aplikasi tersebut, berapa banyak simpanan yang akan digunakan.&lt;/p>
+&lt;p>Selain itu, perlu dipertimbangkan juga bagaimana aplikasi itu akan berkembang di masa depan. Bagaimana jika tiba-tiba aplikasi itu mendapat sambutan hangat dan mendapat sejuta pengguna baru dalam masa semalaman? Oleh kerana proses pemesanan akan mengambil masa beberapa minggu (bulan?), maka server tersebut perlu dikalis masa-depan (future proofing) supaya konfigurasi dipesan hari ini masih mencukupi untuk beban masa depan. Jadi kos asal konfigurasi tadi mungkin perlu digandakan untuk memilih konfigurasi yang lebih mahal. Selepas semua ini, syarikat A berjaya memesan server tersebut daripada vendor.&lt;/p>
+&lt;h3 id="pemasangan">
+&lt;a href="#pemasangan" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Pemasangan
+&lt;/h3>
+&lt;p>Sesudah server yang dipesan siap dihantar ke data center syarikat A, server itu masih tidak boleh terus dihidupkan begitu saja dan siap untuk melayan aplikasi. Server itu perlu diusung ke rak server dan diletakkan bersama server-server lain. Wayar tenaga dan internet perlu disambung. Kemudian, apabila server telah berjaya dihidupkan, perlu dikonfigurasi pula sistem operasi (OS) tersebut dengan software yang diperlukan untuk aplikasi tersebut.&lt;/p>
+&lt;h3 id="masa-untuk-mengubah-dunia">
+&lt;a href="#masa-untuk-mengubah-dunia" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Masa untuk mengubah dunia!
+&lt;/h3>
+&lt;p>Selepas semua proses itu selesai, maka aplikasi baru syarikat A sedia dilayan dari server baru tersebut dan seperti dijangkakan, aplikasi tersebut mendapat sambutan yang amat bagus! Tersangat bagus hinggakan pengguna dari negara-negara lain mula menggunakan aplikasi itu. Mereka perlu menahan waktu tunggu (waiting time) yang lebih lama berbanding pengguna lokal di negara syarikat A kerana pesanan mereka terpaksa merentas dunia sebelum sampai ke server baru syarikat A ini.&lt;/p>
+&lt;h3 id="komplikasi">
+&lt;a href="#komplikasi" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Komplikasi
+&lt;/h3>
+&lt;p>24 jam berlalu dan tiba-tiba pengguna lokal di negara syarikat A tidak dapat mengakses aplikasi itu lagi. Locked. Bahkan bukan pengguna lokal sahaja, &lt;em>semua&lt;/em> pengguna seluruh dunia tak dapat mengakses aplikasi itu. Setelah disiasat, rupa-rupanya ada influencer zaman itu (YouTube, Twitter, Facebook, Instagram masih belum wujud pada masa ini ya) telah menghantar &lt;em>telegraf&lt;/em> ke peminatnya di seluruh dunia. Hasilnya semua future-proofing yang dirancang sebelum ni semua kelaut, tak cukup untuk menampung beban tiba-tiba dari penambahan pengguna-pengguna baru.&lt;/p>
+&lt;h3 id="kesimpulan">
+&lt;a href="#kesimpulan" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Kesimpulan
+&lt;/h3>
+&lt;p>Pilihan syarikat A sekarang adalah untuk mengulang proses pesanan server tadi dan menunggu beberapa minggu untuk server baru itu pula sampai. Sementara menunggu itu syarikat A telah rugi berjuta-juta kerana kehilangan pelanggan dan semua pengguna aplikasi baru itu telah pun lari ke aplikasi yang dibangunkan syarikat B yang dikatakan lebih bagus dari aplikasi syarikat A.&lt;/p>
+&lt;p>&lt;em>TAMMAT.&lt;/em>&lt;/p></description></item><item><title>Apa itu Cloud Computing?</title><link>https://pokgak.xyz/posts/cloud-computing/</link><pubDate>Wed, 25 Aug 2021 23:47:19 +0800</pubDate><guid>https://pokgak.xyz/posts/cloud-computing/</guid><description>
+&lt;p>Perkataan &amp;ldquo;cloud&amp;rdquo; rasanya tak asing lagi dalam kamus anak muda zaman sekarang tapi kebanyakannya merujuk kepada &amp;ldquo;cloud storage&amp;rdquo; iaitu servis penyimpanan data online. Kali ini saya ingin menerangkan konsep cloud computing dari sudut seorang programmer.&lt;/p>
+&lt;h2 id="apa-itu-cloud">
+&lt;a href="#apa-itu-cloud" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Apa itu cloud?
+&lt;/h2>
+&lt;p>&amp;lsquo;&lt;em>The cloud is just someone else&amp;rsquo;s computer&lt;/em>&amp;rsquo;, adalah salah satu meme yang banyak ditemui online. Hakikatnya begitulah, gambar yang diupload ke iCloud, website Twitter yang anda akses setiap hari, video yang anda tonton di YouTube, semuanya dilayan (hosted) oleh komputer-komputer yang tersusun di data center besar di seluruh dunia.&lt;/p>
+&lt;p>Okay, tapi cloud itu bukan sekadar timbunan komputer seluas berpuluh-puluh padang bola sahaja. Ada beberapa ciri-ciri penting untuk sesuatu itu dipanggil cloud computing.&lt;/p>
+&lt;h2 id="ciri-ciri-cloud-computing">
+&lt;a href="#ciri-ciri-cloud-computing" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Ciri-Ciri Cloud Computing
+&lt;/h2>
+&lt;p>Berikut adalah ciri-ciri cloud computing yang utama bagi saya:&lt;/p>
+&lt;ul>
+&lt;li>sumber atas permintaan (on-demand resources)&lt;/li>
+&lt;li>kitaran maklum balas pendek (short feedback cycle)&lt;/li>
+&lt;li>berskala infinity (infinitely scalable)&lt;/li>
+&lt;li>ketersediaan global (global availability)&lt;/li>
+&lt;/ul>
+&lt;h4 id="sumber-atas-permintaan-on-demand-resources">
+&lt;a href="#sumber-atas-permintaan-on-demand-resources" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Sumber Atas Permintaan (on-demand resources)
+&lt;/h4>
+&lt;p>Ciri ini adalah kelebihan utama apabila menggunakan servis cloud computing. Sebarang sumber yang diperlukan untuk menyebarkan aplikasi anda sama ada server, sistem penyimpanan atau pengkalan data, kebiasaannya boleh disiapkan dalam masa kurang daripada 30 minit. Dengan ini, apabila aplikasi itu telah siap dibangunkan, ia boleh siap tersedia untuk disebarkan dalam masa yang amat singkat.&lt;/p>
+&lt;p>Dalam artikel &lt;a href="">Alkisah Syarikat A&lt;/a> saya ingin menggambarkan bagaimanakah proses ini dilakukan sebelum ini. Terdapat pelbagai tugas yang perlu dilakukan sebelum sesuatu sumber itu sedia untuk digunakan. Cloud computing mengambil alih tugas ini dari syarikat A.&lt;/p>
+&lt;h3 id="kitaran-maklum-balas-pendek-short-feedback-cycle">
+&lt;a href="#kitaran-maklum-balas-pendek-short-feedback-cycle" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Kitaran Maklum Balas Pendek (short feedback cycle)
+&lt;/h3>
+&lt;p>Salah satu kelebihan kebolehan menyiapkan sumber atas permintaan adalah kebolehan untuk bertindak dan menyelesaikan masalah kekurangan kapasiti sumber dengan segera. Sebelum ini, masa untuk menyiapkan sumber baru amat besar, oleh sebab itu sumber untuk aplikasi sentiasa disiapkan dengan konfigurasi lebih besar daripada keperluannya hanya supaya mereka mempunyai kapasiti untuk berkembang sebelum perlu dipesan sumber baru.&lt;/p>
+&lt;p>Tapi dengan kelebihan waktu singkat untuk menyediakan sumber baru, tidak perlu lagi server itu disiapkan dengan konfigurasi lebih dari keperluan. Jika aplikasi itu tiba-tiba mendapat trafik yang tinggi, penyiapan sumber baru untuk menampung kapasiti boleh dilakukan segera.&lt;/p>
+&lt;h3 id="berskala-infiniti-infinitely-scalable">
+&lt;a href="#berskala-infiniti-infinitely-scalable" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Berskala Infiniti (infinitely scalable)
+&lt;/h3>
+&lt;p>Platform-platform hyperscaler cloud computing dikatakan mempunyai sumber infiniti. Pada hakikatnya, apa-apa sumber tidak boleh dikatakan infiniti kerana sumber asli dunia pasti akan habis suatu hari nanti. Tapi infiniti di sini bermaksud, platform-platform hyperscaler ini mampu berkembang lebih cepat daripada kadar keperluan sumber oleh semua pengguna platform tersebut.&lt;/p>
+&lt;h3 id="ketersediaan-global-global-availability">
+&lt;a href="#ketersediaan-global-global-availability" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Ketersediaan Global (global availability)
+&lt;/h3>
+&lt;p>Secara teori satu sumber yang disebarkan dari sebuah data center di Malaysia punyai kebolehan untuk melayan permintaan daripada seluruh dunia. Hakikatnya, ini akan meninggalkan kesan kepada pengguna-pengguna yang berada di lokasi bertentangan dengan lokasi di mana aplikasi itu dilayan.&lt;/p>
+&lt;p>Oleh itu, untuk mengembangkan aplikasi ke taraf global, syarikat-syarikat perlu menyediakan server di seluruh dunia supaya permintaan dari pengguna boleh dilayan daripada data center yang terdekat dengan mereka. Bahkan teknologi seperti &lt;em>edge computing&lt;/em> wujud hanya untuk mengurangkan masa untuk melayan permintaan pengguna dengan meletakkan server pelayan sedekat mungkin dengan pengguna.&lt;/p>
+&lt;p>Tapi untuk sesebuah syarikat itu menyediakan server di sebuah lokasi baru tidaklah mudah, terutamanya jika mereka tiada kehadiran fizikal di negara tersebut. Hal-hal regulasi, pembayaran bil dan sebagainya akan menjadi lebih rumit kerana terdapat transaksi rentas negara.&lt;/p>
+&lt;p>Platform hyperscaler cloud computing seperti AWS, Azure, Oracle dll. memudahkan proses ini. Semua aspek fizikal akan diuruskan pihak mereka. Sebagai syarikat pengguna kita hanya perlu membayar sumber-sumber tersebut. Tidak perlu lagi difikirkan aspek-aspek lain.&lt;/p>
+&lt;h2 id="konklusi">
+&lt;a href="#konklusi" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Konklusi
+&lt;/h2>
+&lt;p>4 ciri-ciri di atas pada hemat saya adalah karakteristik utama sesebuah platform cloud computing. Dengan memahami ciri-ciri ini kita dapat menjadikan cloud computing ini sebagai &lt;strong>alat&lt;/strong> untuk menyelesaikan permasalahan yang wujud dalam menyediakan aplikasi kita.&lt;/p>
+&lt;p>Pemahaman ini amatlah penting kerana tanpa memahami bagaimana teknologi cloud computing ini mampu membantu menyelesaikan masalah yang kita hadapi, kita hanyalah seperti lembu diikat hidung, ikut sahaja apa trend yang orang lain suapkan. Akhirnya masa dan wang dibazirkan tanpa kita memperoleh manfaat apa-apa pun.&lt;/p></description></item><item><title>Animasi interaktif berdasarkan data CITF menggunakan Plotly</title><link>https://pokgak.xyz/posts/graf-interaktif-citf-plotly/</link><pubDate>Wed, 25 Aug 2021 04:59:55 +0800</pubDate><guid>https://pokgak.xyz/posts/graf-interaktif-citf-plotly/</guid><description>
+&lt;p>Saya gemar melayari subreddit r/dataisbeautiful dan melihat graf hasil buatan pengguna Reddit lain di sana. Salah satu jenis graf yang saya paling minat adalah apabila graf itu seolah-olah animasi, berubah selaras mengikut jangka masa waktu yang semakin bertambah. Kita boleh melihat perkembangan sesuatu data itu dari mula hingga ke akhir.&lt;/p>
+&lt;p>Contoh post terbaru di subreddit itu yang mempunyai graf sebegini adalah seperti graf di bawah yang memaparkan Kadar vaksinasi sebahagian daripada negara-negara di seluruh dunia (&lt;em>sayang Malaysia tidak dimasukkan sekali di sini&lt;/em>):&lt;/p>
+&lt;iframe id="reddit-embed" src="https://www.redditmedia.com/r/dataisbeautiful/comments/p7l5rm/oc_the_race_to_vaccinate/?ref_source=embed&amp;amp;ref=share&amp;amp;embed=true" sandbox="allow-scripts allow-same-origin allow-popups" style="border: none;" height="620" width="640" scrolling="no">&lt;/iframe>
+&lt;p>Sebelum ini saya menganggap animasi sebegini rumit untuk dilakukan tetapi apabila pihak CITF telah melancarkan &lt;a href="https://twitter.com/Khairykj/status/1410164953965752331?s=20">public repo&lt;/a> di Github bagi data vaksinasi Malaysia, saya memutuskan untuk cuba menghasilkan semula gaya visualisasi ini menggunakan data tersebut.&lt;/p>
+&lt;p>Seterusnya saya akan menerangkan langkah-langkah yang diperlukan untuk menghasilkan visualisasi seperti yang di bawah. Sebagai rujukan, code penuh yang saya gunakan di sini boleh didapati di &lt;a href="https://github.com/pokgak/citf-graphs/blob/main/main.py">sini&lt;/a>.&lt;/p>
+&lt;iframe id="pokgak-citf" src="https://pokgak.github.io/citf-graphs/" style="border: none;" height="400" width="640" scrolling="no">&lt;/iframe>
+&lt;h2 id="pembersihan-data">
+&lt;a href="#pembersihan-data" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Pembersihan Data
+&lt;/h2>
+&lt;p>Dalam projek yang melibatkan data sebegini, data boleh datang dari pelbagai sumber dan bentuk. Oleh itu, langkah pertama selalunya adalah pembersihan data. Tujuan langkah ini adalah supaya pada akhirnya kita mempunyai data dalam format yang sesuai dan boleh terus digunakan untuk langkah seterusnya tanpa perlu pemprosesan ekstra apa-apa pun.&lt;/p>
+&lt;p>Saya bernasib baik kali ini kerana sumber data yang dibekalkan oleh pihak CITF Malaysia sudah pun berada dalam format CSV yang senang untuk dibaca menggunakan &lt;code>pandas&lt;/code>, sebuah library untuk memanipulasi data menggunakan Python. Pihak CITF tidak menawarkan public REST API yang boleh digunakan untuk mengambil (fetch) data tersebut maka saya terpaksa mengambil data menerusi Github. Proses ini kurang sesuai jika anda mahu menapis dahulu data yang diambil tapi untuk kegunaan saya ini, kaedah ini adalah mencukupi.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="n">STATE_DATA_URL&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;https://raw.githubusercontent.com/CITF-Malaysia/citf-public/main/vaccination/vax_state.csv&amp;#34;&lt;/span>
+&lt;span class="n">df&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">pd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">read_csv&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">StringIO&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">requests&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data_url&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Function &lt;code>read_csv&lt;/code> akan mengambil output data yang diambil dari Github dan menukarkannya ke format DataFrame yang digunakan oleh library pandas. Format DataFrame adalah 2D seakan-akan Excel. Ia mempunyai rows dan columns yang mempunyai data dan menawarkan fungsi-fungsi untuk memanipulasi data tersebut (gabung, pisah, transpose, etc) dengan mudah. Berikut adalah code yang saya gunakan untuk menyiapkan data raw tadi untuk visualisasi:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="n">df&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">set_index&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;span class="o">.&lt;/span>&lt;span class="n">loc&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;cumul_partial&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul_full&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul&amp;#34;&lt;/span>&lt;span class="p">]]&lt;/span>
+&lt;span class="o">.&lt;/span>&lt;span class="n">rename&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">columns&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s2">&amp;#34;cumul_partial&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;partially_vaxed&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul_full&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;fully_vaxed&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;span class="o">.&lt;/span>&lt;span class="n">sort_values&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">by&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;cumul&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">ascending&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="o">.&lt;/span>&lt;span class="n">sort_index&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">level&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">sort_remaining&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="o">.&lt;/span>&lt;span class="n">reset_index&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Secara ringkasnya,&lt;/p>
+&lt;ol>
+&lt;li>&lt;code>set_index&lt;/code>: saya menetapkan column &amp;ldquo;date&amp;rdquo; dan &amp;ldquo;state&amp;rdquo; index DataFrame tersebut yang akan saya gunakan nanti untuk mengasingkan data vaksinasi mengikut tarikh dan negeri&lt;/li>
+&lt;li>&lt;code>loc&lt;/code>: pilih hanya column yang saya mahu&lt;/li>
+&lt;li>&lt;code>rename&lt;/code>: memberikan nama baharu kepada column-column tersebut supaya lebih mudah difahami&lt;/li>
+&lt;li>&lt;code>sort_values&lt;/code>: susun semua data vaksinasi mengikut jumlah kumulatif (&amp;ldquo;cumul&amp;rdquo;)&lt;/li>
+&lt;li>&lt;code>sort_index&lt;/code>: susun semua data vaksinasi mengikut tarikh&lt;/li>
+&lt;li>&lt;code>reset_index&lt;/code>: menjadikan column index dari langkah 1 sebelum ini balik seperti column biasa yang boleh digunakan secara normal&lt;/li>
+&lt;/ol>
+&lt;p>Untuk mengetahui lebih lanjut fungsi functions yang saya pakai di sini, bolehlah rujuk kepada &lt;a href="https://pandas.pydata.org/pandas-docs/stable/reference/index.html">pandas API Reference&lt;/a>.&lt;/p>
+&lt;h2 id="visualisasi-data-menggunakan-plotly">
+&lt;a href="#visualisasi-data-menggunakan-plotly" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Visualisasi Data menggunakan Plotly
+&lt;/h2>
+&lt;p>&lt;a href="https://plotly.com/graphing-libraries/">Plotly&lt;/a> adalah sebuah library yang menawarkan fungsi-fungsi untuk mempermudah pengguna untuk menghasilkan visualisasi interaktif. Ia ditawarkan dalam bahasa Python, R, ataupun JavaScript. Saya berpeluang untuk menggunakan Plotly dalam Python untuk menghasilkan visualisasi untuk thesis bachelor saya dan berdasarkan pengalaman saya, sangat mudah untuk bereksperimen dan menghasilkan graf visualisasi menarik menggunakan library ini.&lt;/p>
+&lt;p>Ciri Plotly yang sangat bagus adalah &lt;a href="https://plotly.com/python/plotly-express/">Plotly Express&lt;/a>. Untuk kebanyakan fungsi visualisasi, Plotly Express sudah cukup pandai menakrif data yang diberikan dan kemudian menghasilkan visualisasi seperti yang dikehendaki. Berikut adalah code yang saya gunakan untuk menghasilkan animasi graf yang saya paparkan di permulaan blog post ini:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;span class="lnt">9
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="n">fig&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">px&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">bar&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;span class="n">state_data&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="n">x&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="n">y&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;partially_vaxed&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;fully_vaxed&amp;#34;&lt;/span>&lt;span class="p">],&lt;/span>
+&lt;span class="n">animation_frame&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="n">animation_group&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="n">labels&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s2">&amp;#34;value&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;Total vaccinated&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;variable&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;Dose Type&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;span class="n">title&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Vaccination Count in Malaysia by State&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="p">)&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Jika anda perasan, saya hanyalah menggunakan &lt;strong>satu&lt;/strong> function sahaja daripada Plotly Express iaitu &lt;code>bar&lt;/code>. Function ini digunakan untuk menghasilkan visualisasi graf bar. Sebagai parameter, saya berikan data vaksinasi yang telah dibersihkan dan ditukarkan ke format DataFrame. Menerusi parameter &lt;code>x&lt;/code> dan &lt;code>y&lt;/code>, saya menetapkan data daripada column manakah dalam DataFrame tersebut yang akan digunakan sebagai paksi X dan paksi Y dalam graf.&lt;/p>
+&lt;p>Seterusnya, untuk menghasilkan animasi bergerak, saya menggunakan parameter &lt;code>animation_frame&lt;/code> dan ditetapkan column &amp;ldquo;date&amp;rdquo; sebagai nilainya (value). Dengan parameter ini, Plotly akan menghasilkan satu graf untuk setiap nilai dalam column tersebut. Jadi bila saya menggunakan column &amp;ldquo;date&amp;rdquo;, Plotly akan menghasilkan satu graf untuk setiap tarikh dalam data vaksinasi. Untuk menghasilkan animasi, graf-graf ini akan disusun mengikut tarikh dan dipaparkan seolah-olah slideshow. Hasil akhirnya kita akan dapat perkembangan kadar vaksinasi selaras dengan masa.&lt;/p>
+&lt;p>Parameter &lt;code>animation_frame&lt;/code> cukup untuk menghasilkan animasi perkembangan kadar vaksinasi tersebut tetapi animasinya kelihation tidak begitu lancar dan seperti terpotong-potong. Oleh itu, saya juga menggunakan parameter &lt;code>animation_group&lt;/code>. Dengan parameter ini, Plotly akan mencuba untuk melancarkan transisi antara dua graf yang dihasilkan berdasakan nilai column dalam &lt;code>animation_frame&lt;/code> tadi.
+Dalam visualisasi graf bar, Plotly akan menunjukkan pertukaran posisi bar tersebut apabila ia berubah kedudukan. Dengan ini animasi kita tadi telah pun menjadi lebih lancar.&lt;/p>
+&lt;p>Akhir sekali, parameter &lt;code>labels&lt;/code> dan &lt;code>title&lt;/code> digunakan untuk menetapkan label yang lebih mesra pembaca untuk legend, paksi, serta tajuk graf.&lt;/p>
+&lt;h1 id="konklusi">
+&lt;a href="#konklusi" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Konklusi
+&lt;/h1>
+&lt;p>Saya amat berpuas hati dengan animasi graf ini kerana saya telah belajar cara untuk menghasilkan jenis bentuk graf yang telah saya minati buat sekian lama. Namun begitu, walaupun graf ini kelihatan lebih cantik berbanding graf lain dengan animasi bergerak, saya akui apa yang telah saya hasilkan ini lebih kepada latihan menggunakan library Plotly itu sendiri. Masih banyak aspek yang boleh diperbaiki untuk menyampaikan maklumat menggunakan graf secara tepat dan efektif.&lt;/p>
+&lt;p>Untuk mengakses segala code yang telah saya tunjukkan di sini, boleh akses repository &lt;a href="https://github.com/pokgak/citf-graphs">pokgak/citf-graphs&lt;/a> di Github. Saya juga telah menetapkan jadual berkala supaya graf visualisasi tersebut dikemas kini setiap hari menggunakan Github Actions. Blog post cara saya bagaimana saya buat akan datang.&lt;/p></description></item><item><title>Pengenalan Github Actions</title><link>https://pokgak.xyz/posts/pengenalan-github-actions/</link><pubDate>Tue, 24 Aug 2021 04:49:42 +0800</pubDate><guid>https://pokgak.xyz/posts/pengenalan-github-actions/</guid><description>
+&lt;p>Github Actions (GA) adalah servis automation yang ditawarkan oleh Github untuk semua penggunanya. Jika anda mempunyai repository public di Github, anda boleh mula menggunakan Github Actions pada saat ini tanpa perlu membayar apa-apa pun!&lt;/p>
+&lt;h2 id="bagaimana-untuk-mula-dengan-github-actions">
+&lt;a href="#bagaimana-untuk-mula-dengan-github-actions" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Bagaimana untuk mula dengan Github Actions?
+&lt;/h2>
+&lt;p>Untuk mula menggunakan Github Actions, anda boleh pergi ke mana-mana repository public yang anda miliki dan seterusnya pergi ke tab Actions.&lt;/p>
+&lt;p>&lt;img loading="lazy"
+src="//images/actions-tab.png"
+alt=""
+width=812
+height="190" />&lt;/p>
+&lt;p>Jika anda belum pernah setup mana-mana workflow di repository tersebut, anda akan melihat pilihan templates siap yang boleh digunakan untuk pelbagai jenis projek. Sebagai pemula, saya cadangkan anda mula dengan template barebones yang ditawarkan.&lt;/p>
+&lt;p>&lt;img loading="lazy"
+src="//images/actions-get-started.png"
+alt=""
+width=631
+height="579" />&lt;/p>
+&lt;p>Anda boleh menggunakan editor local di komputer sendiri tapi Github juga ada menawarkan editor online di mana fail workflow anda akan diperiksa formatnya secara langsung sambil anda menaip. Github akan highlight jika fail workflow anda mempunyai kesalahan yang membuatkan workflow anda akan gagal. Selain itu juga, di tepi editor online itu ada dipaparkan documentation ringkas mengenai syntax fail workflow jadi anda tidak perlu lagi tukar-tukar tab untuk semasa menulis fail workflow anda.&lt;/p>
+&lt;p>&lt;img loading="lazy"
+src="//images/actions-editor.png"
+alt="Github Actions online Editor"
+width=1191
+height="388" />&lt;/p>
+&lt;h2 id="anatomi-fail-workflow-github-actions">
+&lt;a href="#anatomi-fail-workflow-github-actions" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Anatomi fail workflow Github Actions
+&lt;/h2>
+&lt;p>Saya telah beberapa kali menyebut &amp;ldquo;fail workflow&amp;rdquo; dalam perenggan sebelum ini tapi belum pernah menerangkan apakah fail workflow itu. Github Actions menggunakan fail workflow untuk menetapkan bagaimana untuk melakukan automasi. Fail ini ditulis dalam format YAML. Satu ciri-ciri penting yang saya mahu highlight di sini adalah format YAML adalah whitespace-sensitive, bermakna anda perlu pastikan indentation fail workflow anda menggunakan 4 spaces.&lt;/p>
+&lt;p>Sebelum bermula, ini adalah isi akhir fail workflow contoh kita:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Ikuti penjelasan saya di bawah untuk memahami apakah yang akan dilakukan apabila workflow ini dijalankan.&lt;/p>
+&lt;h2 id="keyword-dalam-fail-workflow-github-actions">
+&lt;a href="#keyword-dalam-fail-workflow-github-actions" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Keyword dalam fail workflow Github Actions
+&lt;/h2>
+&lt;p>Dalam fail workflow anda ada dua top-level keyword yang wajib: &lt;code>on&lt;/code> dan &lt;code>jobs&lt;/code>.&lt;/p>
+&lt;h3 id="keyword-on">
+&lt;a href="#keyword-on" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Keyword &amp;lt;code&amp;gt;on&amp;lt;/code&amp;gt;
+&lt;/h3>
+&lt;p>Satu ciri-ciri penting Github Actions adalah, workflow anda perlu dimulakan melalui &amp;ldquo;triggers&amp;rdquo;. Hampir semua aktiviti yang anda boleh lakukan secara manual di Github boleh dijadikan trigger untuk workflow anda. Sebagai contoh, anda boleh menetapkan workflow untuk dijalankan apabila seseorang telah push codenya ke repo, atau apabila pull request baru dibuka. Ini cara bagaimana anda melakukan kedua-dua contoh tersebut:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">push&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">pull_request&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Keyword &lt;code>on&lt;/code> digunakan untuk menanda bahawa semua keyword dibawahnya adalah event-event dimana fail workflow anda patut dijalankan. &lt;code>push&lt;/code> bermakna apabila seseorang telah push codenya ke repo anda, maka Github Actions akan menjalankan fail workflow tersebut. &lt;code>pull_request&lt;/code> pula bermakna jika seseorang telah membuka pull request (PR) baru di repository anda, maka fail workflow tersebut akan dijalankan.&lt;/p>
+&lt;p>Kedua-dua keyword &lt;code>push&lt;/code> dan &lt;code>pull_request&lt;/code> ini juga boleh menerima sub-keyword lain untuk tujuan menapis dengan lebih spesifik bila workflow itu patut dijalankan. Antara sub-keyword yang boleh digunakan adalah &lt;code>branches&lt;/code> untuk menapis hanya push atau pull request kepada branch yang dinyatakan sahaja. Anda juga boleh menapis mengikut lokasi fail code anda di dalam repo menggunakan sub-keyword &lt;code>paths&lt;/code>.&lt;/p>
+&lt;p>Terdapat banyak lagi keyword yang anda boleh gunakan untuk trigger workflow anda, jika berminat boleh pergi ke page &lt;a href="https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#on">ini&lt;/a> dan &lt;a href="https://docs.github.com/en/actions/reference/events-that-trigger-workflows#webhook-events">ini&lt;/a> untuk membaca lebih lanjut.&lt;/p>
+&lt;h3 id="keyword-jobs">
+&lt;a href="#keyword-jobs" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Keyword &amp;lt;code&amp;gt;jobs&amp;lt;/code&amp;gt;
+&lt;/h3>
+&lt;p>Okay, kita telah tetapkan &lt;strong>bila&lt;/strong> workflow ini patut dijalankan menggunakan keyword &lt;code>on&lt;/code>. Seterusnya kita akan menetapkan &lt;strong>apa&lt;/strong> yang workflow ini patut buat menggunakan keyword &lt;a href="https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobs">&lt;code>jobs&lt;/code>&lt;/a>. Sesebuah workflow mestilah mempunyai paling kurang satu job. Untuk mencipta job baru, anda boleh menggunakan apa-apa perkataan sebagai &lt;code>id&lt;/code> cuma perlu dipastikan tiada space. Contohnya seperti berikut:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Di sini, &lt;code>job-pertama&lt;/code> adalah &lt;code>id&lt;/code> untuk job kita. Seterusnya, setiap job perlulah menetapkan di bawah environment manakah job ini akan dijalankan. Github Actions menawarkan platform Windows, Linux, dan macOS yang anda boleh gunakan secara percuma. Senarai penuh versi yang disokong boleh dibaca di &lt;a href="https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on">halaman&lt;/a> ini. Di sini saya menggunakan &lt;code>ubuntu-latest&lt;/code> yang bermakna, job ini akan dijalankan di platform Ubuntu yang terbaru (pada masa tulisan ini adalah Ubuntu 20.04.&lt;/p>
+&lt;p>Setelah menetapkan platform, tiba masa untuk kita senaraikan apakah yang patut workflow kita ini buat. Untuk itu kita perlukan keyword &lt;code>steps&lt;/code>. Seperti keyword &lt;code>jobs&lt;/code>, keyword &lt;code>steps&lt;/code> mengandungi sub-keywords yang, satu untuk setiap apa yang kita mahu jalankan.&lt;/p>
+&lt;p>Setiap satu step akan dimulakan dengan simbol &lt;code>-&lt;/code>. Dalam syntax YAML, ini menandakan bahawa semua keyword di bawah satu &lt;code>-&lt;/code> adalah satu bahagian. Keyword &lt;code>run&lt;/code> digunakan untuk menjalankan command seolah-olah anda berada di terminal platform yang telah dipilih menggunakan keyword &lt;code>runs-on&lt;/code> sebelum ini.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Dalam contoh di atas, saya telah menetapkan step itu untuk run command &lt;code>echo&lt;/code>. Command ini akan print perkataan selepas itu ke terminal anda, dalam kes ini anda akan melihat &amp;ldquo;Hello, world&amp;rdquo; di log result workflow anda nanti. Dalam contoh di atas juga, saya telah menetapkan workflow ini untuk run command echo tapi kali ini dengan perkataan lain pula. Selain daripada keyword &lt;code>run&lt;/code>, setiap step juga boleh ditetapkan dengan keyword-keyword lain seperti &lt;code>name&lt;/code>, &lt;code>id&lt;/code> dan pelbagai lagi. Senarai penuh boleh anda lihat di &lt;a href="https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idsteps">halaman&lt;/a> ini. Fungsi simbol &lt;code>-&lt;/code> di sini adalah untuk membantu mengumpul semua keyword yang berkaitan dengan step itu. Setiap simbol &lt;code>-&lt;/code> bermakna satu step dalam job itu.&lt;/p>
+&lt;h3 id="keyword-uses">
+&lt;a href="#keyword-uses" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Keyword &amp;lt;code&amp;gt;uses&amp;lt;/code&amp;gt;
+&lt;/h3>
+&lt;p>Kita telah melihat bagaimana cara untuk menjalankan sebarang command melalui keyword &lt;code>run&lt;/code>. Untuk sesetengah perkara, sekadar bergantung kepada command mungkin akan membataskan apa yang anda boleh lakukan. Oleh itu, Github Actions juga mempunyai fungsi untuk memanggil code luar dari fail workflow anda. Code ini boleh berasal dari repo yang sama ataupun daripada repo developer lain di Github.&lt;/p>
+&lt;p>Actions ini boleh ditulis dengan pelbagai cara sama ada menggunakan Javascript atau melalui Docker. Github juga menyediakan &lt;a href="https://github.com/marketplace?type=actions">marketplace&lt;/a> untuk anda mencari actions yang sesuai untuk digunakan dalam fail workflow anda. Github sendiri mempunyai beberapa Actions yang essential seperti &lt;a href="https://github.com/marketplace/actions/checkout">checkout&lt;/a> untuk checkout git repo anda sewaktu workflow dijalankan dan juga &lt;a href="https://github.com/actions/setup-node">setup-node&lt;/a> untuk setup environment node/javascript anda.&lt;/p>
+&lt;p>Untuk menggunakan Actions, ada perlu menggunakan keyword &lt;code>uses&lt;/code> diikuti dengan nama Actions yang ingin digunakan. Kebanyakan Actions juga mempunya keyword tersendiri yang digunakan untuk memperincikan bagaimana Actions tersebut dijalankan.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Dalam contoh di atas, saya menggunakan Actions dari Github &lt;code>actions/checkout&lt;/code> untuk melakukan git checkout repo saya ke sewaktu workflow dijalankan. &lt;code>@v2&lt;/code> di bahagian belakang itu menandakan versi Action tersebut yang ingin saya gunakan. Versi yang ditawarkan oleh Action tersebut boleh disemak di page Releases Action tersebut.&lt;/p>
+&lt;h2 id="konklusi">
+&lt;a href="#konklusi" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Konklusi
+&lt;/h2>
+&lt;p>Saya pernah menggunakan Jenkins dan Bitbucket Pipeline dan berdasarkan pengalaman saya Github Actions adalah jauh lebih baik dari kedua-dua produk CI/CD tersebut. Dokumentasi Github Actions yang ditawarkan Github adalah sangat lengkap. Saya paling banyak merujuk halaman &lt;a href="https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions">Workflow Syntax&lt;/a> semasa mula belajar menggunakan Github Actions. Selain itu, halaman-halaman lain dalam &lt;a href="https://docs.github.com/en/actions/reference">Reference&lt;/a> ini juga sangat membantu anda ingin mula melakukan perkara yang lebih advance dengan Github Actions.&lt;/p>
+&lt;p>Antara contoh automation yang pernah saya lakukan menggunakan Github Actions adalah, menjalankan unit test untuk setiap commit push, memeriksa dan baiki tajuk pull request secara automatik jika tidak memenuhi kriteria anda. Saya juga pernah menggunakan Github Actions workflow untuk melakukan DB dump daripada server dan terus upload ke S3. Pada pandangan saya, Github Actions sangat menarik dan macam-macam yang anda boleh lakukan dengannya.&lt;/p></description></item></channel></rss>

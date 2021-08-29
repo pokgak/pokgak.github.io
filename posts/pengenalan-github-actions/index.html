@@ -2,124 +2,239 @@
 <head>
 <meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<title>Pengenalan Github Actions</title>
-<style>html body{font-family:raleway,sans-serif;background-color:#fff}:root{--accent:pink;--border-width:0}</style>
-<link rel=stylesheet href=https://pokgak.xyz/css/main.css>
-<link rel=stylesheet href="https://fonts.googleapis.com/css?family=Raleway">
-<link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css>
-<link rel=stylesheet href=https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css crossorigin=anonymous>
-<link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin=anonymous>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js></script>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js></script>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/bash.min.js></script>
-<script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/go.min.js></script>
-<script>hljs.initHighlightingOnLoad()</script>
-<script src=https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js></script>
-<script src=https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js integrity=sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa crossorigin=anonymous></script>
-<script>$(document).on('click',function(){$('.collapse').collapse('hide')})</script>
-<meta name=generator content="Hugo 0.87.0">
-<script type=text/javascript async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<meta name=theme-color content="dark">
+<title>Pengenalan Github Actions | Aiman Ismail</title>
+<meta property="og:site_name" content="Aiman Ismail">
+<meta property="og:title" content="Pengenalan Github Actions | Aiman Ismail">
+<meta itemprop=name content="Pengenalan Github Actions | Aiman Ismail">
+<meta name=twitter:title content="Pengenalan Github Actions | Aiman Ismail">
+<meta name=application-name content="Pengenalan Github Actions | Aiman Ismail">
+<meta name=description content>
+<meta name=twitter:description content>
+<meta itemprop=description content>
+<meta property="og:description" content>
+<link rel="shortcut icon" type=image/x-icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/main.min.3b60735c96f5faa623d75aceae8ee0a0c7d19f76a3eed0574c61f7253a4eeb3d.css>
 </head>
-<body>
-<nav class="navbar navbar-default navbar-fixed-top">
+<script>(function(){const b='ThemeColorScheme',a=localStorage.getItem(b),c=window.matchMedia('(prefers-color-scheme: dark)').matches===!0;a=='dark'||a==='auto'&&c?document.documentElement.dataset.userColorScheme='dark':document.documentElement.dataset.userColorScheme='light'})()</script>
+<body class=dark>
+<nav class=navbar>
 <div class=container>
-<div class=navbar-header>
-<a class="navbar-brand visible-xs" href=#>Pengenalan Github Actions</a>
-<button class=navbar-toggle data-target=.navbar-collapse data-toggle=collapse>
-<span class=icon-bar></span>
-<span class=icon-bar></span>
-<span class=icon-bar></span>
+<div class=flex>
+<div>
+<a class=brand href=/>
+Aiman Ismail
+</a>
+</div>
+<div class=flex>
+<a href=/articles/>Articles</a>
+<button id=dark-mode-button><svg class="light" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" style="-ms-transform:rotate(360deg);-webkit-transform:rotate(360deg);transform:rotate(360deg)" viewBox="0 0 36 36"><path fill="#ffd983" d="M30.312.776C32 19 20 32 .776 30.312c8.199 7.717 21.091 7.588 29.107-.429C37.9 21.867 38.03 8.975 30.312.776z"/><path d="M30.705 15.915a1.163 1.163.0 101.643 1.641 1.163 1.163.0 00-1.643-1.641zm-16.022 14.38a1.74 1.74.0 000 2.465 1.742 1.742.0 100-2.465zm13.968-2.147a2.904 2.904.0 01-4.108.0 2.902 2.902.0 010-4.107 2.902 2.902.0 014.108.0 2.902 2.902.0 010 4.107z" fill="#ffcc4d"/><rect x="0" y="0" width="36" height="36" fill="rgba(0, 0, 0, 0)"/></svg><svg class="dark" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" style="-ms-transform:rotate(360deg);-webkit-transform:rotate(360deg);transform:rotate(360deg)" viewBox="0 0 36 36"><path fill="#ffd983" d="M16 2s0-2 2-2 2 2 2 2v2s0 2-2 2-2-2-2-2V2zm18 14s2 0 2 2-2 2-2 2h-2s-2 0-2-2 2-2 2-2h2zM4 16s2 0 2 2-2 2-2 2H2s-2 0-2-2 2-2 2-2h2zm5.121-8.707s1.414 1.414.0 2.828-2.828.0-2.828.0L4.878 8.708s-1.414-1.414.0-2.829c1.415-1.414 2.829.0 2.829.0l1.414 1.414zm21 21s1.414 1.414.0 2.828-2.828.0-2.828.0l-1.414-1.414s-1.414-1.414.0-2.828 2.828.0 2.828.0l1.414 1.414zm-.413-18.172s-1.414 1.414-2.828.0.0-2.828.0-2.828l1.414-1.414s1.414-1.414 2.828.0.0 2.828.0 2.828l-1.414 1.414zm-21 21s-1.414 1.414-2.828.0.0-2.828.0-2.828l1.414-1.414s1.414-1.414 2.828.0.0 2.828.0 2.828l-1.414 1.414zM16 32s0-2 2-2 2 2 2 2v2s0 2-2 2-2-2-2-2v-2z"/><circle fill="#ffd983" cx="18" cy="18" r="10"/><rect x="0" y="0" width="36" height="36" fill="rgba(0, 0, 0, 0)"/></svg>
 </button>
 </div>
-<div class="collapse navbar-collapse">
-<ul class="nav navbar-nav">
-<li><a href=/>Home</a></li>
-<li><a href=/posts/>Posts</a></li>
-</ul>
-<ul class="nav navbar-nav navbar-right">
-<li class=navbar-icon><a href=mailto:m.aimanismail@gmail.com><i class="fas fa-envelope"></i></a></li>
-<li class=navbar-icon><a href=https://github.com/pokgak/><i class="fab fa-github"></i></a></li>
-<li class=navbar-icon><a href=https://twitter.com/pokgak73/><i class="fab fa-twitter"></i></a></li>
-</ul>
 </div>
 </div>
 </nav>
 <main>
+<div class=container>
+<article>
+<header class=article-header>
+<div class=thumb>
 <div>
-<h2>Pengenalan Github Actions</h2>
-<h5></h5>
+<h1>Pengenalan Github Actions</h1>
+<div class=post-meta>
+<div>
+By Aiman Ismail | <time>August 24, 2021</time>
+| 6 minutes
 </div>
-<div align=start class=content><p>Github Actions (GA) adalah servis automation yang ditawarkan oleh Github untuk semua penggunanya. Jika anda mempunyai repository public di Github, anda boleh mula menggunakan Github Actions pada saat ini tanpa perlu membayar apa-apa pun!</p>
-<h2 id=bagaimana-untuk-mula-dengan-github-actions>Bagaimana untuk mula dengan Github Actions?</h2>
+<div class=tags>
+</div>
+</div>
+</div>
+</div>
+</header>
+</article>
+<div class=article-post>
+<p>Github Actions (GA) adalah servis automation yang ditawarkan oleh Github untuk semua penggunanya. Jika anda mempunyai repository public di Github, anda boleh mula menggunakan Github Actions pada saat ini tanpa perlu membayar apa-apa pun!</p>
+<h2 id=bagaimana-untuk-mula-dengan-github-actions>
+<a href=#bagaimana-untuk-mula-dengan-github-actions class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Bagaimana untuk mula dengan Github Actions?
+</h2>
 <p>Untuk mula menggunakan Github Actions, anda boleh pergi ke mana-mana repository public yang anda miliki dan seterusnya pergi ke tab Actions.</p>
-<p><img src=/images/actions-tab.png alt></p>
+<p><img loading=lazy src=//images/actions-tab.png alt width=812 height=190></p>
 <p>Jika anda belum pernah setup mana-mana workflow di repository tersebut, anda akan melihat pilihan templates siap yang boleh digunakan untuk pelbagai jenis projek. Sebagai pemula, saya cadangkan anda mula dengan template barebones yang ditawarkan.</p>
-<p><img src=/images/actions-get-started.png alt></p>
+<p><img loading=lazy src=//images/actions-get-started.png alt width=631 height=579></p>
 <p>Anda boleh menggunakan editor local di komputer sendiri tapi Github juga ada menawarkan editor online di mana fail workflow anda akan diperiksa formatnya secara langsung sambil anda menaip. Github akan highlight jika fail workflow anda mempunyai kesalahan yang membuatkan workflow anda akan gagal. Selain itu juga, di tepi editor online itu ada dipaparkan documentation ringkas mengenai syntax fail workflow jadi anda tidak perlu lagi tukar-tukar tab untuk semasa menulis fail workflow anda.</p>
-<p><img src=/images/actions-editor.png alt="Github Actions online Editor"></p>
-<h2 id=anatomi-fail-workflow-github-actions>Anatomi fail workflow Github Actions</h2>
+<p><img loading=lazy src=//images/actions-editor.png alt="Github Actions online Editor" width=1191 height=388></p>
+<h2 id=anatomi-fail-workflow-github-actions>
+<a href=#anatomi-fail-workflow-github-actions class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Anatomi fail workflow Github Actions
+</h2>
 <p>Saya telah beberapa kali menyebut &ldquo;fail workflow&rdquo; dalam perenggan sebelum ini tapi belum pernah menerangkan apakah fail workflow itu. Github Actions menggunakan fail workflow untuk menetapkan bagaimana untuk melakukan automasi. Fail ini ditulis dalam format YAML. Satu ciri-ciri penting yang saya mahu highlight di sini adalah format YAML adalah whitespace-sensitive, bermakna anda perlu pastikan indentation fail workflow anda menggunakan 4 spaces.</p>
 <p>Sebelum bermula, ini adalah isi akhir fail workflow contoh kita:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>jobs</span>:
-  <span style=color:#f92672>job-pertama</span>:
-    <span style=color:#f92672>runs-on</span>: <span style=color:#ae81ff>ubuntu-latest</span>
-      <span style=color:#f92672>steps</span>:
-        - <span style=color:#f92672>run</span>: <span style=color:#ae81ff>echo Hello, world!</span>
-
-        - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Selamat tinggal dunia</span>
-          <span style=color:#f92672>run</span>: <span style=color:#ae81ff>echo Bye, world!</span>
-
-        - <span style=color:#f92672>uses</span>: <span style=color:#ae81ff>actions/checkout@v2</span>
-</code></pre></div><p>Ikuti penjelasan saya di bawah untuk memahami apakah yang akan dilakukan apabila workflow ini dijalankan.</p>
-<h2 id=keyword-dalam-fail-workflow-github-actions>Keyword dalam fail workflow Github Actions</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>job-pertama</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span><span class=w>      </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span><span class=w>        </span>- <span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>echo Hello, world!</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Selamat tinggal dunia</span><span class=w>
+</span><span class=w>          </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>echo Bye, world!</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v2</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Ikuti penjelasan saya di bawah untuk memahami apakah yang akan dilakukan apabila workflow ini dijalankan.</p>
+<h2 id=keyword-dalam-fail-workflow-github-actions>
+<a href=#keyword-dalam-fail-workflow-github-actions class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Keyword dalam fail workflow Github Actions
+</h2>
 <p>Dalam fail workflow anda ada dua top-level keyword yang wajib: <code>on</code> dan <code>jobs</code>.</p>
-<h3 id=keyword-on>Keyword <code>on</code></h3>
+<h3 id=keyword-on>
+<a href=#keyword-on class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Keyword &lt;code>on&lt;/code>
+</h3>
 <p>Satu ciri-ciri penting Github Actions adalah, workflow anda perlu dimulakan melalui &ldquo;triggers&rdquo;. Hampir semua aktiviti yang anda boleh lakukan secara manual di Github boleh dijadikan trigger untuk workflow anda. Sebagai contoh, anda boleh menetapkan workflow untuk dijalankan apabila seseorang telah push codenya ke repo, atau apabila pull request baru dibuka. Ini cara bagaimana anda melakukan kedua-dua contoh tersebut:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>on</span>:
-  <span style=color:#f92672>push</span>:
-  <span style=color:#f92672>pull_request</span>:
-</code></pre></div><p>Keyword <code>on</code> digunakan untuk menanda bahawa semua keyword dibawahnya adalah event-event dimana fail workflow anda patut dijalankan. <code>push</code> bermakna apabila seseorang telah push codenya ke repo anda, maka Github Actions akan menjalankan fail workflow tersebut. <code>pull_request</code> pula bermakna jika seseorang telah membuka pull request (PR) baru di repository anda, maka fail workflow tersebut akan dijalankan.</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>on</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>push</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>pull_request</span><span class=p>:</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Keyword <code>on</code> digunakan untuk menanda bahawa semua keyword dibawahnya adalah event-event dimana fail workflow anda patut dijalankan. <code>push</code> bermakna apabila seseorang telah push codenya ke repo anda, maka Github Actions akan menjalankan fail workflow tersebut. <code>pull_request</code> pula bermakna jika seseorang telah membuka pull request (PR) baru di repository anda, maka fail workflow tersebut akan dijalankan.</p>
 <p>Kedua-dua keyword <code>push</code> dan <code>pull_request</code> ini juga boleh menerima sub-keyword lain untuk tujuan menapis dengan lebih spesifik bila workflow itu patut dijalankan. Antara sub-keyword yang boleh digunakan adalah <code>branches</code> untuk menapis hanya push atau pull request kepada branch yang dinyatakan sahaja. Anda juga boleh menapis mengikut lokasi fail code anda di dalam repo menggunakan sub-keyword <code>paths</code>.</p>
 <p>Terdapat banyak lagi keyword yang anda boleh gunakan untuk trigger workflow anda, jika berminat boleh pergi ke page <a href=https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#on>ini</a> dan <a href=https://docs.github.com/en/actions/reference/events-that-trigger-workflows#webhook-events>ini</a> untuk membaca lebih lanjut.</p>
-<h3 id=keyword-jobs>Keyword <code>jobs</code></h3>
+<h3 id=keyword-jobs>
+<a href=#keyword-jobs class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Keyword &lt;code>jobs&lt;/code>
+</h3>
 <p>Okay, kita telah tetapkan <strong>bila</strong> workflow ini patut dijalankan menggunakan keyword <code>on</code>. Seterusnya kita akan menetapkan <strong>apa</strong> yang workflow ini patut buat menggunakan keyword <a href=https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobs><code>jobs</code></a>. Sesebuah workflow mestilah mempunyai paling kurang satu job. Untuk mencipta job baru, anda boleh menggunakan apa-apa perkataan sebagai <code>id</code> cuma perlu dipastikan tiada space. Contohnya seperti berikut:</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>jobs</span>:
-  <span style=color:#f92672>job-pertama</span>:
-    <span style=color:#f92672>runs-on</span>: <span style=color:#ae81ff>ubuntu-latest</span>
-</code></pre></div><p>Di sini, <code>job-pertama</code> adalah <code>id</code> untuk job kita. Seterusnya, setiap job perlulah menetapkan di bawah environment manakah job ini akan dijalankan. Github Actions menawarkan platform Windows, Linux, dan macOS yang anda boleh gunakan secara percuma. Senarai penuh versi yang disokong boleh dibaca di <a href=https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on>halaman</a> ini. Di sini saya menggunakan <code>ubuntu-latest</code> yang bermakna, job ini akan dijalankan di platform Ubuntu yang terbaru (pada masa tulisan ini adalah Ubuntu 20.04.</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>job-pertama</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Di sini, <code>job-pertama</code> adalah <code>id</code> untuk job kita. Seterusnya, setiap job perlulah menetapkan di bawah environment manakah job ini akan dijalankan. Github Actions menawarkan platform Windows, Linux, dan macOS yang anda boleh gunakan secara percuma. Senarai penuh versi yang disokong boleh dibaca di <a href=https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on>halaman</a> ini. Di sini saya menggunakan <code>ubuntu-latest</code> yang bermakna, job ini akan dijalankan di platform Ubuntu yang terbaru (pada masa tulisan ini adalah Ubuntu 20.04.</p>
 <p>Setelah menetapkan platform, tiba masa untuk kita senaraikan apakah yang patut workflow kita ini buat. Untuk itu kita perlukan keyword <code>steps</code>. Seperti keyword <code>jobs</code>, keyword <code>steps</code> mengandungi sub-keywords yang, satu untuk setiap apa yang kita mahu jalankan.</p>
 <p>Setiap satu step akan dimulakan dengan simbol <code>-</code>. Dalam syntax YAML, ini menandakan bahawa semua keyword di bawah satu <code>-</code> adalah satu bahagian. Keyword <code>run</code> digunakan untuk menjalankan command seolah-olah anda berada di terminal platform yang telah dipilih menggunakan keyword <code>runs-on</code> sebelum ini.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>jobs</span>:
-  <span style=color:#f92672>job-pertama</span>:
-    <span style=color:#f92672>runs-on</span>: <span style=color:#ae81ff>ubuntu-latest</span>
-      <span style=color:#f92672>steps</span>:
-        - <span style=color:#f92672>run</span>: <span style=color:#ae81ff>echo Hello, world!</span>
-
-        - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Selamat tinggal dunia</span>
-          <span style=color:#f92672>run</span>: <span style=color:#ae81ff>echo Bye, world!</span>
-</code></pre></div><p>Dalam contoh di atas, saya telah menetapkan step itu untuk run command <code>echo</code>. Command ini akan print perkataan selepas itu ke terminal anda, dalam kes ini anda akan melihat &ldquo;Hello, world&rdquo; di log result workflow anda nanti. Dalam contoh di atas juga, saya telah menetapkan workflow ini untuk run command echo tapi kali ini dengan perkataan lain pula. Selain daripada keyword <code>run</code>, setiap step juga boleh ditetapkan dengan keyword-keyword lain seperti <code>name</code>, <code>id</code> dan pelbagai lagi. Senarai penuh boleh anda lihat di <a href=https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idsteps>halaman</a> ini. Fungsi simbol <code>-</code> di sini adalah untuk membantu mengumpul semua keyword yang berkaitan dengan step itu. Setiap simbol <code>-</code> bermakna satu step dalam job itu.</p>
-<h3 id=keyword-uses>Keyword <code>uses</code></h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>job-pertama</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span><span class=w>      </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span><span class=w>        </span>- <span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>echo Hello, world!</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Selamat tinggal dunia</span><span class=w>
+</span><span class=w>          </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>echo Bye, world!</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Dalam contoh di atas, saya telah menetapkan step itu untuk run command <code>echo</code>. Command ini akan print perkataan selepas itu ke terminal anda, dalam kes ini anda akan melihat &ldquo;Hello, world&rdquo; di log result workflow anda nanti. Dalam contoh di atas juga, saya telah menetapkan workflow ini untuk run command echo tapi kali ini dengan perkataan lain pula. Selain daripada keyword <code>run</code>, setiap step juga boleh ditetapkan dengan keyword-keyword lain seperti <code>name</code>, <code>id</code> dan pelbagai lagi. Senarai penuh boleh anda lihat di <a href=https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idsteps>halaman</a> ini. Fungsi simbol <code>-</code> di sini adalah untuk membantu mengumpul semua keyword yang berkaitan dengan step itu. Setiap simbol <code>-</code> bermakna satu step dalam job itu.</p>
+<h3 id=keyword-uses>
+<a href=#keyword-uses class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Keyword &lt;code>uses&lt;/code>
+</h3>
 <p>Kita telah melihat bagaimana cara untuk menjalankan sebarang command melalui keyword <code>run</code>. Untuk sesetengah perkara, sekadar bergantung kepada command mungkin akan membataskan apa yang anda boleh lakukan. Oleh itu, Github Actions juga mempunyai fungsi untuk memanggil code luar dari fail workflow anda. Code ini boleh berasal dari repo yang sama ataupun daripada repo developer lain di Github.</p>
 <p>Actions ini boleh ditulis dengan pelbagai cara sama ada menggunakan Javascript atau melalui Docker. Github juga menyediakan <a href="https://github.com/marketplace?type=actions">marketplace</a> untuk anda mencari actions yang sesuai untuk digunakan dalam fail workflow anda. Github sendiri mempunyai beberapa Actions yang essential seperti <a href=https://github.com/marketplace/actions/checkout>checkout</a> untuk checkout git repo anda sewaktu workflow dijalankan dan juga <a href=https://github.com/actions/setup-node>setup-node</a> untuk setup environment node/javascript anda.</p>
 <p>Untuk menggunakan Actions, ada perlu menggunakan keyword <code>uses</code> diikuti dengan nama Actions yang ingin digunakan. Kebanyakan Actions juga mempunya keyword tersendiri yang digunakan untuk memperincikan bagaimana Actions tersebut dijalankan.</p>
-<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>jobs</span>:
-  <span style=color:#f92672>job-pertama</span>:
-    <span style=color:#f92672>runs-on</span>: <span style=color:#ae81ff>ubuntu-latest</span>
-      <span style=color:#f92672>steps</span>:
-        - <span style=color:#f92672>run</span>: <span style=color:#ae81ff>echo Hello, world!</span>
-
-        - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>Selamat tinggal dunia</span>
-          <span style=color:#f92672>run</span>: <span style=color:#ae81ff>echo Bye, world!</span>
-
-        - <span style=color:#f92672>uses</span>: <span style=color:#ae81ff>actions/checkout@v2</span>
-</code></pre></div><p>Dalam contoh di atas, saya menggunakan Actions dari Github <code>actions/checkout</code> untuk melakukan git checkout repo saya ke sewaktu workflow dijalankan. <code>@v2</code> di bahagian belakang itu menandakan versi Action tersebut yang ingin saya gunakan. Versi yang ditawarkan oleh Action tersebut boleh disemak di page Releases Action tersebut.</p>
-<h2 id=konklusi>Konklusi</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>job-pertama</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span><span class=w>      </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span><span class=w>        </span>- <span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>echo Hello, world!</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Selamat tinggal dunia</span><span class=w>
+</span><span class=w>          </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>echo Bye, world!</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v2</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Dalam contoh di atas, saya menggunakan Actions dari Github <code>actions/checkout</code> untuk melakukan git checkout repo saya ke sewaktu workflow dijalankan. <code>@v2</code> di bahagian belakang itu menandakan versi Action tersebut yang ingin saya gunakan. Versi yang ditawarkan oleh Action tersebut boleh disemak di page Releases Action tersebut.</p>
+<h2 id=konklusi>
+<a href=#konklusi class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Konklusi
+</h2>
 <p>Saya pernah menggunakan Jenkins dan Bitbucket Pipeline dan berdasarkan pengalaman saya Github Actions adalah jauh lebih baik dari kedua-dua produk CI/CD tersebut. Dokumentasi Github Actions yang ditawarkan Github adalah sangat lengkap. Saya paling banyak merujuk halaman <a href=https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions>Workflow Syntax</a> semasa mula belajar menggunakan Github Actions. Selain itu, halaman-halaman lain dalam <a href=https://docs.github.com/en/actions/reference>Reference</a> ini juga sangat membantu anda ingin mula melakukan perkara yang lebih advance dengan Github Actions.</p>
 <p>Antara contoh automation yang pernah saya lakukan menggunakan Github Actions adalah, menjalankan unit test untuk setiap commit push, memeriksa dan baiki tajuk pull request secara automatik jika tidak memenuhi kriteria anda. Saya juga pernah menggunakan Github Actions workflow untuk melakukan DB dump daripada server dan terus upload ke S3. Pada pandangan saya, Github Actions sangat menarik dan macam-macam yang anda boleh lakukan dengannya.</p>
 </div>
+</div>
+<div class=container>
+<nav class="flex container suggested">
+<a rel=next href=/posts/graf-interaktif-citf-plotly/ title="Next post (newer)">
+<span>Next</span>
+Animasi interaktif berdasarkan data CITF menggunakan Plotly
+</a>
+</nav>
+</div>
+<div class=container>
+</div>
 </main>
-<footer>
-<p class="copyright text-muted">© All rights reserved. Powered by <a href=https://gohugo.io>Hugo</a> and <a href=https://github.com/calintat/minimal>Minimal</a>.</p>
+</main>
+<footer class="footer flex">
+<section class=container>
+<nav class=footer-links>
+<a href=/index.xml>RSS</a>
+</nav>
+</section>
+<script defer src=/ts/features.39c567b3af1363f8abe74bfd650f3d58cb963716b7ad4b3b53f801d3ca585599.js data-enable-footnotes=true></script>
 </footer>
 </body>
 </html>
