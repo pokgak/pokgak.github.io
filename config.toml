@@ -1,57 +1,64 @@
-baseURL = "https://pokgak.xyz/"
+baseurl = "https://pokgak.xyz"
 languageCode = "en-us"
 title = "Aiman Ismail"
-theme = "minimal"
-googleAnalytics = ""
+theme = "hugo-tania"
+paginate = 6
+
+#disqusShortname = "https-hugo-tania-netlify-app"
 
 [params]
-    author = "Aiman Ismail"
-    description = "README"
-    githubUsername = "pokgak"
-    accent = "pink"
-    showBorder = false
-    backgroundColor = "white"
-    font = "Raleway" # should match the name on Google Fonts!
-    highlight = true
-    highlightStyle = "default"
-    highlightLanguages = ["yaml", "bash", "go"]
+  # Emoji will show before the blog title on site navbar.
+  #titleEmoji  = "😎"
 
-[[menu.main]]
-    url = "/"
-    name = "Home"
-    weight = 1
+  # Logo will show before the blog title on site navbar.
+  #titleLogo = ""
 
-#[[menu.main]]
-#    url = "/about/"
-#    name = "About"
-#    weight = 2
+  # Enable float footnotes.
+  # Default to true
+  enableFootnotes = true
+  siteName = "Aiman Ismail"
+  # siteDesc = "Hugo is Absurdly Fast!"
+  author = "Aiman Ismail"
 
-[[menu.main]]
-    url = "/posts/"
-    name = "Posts"
-    weight = 3
+  # Limit how many categories filter show above search input.
+  # Default to 5
+  #maxCategoryToShow = 10
 
-#[[menu.main]]
-#    url = "/project/"
-#    name = "Projects"
-#    weight = 4
+  # Show your social information with icon on index bio with `_index.md` content.
+  [params.socialOptions]
+    dev-to = ""
+    email = "m.aimanismail@gmail.com"
+    facebook = ""
+    github = "https://github.com/pokgak"
+    instagram = ""
+    linkedin = ""
+    medium = ""
+    stack-overflow = ""
+    steam = ""
+    telegram = ""
+    twitter = "https://twitter.com/pokgak73"
+    twitch = ""
+    whatsapp = ""
+  
+  # Comments settigns
+  [params.comments]
+    enabled = false 
+    provider = "disqus"
 
-# Social icons to be shown on the right-hand side of the navigation bar.
-# The "name" field should match the name of the icon in Font Awesome.
-# The list of available icons can be found at http://fontawesome.io/icons.
+[menu]
+[[menu.header]]
+  name = "Articles"
+  url = "/articles/"
+[[menu.footer]]
+    name = "RSS"
+    url = "/index.xml"
 
-[[menu.icon]]
-    url = "mailto:m.aimanismail@gmail.com"
-    name = "fas fa-envelope"
-    weight = 1
+[markup]
+[markup.highlight]
+  noClasses = false
+  lineNos = true
+[markup.goldmark.renderer]
+  unsafe = true
 
-[[menu.icon]]
-    url = "https://github.com/pokgak/"
-    name = "fab fa-github"
-    weight = 2
-
-[[menu.icon]]
-    url = "https://twitter.com/pokgak73/"
-    name = "fab fa-twitter"
-    weight = 3
-
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
