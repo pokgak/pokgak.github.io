@@ -273,19 +273,19 @@ Bagaimana untuk mula dengan Github Actions?
 &lt;/h2>
 &lt;p>Untuk mula menggunakan Github Actions, anda boleh pergi ke mana-mana repository public yang anda miliki dan seterusnya pergi ke tab Actions.&lt;/p>
 &lt;p>&lt;img loading="lazy"
-src="//images/actions-tab.png"
+src="https://pokgak.xyz/images/actions-tab.png"
 alt=""
 width=812
 height="190" />&lt;/p>
 &lt;p>Jika anda belum pernah setup mana-mana workflow di repository tersebut, anda akan melihat pilihan templates siap yang boleh digunakan untuk pelbagai jenis projek. Sebagai pemula, saya cadangkan anda mula dengan template barebones yang ditawarkan.&lt;/p>
 &lt;p>&lt;img loading="lazy"
-src="//images/actions-get-started.png"
+src="https://pokgak.xyz/images/actions-get-started.png"
 alt=""
 width=631
 height="579" />&lt;/p>
 &lt;p>Anda boleh menggunakan editor local di komputer sendiri tapi Github juga ada menawarkan editor online di mana fail workflow anda akan diperiksa formatnya secara langsung sambil anda menaip. Github akan highlight jika fail workflow anda mempunyai kesalahan yang membuatkan workflow anda akan gagal. Selain itu juga, di tepi editor online itu ada dipaparkan documentation ringkas mengenai syntax fail workflow jadi anda tidak perlu lagi tukar-tukar tab untuk semasa menulis fail workflow anda.&lt;/p>
 &lt;p>&lt;img loading="lazy"
-src="//images/actions-editor.png"
+src="https://pokgak.xyz/images/actions-editor.png"
 alt="Github Actions online Editor"
 width=1191
 height="388" />&lt;/p>
