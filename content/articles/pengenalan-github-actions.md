@@ -10,15 +10,15 @@ Github Actions (GA) adalah servis automation yang ditawarkan oleh Github untuk s
 
 Untuk mula menggunakan Github Actions, anda boleh pergi ke mana-mana repository public yang anda miliki dan seterusnya pergi ke tab Actions.
 
-![](/images/actions-tab.png)
+![](images/actions-tab.png)
 
 Jika anda belum pernah setup mana-mana workflow di repository tersebut, anda akan melihat pilihan templates siap yang boleh digunakan untuk pelbagai jenis projek. Sebagai pemula, saya cadangkan anda mula dengan template barebones yang ditawarkan.
 
-![](/images/actions-get-started.png)
+![](images/actions-get-started.png)
 
 Anda boleh menggunakan editor local di komputer sendiri tapi Github juga ada menawarkan editor online di mana fail workflow anda akan diperiksa formatnya secara langsung sambil anda menaip. Github akan highlight jika fail workflow anda mempunyai kesalahan yang membuatkan workflow anda akan gagal. Selain itu juga, di tepi editor online itu ada dipaparkan documentation ringkas mengenai syntax fail workflow jadi anda tidak perlu lagi tukar-tukar tab untuk semasa menulis fail workflow anda.
 
-![Github Actions online Editor](/images/actions-editor.png)
+![Github Actions online Editor](images/actions-editor.png)
 
 ## Anatomi fail workflow Github Actions
 
