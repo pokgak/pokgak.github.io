@@ -1,0 +1,107 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Animasi interaktif berdasarkan data CITF menggunakan Plotly</title>
+<style>html body{font-family:raleway,sans-serif;background-color:#fff}:root{--accent:pink;--border-width:0}</style>
+<link rel=stylesheet href=http://example.com/css/main.css>
+<link rel=stylesheet href="https://fonts.googleapis.com/css?family=Raleway">
+<link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css>
+<link rel=stylesheet href=https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css crossorigin=anonymous>
+<link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin=anonymous>
+<script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js></script>
+<script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js></script>
+<script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/bash.min.js></script>
+<script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/go.min.js></script>
+<script>hljs.initHighlightingOnLoad()</script>
+<script src=https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js></script>
+<script src=https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js integrity=sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa crossorigin=anonymous></script>
+<script>$(document).on('click',function(){$('.collapse').collapse('hide')})</script>
+<meta name=generator content="Hugo 0.87.0">
+<script type=text/javascript async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</head>
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+<div class=container>
+<div class=navbar-header>
+<a class="navbar-brand visible-xs" href=#>Animasi interaktif berdasarkan data CITF menggunakan Plotly</a>
+<button class=navbar-toggle data-target=.navbar-collapse data-toggle=collapse>
+<span class=icon-bar></span>
+<span class=icon-bar></span>
+<span class=icon-bar></span>
+</button>
+</div>
+<div class="collapse navbar-collapse">
+<ul class="nav navbar-nav">
+<li><a href=/>Home</a></li>
+<li><a href=/posts/>Posts</a></li>
+</ul>
+<ul class="nav navbar-nav navbar-right">
+<li class=navbar-icon><a href=mailto:m.aimanismail@gmail.com><i class="fas fa-envelope"></i></a></li>
+<li class=navbar-icon><a href=https://github.com/pokgak/><i class="fab fa-github"></i></a></li>
+<li class=navbar-icon><a href=https://twitter.com/pokgak73/><i class="fab fa-twitter"></i></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main>
+<div>
+<h2>Animasi interaktif berdasarkan data CITF menggunakan Plotly</h2>
+<h5></h5>
+</div>
+<div align=start class=content><p>Saya gemar melayari subreddit r/dataisbeautiful dan melihat graf hasil buatan pengguna Reddit lain di sana. Salah satu jenis graf yang saya paling minat adalah apabila graf itu seolah-olah animasi, berubah selaras mengikut jangka masa waktu yang semakin bertambah. Kita boleh melihat perkembangan sesuatu data itu dari mula hingga ke akhir.</p>
+<p>Contoh post terbaru di subreddit itu yang mempunyai graf sebegini adalah seperti graf di bawah yang memaparkan Kadar vaksinasi sebahagian daripada negara-negara di seluruh dunia (<em>sayang Malaysia tidak dimasukkan sekali di sini</em>):</p>
+<iframe id=reddit-embed src="https://www.redditmedia.com/r/dataisbeautiful/comments/p7l5rm/oc_the_race_to_vaccinate/?ref_source=embed&ref=share&embed=true" sandbox="allow-scripts allow-same-origin allow-popups" style=border:none height=620 width=640 scrolling=no></iframe>
+<p>Sebelum ini saya menganggap animasi sebegini rumit untuk dilakukan tetapi apabila pihak CITF telah melancarkan <a href="https://twitter.com/Khairykj/status/1410164953965752331?s=20">public repo</a> di Github bagi data vaksinasi Malaysia, saya memutuskan untuk cuba menghasilkan semula gaya visualisasi ini menggunakan data tersebut.</p>
+<p>Seterusnya saya akan menerangkan langkah-langkah yang diperlukan untuk menghasilkan visualisasi seperti yang di bawah. Sebagai rujukan, code penuh yang saya gunakan di sini boleh didapati di <a href=https://github.com/pokgak/citf-graphs/blob/main/main.py>sini</a>.</p>
+<iframe id=pokgak-citf src=https://pokgak.github.io/citf-graphs/ style=border:none height=400 width=640 scrolling=no></iframe>
+<h2 id=pembersihan-data>Pembersihan Data</h2>
+<p>Dalam projek yang melibatkan data sebegini, data boleh datang dari pelbagai sumber dan bentuk. Oleh itu, langkah pertama selalunya adalah pembersihan data. Tujuan langkah ini adalah supaya pada akhirnya kita mempunyai data dalam format yang sesuai dan boleh terus digunakan untuk langkah seterusnya tanpa perlu pemprosesan ekstra apa-apa pun.</p>
+<p>Saya bernasib baik kali ini kerana sumber data yang dibekalkan oleh pihak CITF Malaysia sudah pun berada dalam format CSV yang senang untuk dibaca menggunakan <code>pandas</code>, sebuah library untuk memanipulasi data menggunakan Python. Pihak CITF tidak menawarkan public REST API yang boleh digunakan untuk mengambil (fetch) data tersebut maka saya terpaksa mengambil data menerusi Github. Proses ini kurang sesuai jika anda mahu menapis dahulu data yang diambil tapi untuk kegunaan saya ini, kaedah ini adalah mencukupi.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>STATE_DATA_URL <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;https://raw.githubusercontent.com/CITF-Malaysia/citf-public/main/vaccination/vax_state.csv&#34;</span>
+
+df <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_csv(StringIO(requests<span style=color:#f92672>.</span>get(data_url)<span style=color:#f92672>.</span>text))
+</code></pre></div><p>Function <code>read_csv</code> akan mengambil output data yang diambil dari Github dan menukarkannya ke format DataFrame yang digunakan oleh library pandas. Format DataFrame adalah 2D seakan-akan Excel. Ia mempunyai rows dan columns yang mempunyai data dan menawarkan fungsi-fungsi untuk memanipulasi data tersebut (gabung, pisah, transpose, etc) dengan mudah. Berikut adalah code yang saya gunakan untuk menyiapkan data raw tadi untuk visualisasi:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>df<span style=color:#f92672>.</span>set_index([<span style=color:#e6db74>&#34;date&#34;</span>, <span style=color:#e6db74>&#34;state&#34;</span>])
+  <span style=color:#f92672>.</span>loc[:, [<span style=color:#e6db74>&#34;cumul_partial&#34;</span>, <span style=color:#e6db74>&#34;cumul_full&#34;</span>, <span style=color:#e6db74>&#34;cumul&#34;</span>]]
+  <span style=color:#f92672>.</span>rename(columns<span style=color:#f92672>=</span>{<span style=color:#e6db74>&#34;cumul_partial&#34;</span>: <span style=color:#e6db74>&#34;partially_vaxed&#34;</span>, <span style=color:#e6db74>&#34;cumul_full&#34;</span>: <span style=color:#e6db74>&#34;fully_vaxed&#34;</span>})
+  <span style=color:#f92672>.</span>sort_values(by<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;cumul&#34;</span>, ascending<span style=color:#f92672>=</span><span style=color:#66d9ef>False</span>)
+  <span style=color:#f92672>.</span>sort_index(level<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;date&#34;</span>, sort_remaining<span style=color:#f92672>=</span><span style=color:#66d9ef>False</span>)
+  <span style=color:#f92672>.</span>reset_index()
+</code></pre></div><p>Secara ringkasnya,</p>
+<ol>
+<li><code>set_index</code>: saya menetapkan column &ldquo;date&rdquo; dan &ldquo;state&rdquo; index DataFrame tersebut yang akan saya gunakan nanti untuk mengasingkan data vaksinasi mengikut tarikh dan negeri</li>
+<li><code>loc</code>: pilih hanya column yang saya mahu</li>
+<li><code>rename</code>: memberikan nama baharu kepada column-column tersebut supaya lebih mudah difahami</li>
+<li><code>sort_values</code>: susun semua data vaksinasi mengikut jumlah kumulatif (&ldquo;cumul&rdquo;)</li>
+<li><code>sort_index</code>: susun semua data vaksinasi mengikut tarikh</li>
+<li><code>reset_index</code>: menjadikan column index dari langkah 1 sebelum ini balik seperti column biasa yang boleh digunakan secara normal</li>
+</ol>
+<p>Untuk mengetahui lebih lanjut fungsi functions yang saya pakai di sini, bolehlah rujuk kepada <a href=https://pandas.pydata.org/pandas-docs/stable/reference/index.html>pandas API Reference</a>.</p>
+<h2 id=visualisasi-data-menggunakan-plotly>Visualisasi Data menggunakan Plotly</h2>
+<p><a href=https://plotly.com/graphing-libraries/>Plotly</a> adalah sebuah library yang menawarkan fungsi-fungsi untuk mempermudah pengguna untuk menghasilkan visualisasi interaktif. Ia ditawarkan dalam bahasa Python, R, ataupun JavaScript. Saya berpeluang untuk menggunakan Plotly dalam Python untuk menghasilkan visualisasi untuk thesis bachelor saya dan berdasarkan pengalaman saya, sangat mudah untuk bereksperimen dan menghasilkan graf visualisasi menarik menggunakan library ini.</p>
+<p>Ciri Plotly yang sangat bagus adalah <a href=https://plotly.com/python/plotly-express/>Plotly Express</a>. Untuk kebanyakan fungsi visualisasi, Plotly Express sudah cukup pandai menakrif data yang diberikan dan kemudian menghasilkan visualisasi seperti yang dikehendaki. Berikut adalah code yang saya gunakan untuk menghasilkan animasi graf yang saya paparkan di permulaan blog post ini:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>fig <span style=color:#f92672>=</span> px<span style=color:#f92672>.</span>bar(
+        state_data,
+        x<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;state&#34;</span>,
+        y<span style=color:#f92672>=</span>[<span style=color:#e6db74>&#34;partially_vaxed&#34;</span>, <span style=color:#e6db74>&#34;fully_vaxed&#34;</span>],
+        animation_frame<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;date&#34;</span>,
+        animation_group<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;state&#34;</span>,
+        labels<span style=color:#f92672>=</span>{<span style=color:#e6db74>&#34;value&#34;</span>: <span style=color:#e6db74>&#34;Total vaccinated&#34;</span>, <span style=color:#e6db74>&#34;state&#34;</span>: <span style=color:#e6db74>&#34;&#34;</span>, <span style=color:#e6db74>&#34;variable&#34;</span>: <span style=color:#e6db74>&#34;Dose Type&#34;</span>},
+        title<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;Vaccination Count in Malaysia by State&#34;</span>,
+    )
+</code></pre></div><p>Jika anda perasan, saya hanyalah menggunakan <strong>satu</strong> function sahaja daripada Plotly Express iaitu <code>bar</code>. Function ini digunakan untuk menghasilkan visualisasi graf bar. Sebagai parameter, saya berikan data vaksinasi yang telah dibersihkan dan ditukarkan ke format DataFrame. Menerusi parameter <code>x</code> dan <code>y</code>, saya menetapkan data daripada column manakah dalam DataFrame tersebut yang akan digunakan sebagai paksi X dan paksi Y dalam graf.</p>
+<p>Seterusnya, untuk menghasilkan animasi bergerak, saya menggunakan parameter <code>animation_frame</code> dan ditetapkan column &ldquo;date&rdquo; sebagai nilainya (value). Dengan parameter ini, Plotly akan menghasilkan satu graf untuk setiap nilai dalam column tersebut. Jadi bila saya menggunakan column &ldquo;date&rdquo;, Plotly akan menghasilkan satu graf untuk setiap tarikh dalam data vaksinasi. Untuk menghasilkan animasi, graf-graf ini akan disusun mengikut tarikh dan dipaparkan seolah-olah slideshow. Hasil akhirnya kita akan dapat perkembangan kadar vaksinasi selaras dengan masa.</p>
+<p>Parameter <code>animation_frame</code> cukup untuk menghasilkan animasi perkembangan kadar vaksinasi tersebut tetapi animasinya kelihation tidak begitu lancar dan seperti terpotong-potong. Oleh itu, saya juga menggunakan parameter <code>animation_group</code>. Dengan parameter ini, Plotly akan mencuba untuk melancarkan transisi antara dua graf yang dihasilkan berdasakan nilai column dalam <code>animation_frame</code> tadi.
+Dalam visualisasi graf bar, Plotly akan menunjukkan pertukaran posisi bar tersebut apabila ia berubah kedudukan. Dengan ini animasi kita tadi telah pun menjadi lebih lancar.</p>
+<p>Akhir sekali, parameter <code>labels</code> dan <code>title</code> digunakan untuk menetapkan label yang lebih mesra pembaca untuk legend, paksi, serta tajuk graf.</p>
+<h1 id=konklusi>Konklusi</h1>
+<p>Saya amat berpuas hati dengan animasi graf ini kerana saya telah belajar cara untuk menghasilkan jenis bentuk graf yang telah saya minati buat sekian lama. Namun begitu, walaupun graf ini kelihatan lebih cantik berbanding graf lain dengan animasi bergerak, saya akui apa yang telah saya hasilkan ini lebih kepada latihan menggunakan library Plotly itu sendiri. Masih banyak aspek yang boleh diperbaiki untuk menyampaikan maklumat menggunakan graf secara tepat dan efektif.</p>
+<p>Untuk mengakses segala code yang telah saya tunjukkan di sini, boleh akses repository <a href=https://github.com/pokgak/citf-graphs>pokgak/citf-graphs</a> di Github. Saya juga telah menetapkan jadual berkala supaya graf visualisasi tersebut dikemas kini setiap hari menggunakan Github Actions. Blog post cara saya bagaimana saya buat akan datang.</p>
+</div>
+</main>
+<footer>
+<p class="copyright text-muted">© All rights reserved. Powered by <a href=https://gohugo.io>Hugo</a> and <a href=https://github.com/calintat/minimal>Minimal</a>.</p>
+</footer>
+</body>
+</html>
