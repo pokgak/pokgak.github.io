@@ -1,0 +1,309 @@
+<!doctype html><html lang=en-us>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<meta name=theme-color content="dark">
+<title>Auto-update Graf Covid-19 menggunakan Github Actions | Aiman Ismail</title>
+<meta property="og:site_name" content="Aiman Ismail">
+<meta property="og:title" content="Auto-update Graf Covid-19 menggunakan Github Actions | Aiman Ismail">
+<meta itemprop=name content="Auto-update Graf Covid-19 menggunakan Github Actions | Aiman Ismail">
+<meta name=twitter:title content="Auto-update Graf Covid-19 menggunakan Github Actions | Aiman Ismail">
+<meta name=application-name content="Auto-update Graf Covid-19 menggunakan Github Actions | Aiman Ismail">
+<meta name=description content>
+<meta name=twitter:description content>
+<meta itemprop=description content>
+<meta property="og:description" content>
+<link rel="shortcut icon" type=image/x-icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/main.min.3b60735c96f5faa623d75aceae8ee0a0c7d19f76a3eed0574c61f7253a4eeb3d.css>
+</head>
+<script>(function(){const b='ThemeColorScheme',a=localStorage.getItem(b),c=window.matchMedia('(prefers-color-scheme: dark)').matches===!0;a=='dark'||a==='auto'&&c?document.documentElement.dataset.userColorScheme='dark':document.documentElement.dataset.userColorScheme='light'})()</script>
+<body class=dark>
+<nav class=navbar>
+<div class=container>
+<div class=flex>
+<div>
+<a class=brand href=/>
+Aiman Ismail
+</a>
+</div>
+<div class=flex>
+<a href=/articles/>Articles</a>
+<button id=dark-mode-button><svg class="light" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" style="-ms-transform:rotate(360deg);-webkit-transform:rotate(360deg);transform:rotate(360deg)" viewBox="0 0 36 36"><path fill="#ffd983" d="M30.312.776C32 19 20 32 .776 30.312c8.199 7.717 21.091 7.588 29.107-.429C37.9 21.867 38.03 8.975 30.312.776z"/><path d="M30.705 15.915a1.163 1.163.0 101.643 1.641 1.163 1.163.0 00-1.643-1.641zm-16.022 14.38a1.74 1.74.0 000 2.465 1.742 1.742.0 100-2.465zm13.968-2.147a2.904 2.904.0 01-4.108.0 2.902 2.902.0 010-4.107 2.902 2.902.0 014.108.0 2.902 2.902.0 010 4.107z" fill="#ffcc4d"/><rect x="0" y="0" width="36" height="36" fill="rgba(0, 0, 0, 0)"/></svg><svg class="dark" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" style="-ms-transform:rotate(360deg);-webkit-transform:rotate(360deg);transform:rotate(360deg)" viewBox="0 0 36 36"><path fill="#ffd983" d="M16 2s0-2 2-2 2 2 2 2v2s0 2-2 2-2-2-2-2V2zm18 14s2 0 2 2-2 2-2 2h-2s-2 0-2-2 2-2 2-2h2zM4 16s2 0 2 2-2 2-2 2H2s-2 0-2-2 2-2 2-2h2zm5.121-8.707s1.414 1.414.0 2.828-2.828.0-2.828.0L4.878 8.708s-1.414-1.414.0-2.829c1.415-1.414 2.829.0 2.829.0l1.414 1.414zm21 21s1.414 1.414.0 2.828-2.828.0-2.828.0l-1.414-1.414s-1.414-1.414.0-2.828 2.828.0 2.828.0l1.414 1.414zm-.413-18.172s-1.414 1.414-2.828.0.0-2.828.0-2.828l1.414-1.414s1.414-1.414 2.828.0.0 2.828.0 2.828l-1.414 1.414zm-21 21s-1.414 1.414-2.828.0.0-2.828.0-2.828l1.414-1.414s1.414-1.414 2.828.0.0 2.828.0 2.828l-1.414 1.414zM16 32s0-2 2-2 2 2 2 2v2s0 2-2 2-2-2-2-2v-2z"/><circle fill="#ffd983" cx="18" cy="18" r="10"/><rect x="0" y="0" width="36" height="36" fill="rgba(0, 0, 0, 0)"/></svg>
+</button>
+</div>
+</div>
+</div>
+</nav>
+<main>
+<div class=container>
+<article>
+<header class=article-header>
+<div class=thumb>
+<div>
+<h1>Auto-update Graf Covid-19 menggunakan Github Actions</h1>
+<div class=post-meta>
+<div>
+By Aiman Ismail | <time>September 02, 2021</time>
+| 4 minutes
+</div>
+<div class=tags>
+<a href=/tags/github-actions/>Github Actions</a>
+<a href=/tags/ci/cd/>CI/CD</a>
+</div>
+</div>
+</div>
+</div>
+</header>
+</article>
+<div class=article-post>
+<p>Dalam blog post saya sebelum ini saya dah menerangkan bagaimana saya membuat graf animasi <a href=https://pokgak.xyz/articles/graf-interaktif-citf-plotly/>perkembangan status pemberian imunisasi</a> negeri-negeri di Malaysia. Seterusnya saya juga ada berkongsi <a href=https://pokgak.xyz/articles/pengenalan-github-actions/>asas-asas untuk menggunakan Github Actions</a>. Dalam blog post ini saya ingin menerangkan pula bagaimana saya menggunakan Github Actions untuk mengemaskini graf tersebut dengan data terbaru yang dikeluarkan oleh pihak CITF Malaysia secara automatik setiap hari.</p>
+<h2 id=konfigurasi-penuh>
+<a href=#konfigurasi-penuh class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Konfigurasi penuh
+</h2>
+<p>Sebelum saya mula penerangan, inilah hasil fail workflow Github Actions yang saya gunakan:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Update Graphs</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=nt>on</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>push</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>branches</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>main]</span><span class=w>
+</span><span class=w>  </span><span class=nt>workflow_dispatch</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>schedule</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span>- <span class=nt>cron</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0 0 * * *&#34;</span><span class=w> </span><span class=c># Run workflow everyday at 12 AM </span><span class=w>
+</span><span class=w></span><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>vax-count-by-state</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span><span class=w>    </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span><span class=w>      </span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v2</span><span class=w>
+</span><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span><span class=w>          </span><span class=nt>token</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.GITHUB_TOKEN }}</span><span class=w>
+</span><span class=w>
+</span><span class=w>      </span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/setup-python@v2</span><span class=w>
+</span><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span><span class=w>          </span><span class=nt>python-version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span><span class=w>
+</span><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Cache pip</span><span class=w>
+</span><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/cache@v2</span><span class=w>
+</span><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span><span class=w>          </span><span class=c># This path is specific to Ubuntu</span><span class=w>
+</span><span class=w>          </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>~/.cache/pip</span><span class=w>
+</span><span class=w>          </span><span class=c># Look to see if there is a cache hit for the corresponding requirements file</span><span class=w>
+</span><span class=w>          </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>${{ runner.os }}-pip-${{ hashFiles(&#39;requirements.txt&#39;) }}</span><span class=w>
+</span><span class=w>          </span><span class=nt>restore-keys</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span><span class=sd>            ${{ runner.os }}-pip-
+</span><span class=sd>            ${{ runner.os }}-</span><span class=w>            
+</span><span class=w>
+</span><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Install dependencies</span><span class=w>
+</span><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>pip3 install -r requirements.txt</span><span class=w>
+</span><span class=w>
+</span><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Fetch latest data &amp; generate new graph</span><span class=w>
+</span><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>python3 main.py</span><span class=w>
+</span><span class=w>        
+</span><span class=w>      </span>- <span class=nt>id</span><span class=p>:</span><span class=w> </span><span class=l>get-date</span><span class=w>
+</span><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>echo &#34;::set-output name=value::$(date --iso-8601)&#34;</span><span class=w>
+</span><span class=w>
+</span><span class=w>      </span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>stefanzweifel/git-auto-commit-action@v4</span><span class=w>
+</span><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span><span class=w>          </span><span class=nt>commit_message</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;bot: update graph for ${{ steps.get-date.outputs.value }}&#34;</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id=bahagian-bahagian>
+<a href=#bahagian-bahagian class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Bahagian-bahagian
+</h2>
+<p>Saya akan memecahkan penerangan saya kepada beberapa bahagian iaitu:</p>
+<ol>
+<li>Jadual auto-update</li>
+<li>Melakukan kemaskini graf</li>
+<li>Commit & Push kemaskini ke repository</li>
+</ol>
+<h3 id=bahagian-1-jadual-auto-update>
+<a href=#bahagian-1-jadual-auto-update class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Bahagian 1: Jadual Auto-update
+</h3>
+<p>Di bahagian ini saya akan menunjukkan cara bagaimana saya menetapkan Github Actions untuk melakukan kemaskini setiap hari secara automatik.</p>
+<p>Dalam penerangan saya berkenaan <a href=https://pokgak.xyz/articles/pengenalan-github-actions/>asas-asas Github Actions</a>, saya ada menyebut yang sesebuah workflow itu boleh dicetuskan oleh pelbagai event daripada Github. Antara event yang disokong adalah menjalankan workflow tersebut berdasarkan jadual yang ditetapkan. Untuk ini kita memerlukan keyword <code>schedule</code> di bawah keyword utama <code>on</code> seperti contoh di bawah:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>on</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>schedule</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span>- <span class=nt>cron</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0 0 * * *&#34;</span><span class=w> </span><span class=c># Run workflow everyday at 12 AM</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Keyword <code>schedule</code> ini menerima jadual dalam format syntax <code>cron</code>. Jika anda tahu selok-belok sesebuah sistem UNIX atau Linux anda mungkin tahu mengenai <code>cron</code>. Untuk yang belum tahu apa syntax <code>cron</code> itu, ia mempunyai 5 bahagian yang dipisahkan dengan paling kurang satu karakter <code>whitespace</code> seperti <code>space</code> atau <code>tab</code>. Bermula dari kiri, bahagian-bahagian tersebut melambangkan nilai berikut, nilai yang boleh diterima saya letakkan dalam kotak disebelah:</p>
+<ul>
+<li>minit [0 hingga 59]</li>
+<li>jam [0 hingga 23]</li>
+<li>hari dalam bulan [1 hingga 31]</li>
+<li>bulan dalam tahun [1 hingga 12]</li>
+<li>hari dalam minggu [0 hingga 6], bermula dengan 0=Ahad, 1=Isnin, dan seterusnya hingga 6=Sabtu</li>
+</ul>
+<p>Nilai khas <code>*</code> boleh digunakan yang membawa maksud <em>untuk setiap nilai dalam bahagian tersebut</em>. Dalam fail workflow saya jadual cron yang digunakan adalah &ldquo;0 0 * * *&rdquo; yang bermakna, &ldquo;<em>Jalankan fail workflow ini pada jam 0:00 (tengah malam) setiap hari dalam bulan, untuk setiap tahun, tidak mengira hari apa pun</em>&rdquo;. Kadangkala syntax cron ini boleh mengelirukan. Jadi saya mencadangkan laman <a href=https://crontab.guru/>crontab.guru</a> untuk memeriksa dan bereksperimen dengan syntax cron ini.</p>
+<h3 id=bahagian-2-melakukan-kemaskini-graf>
+<a href=#bahagian-2-melakukan-kemaskini-graf class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Bahagian 2: Melakukan kemaskini graf
+</h3>
+<p>Di blog post sebelum ini saya telah menerangkan code yang saya gunakan untuk menjana graf animasi baru jadi kita akan menggunakan skrip yang sama untuk melakukannya di sini. Walaupun begitu, sebelum menjalankan skrip Python untuk menjana graf berdasarkan informasi baru, kita perlu menyediakan semua perisian yang diperlukan oleh skrip tersebut di Github Actions Runner.</p>
+<p>Untuk itu saya menggunakan [actions/setup-python] untuk menyediakan Python di runner tersebut dan seterusnya menginstall dependency lain. Hanya step terakhir dalam job tersebut adalah bahagian dimana saya betul-betul menjalan kerja tersebut. Berikut adalah code tersebut.</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v2</span><span class=w>
+</span><span class=w>  </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>token</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.GITHUB_TOKEN }}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/setup-python@v2</span><span class=w>
+</span><span class=w>  </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>python-version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Cache pip</span><span class=w>
+</span><span class=w>  </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/cache@v2</span><span class=w>
+</span><span class=w>  </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=c># This path is specific to Ubuntu</span><span class=w>
+</span><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>~/.cache/pip</span><span class=w>
+</span><span class=w>    </span><span class=c># Look to see if there is a cache hit for the corresponding requirements file</span><span class=w>
+</span><span class=w>    </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>${{ runner.os }}-pip-${{ hashFiles(&#39;requirements.txt&#39;) }}</span><span class=w>
+</span><span class=w>    </span><span class=nt>restore-keys</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span><span class=sd>      ${{ runner.os }}-pip-
+</span><span class=sd>      ${{ runner.os }}-            </span><span class=w>      
+</span><span class=w>
+</span><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Install dependencies</span><span class=w>
+</span><span class=w>  </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>pip3 install -r requirements.txt</span><span class=w>
+</span><span class=w>
+</span><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Fetch latest data &amp; generate new graph</span><span class=w>
+</span><span class=w>  </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>python3 main.py</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id=bahagian-3-commit-dan-push-kemaskini-ke-repository>
+<a href=#bahagian-3-commit-dan-push-kemaskini-ke-repository class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Bahagian 3: Commit dan Push kemaskini ke repository
+</h3>
+<p>Setelah mencipta graf baru dari data terkini daripada repo CITF-public, graf baru kita sudah pun ready tapi belum lagi dipaparkan di website <a href=https://pokgak.github.io/citf-graphs>https://pokgak.github.io/citf-graphs</a> kerana ia masih belum dicommit lagi ke repository.</p>
+<p>Biasanya saya akan melakukan commit secara manual dan push ke Github tapi oleh kerana kita melakukan semua proses diatas secara automatik daripada Github Actions, kita tidak boleh lagi buat begitu. Oleh itu, saya menggunakan Actions <a href=https://github.com/stefanzweifel/git-auto-commit-action>stefanzweifel/git-auto-commit-action</a> untuk melakukan commit secara automatik. Berikut adalah segmen fail workflow saya yang menunjukkan penggunaan Actions ini:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>stefanzweifel/git-auto-commit-action@v4</span><span class=w>
+</span><span class=w>  </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>commit_message</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;bot: update graph for ${{ steps.get-date.outputs.value }}&#34;</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Seperti yang anda boleh lihat, mudah sahaja cara penggunaan actions ini. Kita hanya perlu menggunakan keyword <code>uses</code> untuk menanda bahawa kita ingin menggunakan Actions luar dalam fail workflow ini, diikuti dengan nama Actions tersebut. Senarai semua actions yang ada boleh dilihat di <a href="https://github.com/marketplace?type=actions">Github Actions Marketplace</a>. Tambahan pula, anda juga boleh <a href=https://docs.github.com/en/actions/creating-actions>menulis Actions anda sendiri</a>!.</p>
+<h2 id=konklusi>
+<a href=#konklusi class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>
+Konklusi
+</h2>
+<p>Sejak adanya workflow ini, saya tidak perlu lagi memastikan graf yang saya hasilkan di <a href=https://github.com/pokgak/citf-graphs>pokgak/citf-graphs</a> sentiasa dikemaskini dengan maklumat terbaru secara manual, semuanya dilakukan secara automatik. Sejak itu juga, Github menunjukkan aktiviti saya aktif setiap hari, walaupun pada hakikatnya itu semua adalah bot sahaja :p</p>
+<p><img loading=lazy src=/images/github-activity.png alt="Cuba teka bila saya mula pakai workflow ni?" width=782 height=207></p>
+</div>
+</div>
+<div class=container>
+<nav class="flex container suggested">
+<a rel=prev href=/articles/alkisah-syarikat-a/ title="Previous post (older)">
+<span>Previous</span>
+Alkisah Syarikat A
+</a>
+</nav>
+</div>
+<div class=container>
+</div>
+</main>
+</main>
+<footer class="footer flex">
+<section class=container>
+<nav class=footer-links>
+<a href=/index.xml>RSS</a>
+</nav>
+</section>
+<script defer src=/ts/features.39c567b3af1363f8abe74bfd650f3d58cb963716b7ad4b3b53f801d3ca585599.js data-enable-footnotes=true></script>
+</footer>
+</body>
+</html>
