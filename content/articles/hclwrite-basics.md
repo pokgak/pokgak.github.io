@@ -185,3 +185,10 @@ ioutil.WriteFile("data/result_itsm.tf", hclwrite.Format(f.Bytes()), 0644)
 ## Konklusi
 
 Manipulasi fail HCL menggunakan library hclwrite lebih kompleks daripada melakukan ubahsuai secara manual tetapi jika ini perkara yang anda perlu lakukan setiap hari, mungkin lebih senang jika anda meluangkan masa beberapa hari untuk membangunkan solusi automation ini supaya perkara yang sama tidak perlu lagi intervensi manual daripada anda.
+
+
+### Sumber Rujukan
+
+- [Terraform Configuration Syntax](https://www.terraform.io/docs/language/syntax/configuration.html)
+- [hclwrite package documentation](https://pkg.go.dev/github.com/hashicorp/hcl/v2@v2.10.1/hclwrite)
+- [Write Terraform Files in Go with hclwrite](https://dev.to/pdcommunity/write-terraform-files-in-go-with-hclwrite-2e1j)
