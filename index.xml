@@ -345,7 +345,22 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Konklusi
 &lt;/h2>
-&lt;p>Manipulasi fail HCL menggunakan library hclwrite lebih kompleks daripada melakukan ubahsuai secara manual tetapi jika ini perkara yang anda perlu lakukan setiap hari, mungkin lebih senang jika anda meluangkan masa beberapa hari untuk membangunkan solusi automation ini supaya perkara yang sama tidak perlu lagi intervensi manual daripada anda.&lt;/p></description></item><item><title>Auto-update Graf Covid-19 menggunakan Github Actions</title><link>https://pokgak.xyz/articles/auto-update-citf-graphs/</link><pubDate>Thu, 02 Sep 2021 09:56:10 +0800</pubDate><guid>https://pokgak.xyz/articles/auto-update-citf-graphs/</guid><description>
+&lt;p>Manipulasi fail HCL menggunakan library hclwrite lebih kompleks daripada melakukan ubahsuai secara manual tetapi jika ini perkara yang anda perlu lakukan setiap hari, mungkin lebih senang jika anda meluangkan masa beberapa hari untuk membangunkan solusi automation ini supaya perkara yang sama tidak perlu lagi intervensi manual daripada anda.&lt;/p>
+&lt;h3 id="sumber-rujukan">
+&lt;a href="#sumber-rujukan" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Sumber Rujukan
+&lt;/h3>
+&lt;ul>
+&lt;li>&lt;a href="https://www.terraform.io/docs/language/syntax/configuration.html">Terraform Configuration Syntax&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://pkg.go.dev/github.com/hashicorp/hcl/v2@v2.10.1/hclwrite">hclwrite package documentation&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://dev.to/pdcommunity/write-terraform-files-in-go-with-hclwrite-2e1j">Write Terraform Files in Go with hclwrite&lt;/a>&lt;/li>
+&lt;/ul></description></item><item><title>Auto-update Graf Covid-19 menggunakan Github Actions</title><link>https://pokgak.xyz/articles/auto-update-citf-graphs/</link><pubDate>Thu, 02 Sep 2021 09:56:10 +0800</pubDate><guid>https://pokgak.xyz/articles/auto-update-citf-graphs/</guid><description>
 &lt;p>Dalam blog post saya sebelum ini saya dah menerangkan bagaimana saya membuat graf animasi &lt;a href="https://pokgak.xyz/articles/graf-interaktif-citf-plotly/">perkembangan status pemberian imunisasi&lt;/a> negeri-negeri di Malaysia. Seterusnya saya juga ada berkongsi &lt;a href="https://pokgak.xyz/articles/pengenalan-github-actions/">asas-asas untuk menggunakan Github Actions&lt;/a>. Dalam blog post ini saya ingin menerangkan pula bagaimana saya menggunakan Github Actions untuk mengemaskini graf tersebut dengan data terbaru yang dikeluarkan oleh pihak CITF Malaysia secara automatik setiap hari.&lt;/p>
 &lt;h2 id="konfigurasi-penuh">
 &lt;a href="#konfigurasi-penuh" class="anchor">
