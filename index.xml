@@ -1,4 +1,361 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 02 Sep 2021 09:56:10 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Auto-update Graf Covid-19 menggunakan Github Actions</title><link>https://pokgak.xyz/articles/auto-update-citf-graphs/</link><pubDate>Thu, 02 Sep 2021 09:56:10 +0800</pubDate><guid>https://pokgak.xyz/articles/auto-update-citf-graphs/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 19 Sep 2021 12:25:34 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Generate fail HCL menggunakan library hclwrite</title><link>https://pokgak.xyz/articles/hclwrite-basics/</link><pubDate>Sun, 19 Sep 2021 12:25:34 +0800</pubDate><guid>https://pokgak.xyz/articles/hclwrite-basics/</guid><description>
+&lt;p>HCL adalah bahasa yang digunakan dalam produk-produk daripada Hashicorp seperti Terraform dan Packer. Kebiasaannya, fail HCL ini ditulis secara manual tetapi jika anda ingin menulis atau mengubah fail-fail tersebut secara programmatik menggunakan code, maka anda boleh menggunakan &lt;a href="https://pkg.go.dev/github.com/hashicorp/hcl/v2@v2.10.1/hclwrite#Tokens">&lt;code>hclwrite&lt;/code>&lt;/a>, sebuah library yang ditulis dalam Go.&lt;/p>
+&lt;p>Blog post ini dibahagikan kepada dua bahagian. Bahagian pertama menunjukkan cara untuk menghasilkan block baru from scratch dan simpan ke fail. Ini adalah asas untuk bahagian kedua di mana kita akan mengubah fail HCL sedia ada dan memastikan format fail tersebut terjaga dan tidak melakukan pengubahan secara semberono.&lt;/p>
+&lt;h2 id="elemen-elemen-dalam-fail-hcl">
+&lt;a href="#elemen-elemen-dalam-fail-hcl" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Elemen-elemen dalam fail HCL
+&lt;/h2>
+&lt;p>Saya tidak akan memberi penerangan penuh syntax fail HCL kerana ia boleh didapati di &lt;a href="https://www.terraform.io/docs/language/syntax/configuration.html">halaman ini&lt;/a>.&lt;/p>
+&lt;h2 id="bahagian-1-cipta-block-baru-daripada-mula">
+&lt;a href="#bahagian-1-cipta-block-baru-daripada-mula" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Bahagian 1: Cipta block baru daripada mula
+&lt;/h2>
+&lt;p>Untuk bahagian 1 ini, kita akan belajar cara untuk:&lt;/p>
+&lt;ul>
+&lt;li>cipta block baru&lt;/li>
+&lt;li>tambah attribute dalam block tersebut&lt;/li>
+&lt;li>simpan block yang dicipta ke dalam fail&lt;/li>
+&lt;/ul>
+&lt;p>Untuk contoh pertama, kita akan cuba generate block HCL di bawah:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-hcl" data-lang="hcl">&lt;span class="k">resource&lt;/span> &lt;span class="s2">&amp;#34;github_membership&amp;#34; &amp;#34;user&amp;#34;&lt;/span> {
+&lt;span class="n"> username&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;github_username&amp;#34;&lt;/span>
+&lt;span class="n"> role&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;member&amp;#34;&lt;/span>
+}
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Inilah code yang diperlukan untuk generate block tersebut:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;span class="lnt">9
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">newMemberBlock&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;resource&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;span class="nx">body&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;span class="nx">body&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SetAttributeValue&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">cty&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">StringVal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">githubUsername&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;span class="nx">body&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SetAttributeValue&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;role&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">cty&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">StringVal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;span class="nx">f&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewEmptyFile&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendNewline&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_members.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="cipta-block">
+&lt;a href="#cipta-block" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Cipta block
+&lt;/h3>
+&lt;p>Mula-mula kita perlukan sebuah block untuk mengisi content-content lain ke dalamnya. Ini boleh dicipta menggunakan function &lt;code>hclwrite.NewBlock()&lt;/code>. Parameter pertama function ini adalah nama type, kemudian diikuti dengan label-label bagi block tersebut. Dalam contoh block di atas, nama type yang kita perlukan adalah &amp;ldquo;resource&amp;rdquo; dan kita memerlukan label &amp;ldquo;github_membership&amp;rdquo; dan &amp;ldquo;user&amp;rdquo;.&lt;/p>
+&lt;p>Seterusnya kita boleh mula mengisi boleh yang baru sahaja kita cipta tadi. Dalam contoh di atas, block itu mengandungi attribute &amp;ldquo;username&amp;rdquo; dan &amp;ldquo;role&amp;rdquo; dengan nilai masing-masing. Kita boleh set attribute sesebuah block dengan function &lt;code>SetAttributeValue()&lt;/code>.&lt;/p>
+&lt;p>Untuk nama attribute, kita boleh menggunakan string biasa tetapi bagi nilai attribute tersebut, hclwrite menggunakan library &lt;code>cty&lt;/code> (sebut: si-tai) untuk memastikan nilai attribute tersebut mempunyai type yang betul setelah habis proces pemprosesan nanti. Bagi memasukkan nilai string menggunakan library cty, kita boleh menggunakan function &lt;code>cty.StringVal()&lt;/code>, yang akan menukarkan string Go biasa kepada nilai cty yang setaraf.&lt;/p>
+&lt;h3 id="simpan-block-ke-dalam-fail">
+&lt;a href="#simpan-block-ke-dalam-fail" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Simpan block ke dalam fail
+&lt;/h3>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">f&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewEmptyFile&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendNewline&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_members.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Dengan itu selesai bahagian pertama iaitu mencipta block tersebut menggunakan code. Seterusnya, kita perlu menyimpan block yang telah kita cipta ini ke dalam fail. Untuk memudahkan, kali ini kita akan bermula dengan fail baru yang kosong. Untuk bermula dengan fail kosong, kita boleh menggunakan function &lt;code>hclwrite.NewEmptyFile()&lt;/code>. Fuction ini seolah-olah memberi kita kanvas kosong untuk kita isikan dengan block-block yang akan kita reka.&lt;/p>
+&lt;p>Untuk menambah block ke fail tersebut, kita tidak boleh menambahnya terus ke objek &lt;code>File&lt;/code> yang dipulangkan oleh function NewEmptyFile. Semua content dalam sebuah fail perlu diletakkan dalam bahagian &lt;code>Body&lt;/code> block tersebut. Kita boleh mengakses Body melalui function &lt;code>Body()&lt;/code>.&lt;/p>
+&lt;p>Seterusnya, kita boleh tambah block yang telah kita siapkan dalam bahagian sebelum ini menggunakan function &lt;code>ApppendBlock&lt;/code> ke dalam Body yang telah dapat dalam langkah sebelum ini. Untuk memastikan block kita itu nampak kemas, maka kita boleh tambah baris kosong di hujung fail dengan menggunakan function &lt;code>AppendNewLine&lt;/code>.&lt;/p>
+&lt;p>Akhirnya, untuk menyimpan semua yang telah kita generate ini ke fail, kita boleh menggunakan function &lt;code>ioutil.WriteFile()&lt;/code>. Kita boleh memasukkan content fail kita dengan cara menukarkannya kepada &lt;code>bytes&lt;/code>. hclwrite juga mempunyai function &lt;code>Format&lt;/code> untuk memastikan fail yang telah kita cipta itu mematuhi recommended format untuk sesebuah fail HCL. Selepas itu anda bolehlah menyemak fail HCL yang dihasilkan di lokasi yang telah diberi semasa memanggil function &lt;code>WriteFile&lt;/code> tadi.&lt;/p>
+&lt;h2 id="bahagian-2-mengubah-block-sedia-ada">
+&lt;a href="#bahagian-2-mengubah-block-sedia-ada" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Bahagian 2: Mengubah block sedia ada
+&lt;/h2>
+&lt;p>Untuk bahagian 2 ini, kita akan belajar cara untuk:&lt;/p>
+&lt;ul>
+&lt;li>baca dan parse fail HCL sedia ada&lt;/li>
+&lt;li>cari bahagian untuk kita ubah&lt;/li>
+&lt;li>tambah pengubahan yang diinginkan menggunakan Token&lt;/li>
+&lt;li>beza &lt;code>Traversal&lt;/code> dan &lt;code>Value&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;p>Fail yang ingin kita hasilkan adalah seperti berikut:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-hcl" data-lang="hcl">&lt;span class="k">module&lt;/span> &lt;span class="s2">&amp;#34;team_itsm_team&amp;#34;&lt;/span> {
+&lt;span class="n"> source&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;../../modules/github/team_nx&amp;#34;&lt;/span>
+&lt;span class="n"> team_name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;ITSM Team&amp;#34;&lt;/span>
+&lt;span class="n"> members&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span>
+&lt;span class="k">github_membership&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">kasan&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">username&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="k">github_membership&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">mismail&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">username&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="err">//&lt;/span> &lt;span class="err">*&lt;/span>&lt;span class="k">kita&lt;/span> &lt;span class="k">ingin&lt;/span> &lt;span class="k">menambah&lt;/span> &lt;span class="k">baris&lt;/span> &lt;span class="k">ini&lt;/span>
+&lt;span class="p">]&lt;/span>
+}
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ReadFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;.tf&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">f&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ParseConfig&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">InitialPos&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">block&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">FirstMatchingBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;module&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;team_&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;_team&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;span class="nx">oldMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">GetAttribute&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">Expr&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">newEntry&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewExpressionAbsTraversal&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Traversal&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseRoot&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;span class="p">},&lt;/span>
+&lt;span class="p">).&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">newMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">[:&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">],&lt;/span>
+&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;span class="p">)&lt;/span>
+&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newEntry&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Tokens&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenComma&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;,&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenCBrack&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;]&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;span class="p">}&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">SetAttributeRaw&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newMembers&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_itsm.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="baca-dan-parse-fail-hcl-sedia-ada">
+&lt;a href="#baca-dan-parse-fail-hcl-sedia-ada" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Baca dan parse fail HCL sedia ada
+&lt;/h3>
+&lt;p>Kali ini kita tidak akan bermula dengan fail kosong, sebaliknya mengambil fail HCL yang sedia ada.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ReadFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;.tf&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">f&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ParseConfig&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">InitialPos&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Kita menggunakan function &lt;code>ReadFile&lt;/code> untuk membaca keseluruhan fail tersebut. Function tersebut akan memulangkan content dalam bentuk &lt;code>[]byte&lt;/code> yang akan kita berikan kepada function &lt;code>hclwrite.ParseConfig()&lt;/code>. Function inilah yang bertanggungjawab memahami syntax sedia ada fail HCL tersebut dan membolehkan kita mengubah fail itu dengan tepat. Function ini akan memulangkan objeck &lt;code>hclwrite.File&lt;/code>, sama seperti function &lt;code>hclwrite.NewEmptyFile()&lt;/code> di bahagian 1.&lt;/p>
+&lt;h3 id="cari-bahagian-untuk-kita-ubah">
+&lt;a href="#cari-bahagian-untuk-kita-ubah" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Cari bahagian untuk kita ubah
+&lt;/h3>
+&lt;p>Terdapat pelbagai cara yang boleh kita gunakan untuk mencari bahagian tertentu yang ingin kita ubah. Antaranya ialah dengan menggunakan function &lt;code>FirstMatchingBlock()&lt;/code>.
+Kita perlu menetapkan jenis (type) block yang ingin dicari, kemudian diikuti dengan label-label yang ada pada block tersebut.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">block&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">FirstMatchingBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;module&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;team_&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;_team&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="tambah-pengubahan-yang-diinginkan">
+&lt;a href="#tambah-pengubahan-yang-diinginkan" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Tambah pengubahan yang diinginkan
+&lt;/h3>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">oldMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">GetAttribute&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">Expr&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">newEntry&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewExpressionAbsTraversal&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Traversal&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseRoot&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;span class="p">},&lt;/span>
+&lt;span class="p">).&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">newMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">[:&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">],&lt;/span>
+&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;span class="p">)&lt;/span>
+&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newEntry&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Tokens&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenComma&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;,&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenCBrack&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;]&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;span class="p">}&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">SetAttributeRaw&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newMembers&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Dapatkan nilai attribute yang ingin kita ubah melalui function &lt;code>GetAttribute()&lt;/code>. Nilai attribute ini merupakan sebuah expression. Untuk mengubahnya kita perlu menukarkannya kepada &lt;code>Token&lt;/code>.&lt;/p>
+&lt;h4 id="apa-itu-token">
+&lt;a href="#apa-itu-token" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Apa itu Token?
+&lt;/h4>
+&lt;p>TODO&lt;/p>
+&lt;h4 id="beza-traversal-dan-literal-value">
+&lt;a href="#beza-traversal-dan-literal-value" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Beza Traversal dan literal Value
+&lt;/h4>
+&lt;p>Traversal digunakan untuk merujuk kepada variable lain dalam fail HCL tersebut. Literal value tidak merujuk kepada mana-mana bahagian lain dalam fail/projek, berdiri dengan sendiri.&lt;/p>
+&lt;h3 id="simpan-fail-yang-diubah">
+&lt;a href="#simpan-fail-yang-diubah" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Simpan fail yang diubah
+&lt;/h3>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_itsm.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="konklusi">
+&lt;a href="#konklusi" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Konklusi
+&lt;/h2>
+&lt;p>Manipulasi fail HCL menggunakan library hclwrite lebih kompleks daripada melakukan ubahsuai secara manual tetapi jika ini perkara yang anda perlu lakukan setiap hari, mungkin lebih senang jika anda meluangkan masa beberapa hari untuk membangunkan solusi automation ini supaya perkara yang sama tidak perlu lagi intervensi manual daripada anda.&lt;/p></description></item><item><title>Auto-update Graf Covid-19 menggunakan Github Actions</title><link>https://pokgak.xyz/articles/auto-update-citf-graphs/</link><pubDate>Thu, 02 Sep 2021 09:56:10 +0800</pubDate><guid>https://pokgak.xyz/articles/auto-update-citf-graphs/</guid><description>
 &lt;p>Dalam blog post saya sebelum ini saya dah menerangkan bagaimana saya membuat graf animasi &lt;a href="https://pokgak.xyz/articles/graf-interaktif-citf-plotly/">perkembangan status pemberian imunisasi&lt;/a> negeri-negeri di Malaysia. Seterusnya saya juga ada berkongsi &lt;a href="https://pokgak.xyz/articles/pengenalan-github-actions/">asas-asas untuk menggunakan Github Actions&lt;/a>. Dalam blog post ini saya ingin menerangkan pula bagaimana saya menggunakan Github Actions untuk mengemaskini graf tersebut dengan data terbaru yang dikeluarkan oleh pihak CITF Malaysia secara automatik setiap hari.&lt;/p>
 &lt;h2 id="konfigurasi-penuh">
 &lt;a href="#konfigurasi-penuh" class="anchor">
