@@ -7,8 +7,6 @@ HCL adalah bahasa yang digunakan dalam produk-produk daripada Hashicorp seperti 
 
 Blog post ini dibahagikan kepada dua bahagian. Bahagian pertama menunjukkan cara untuk menghasilkan block baru from scratch dan simpan ke fail. Ini adalah asas untuk bahagian kedua di mana kita akan mengubah fail HCL sedia ada dan memastikan format fail tersebut terjaga dan tidak melakukan pengubahan secara semberono.
 
-## Elemen-elemen dalam fail HCL
-
 Saya tidak akan memberi penerangan penuh syntax fail HCL kerana ia boleh didapati di [halaman ini](https://www.terraform.io/docs/language/syntax/configuration.html).
 
 
