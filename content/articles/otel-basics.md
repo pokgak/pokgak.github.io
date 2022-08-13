@@ -4,6 +4,15 @@ date: 2022-08-13T17:43:00+08:00
 tags: [observability, opentelemetry, otel-slack, honeycomb]
 ---
 
++++
+[twitter]
+  card = "summary"
+  site = "@twittername"
+  title = "Special Title for the Card"
+  description = "Special Description for the card max. 200 characters"
+  image = "https://example.com/great-picture.jpg"
++++
+
 # OpenTelemetry Basics
 
 I got to work on integrating OpenTelemetry in the application that our team maintains recently so I'm starting a series documenting my learnings throughout this journey.
