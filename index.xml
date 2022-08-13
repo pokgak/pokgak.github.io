@@ -19,8 +19,7 @@ OpenTelemetry Basics
 &lt;/h1>
 &lt;p>I got to work on integrating &lt;a href="https://opentelemetry.io/">OpenTelemetry&lt;/a> in an application that our team maintains recently so I&amp;rsquo;m starting a series documenting my learnings throughout this journey.&lt;/p>
 &lt;p>A little background info on the application I&amp;rsquo;m working on: it&amp;rsquo;s a Slack chatbot written in Typescript using BoltJS. Our goal is to know how many users are using our Slack bot with a breakdown of the percentage of successful and error interactions. When an error happened, we also want to know what exactly the user did and the current state of the application that caused it to error. Based on my reading, the last sentence is exactly what observability promises, So that&amp;rsquo;s why we&amp;rsquo;re giving it a try.&lt;/p>
-&lt;p>OpenTelemetry can be divided into three categories: tracing, logging, and metrics; but I&amp;rsquo;ll be focusing on tracing in
-this series.&lt;/p>
+&lt;p>OpenTelemetry can be divided into three categories: tracing, logging, and metrics; but I&amp;rsquo;ll be focusing on tracing in this series.&lt;/p>
 &lt;h2 id="tracing-primers">
 &lt;a href="#tracing-primers" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -31,6 +30,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Tracing Primers
 &lt;/h2>
+&lt;p>To get started you should know some basic concepts about tracing.&lt;/p>
 &lt;h3 id="traces-spans">
 &lt;a href="#traces-spans" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -41,7 +41,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Traces, Spans
 &lt;/h3>
-&lt;p>To get started you should know some basic concepts about tracing. A trace consists of multiple spans and a span is a unit of work with a start and end time. In a span, you can create events that marks when something happened in the lifetime of the span.&lt;/p>
+&lt;p>A trace consists of multiple spans and a span is a unit of work with a start and end time. In a span, you can create events that marks when something happened in the lifetime of the span.&lt;/p>
 &lt;p>A span can also have nested spans and these are called child spans. The parent span is usually representing some abstract unit of work, like the lifetime of a HTTP request when it from when it hits the application
 until the response is sent. Child spans can be used to get more details into the operations done during the lifetime of that parent span ie. API call to another service to fetch more informations.&lt;/p>
 &lt;h3 id="span-attributes-status-errors">
