@@ -3,7 +3,7 @@ title: "OpenTelemetry Basics"
 date: 2022-08-13T17:43:00+08:00
 tags: [observability, opentelemetry, otel-slack, honeycomb]
 images:
-- https://cncf-branding.netlify.app/img/projects/opentelemetry/horizontal/color/opentelemetry-horizontal-color.png
+- "https://cncf-branding.netlify.app/img/projects/opentelemetry/horizontal/color/opentelemetry-horizontal-color.png"
 ---
 
 # OpenTelemetry Basics
