@@ -1,5 +1,4 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 13 Aug 2022 17:43:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>OpenTelemetry Basics</title><link>https://pokgak.xyz/articles/otel-basics/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-basics/</guid><description>
-&lt;p>{{ template &amp;ldquo;_internal/twitter_cards.html&amp;rdquo; . }}&lt;/p>
 &lt;h1 id="opentelemetry-basics">
 &lt;a href="#opentelemetry-basics" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
