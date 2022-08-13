@@ -17,7 +17,7 @@ paginate = 6
   # Default to true
   enableFootnotes = true
   siteName = "Aiman Ismail"
-  # siteDesc = "Hugo is Absurdly Fast!"
+  siteDesc = "I'm learning stuff."
   author = "Aiman Ismail"
 
   # Limit how many categories filter show above search input.
