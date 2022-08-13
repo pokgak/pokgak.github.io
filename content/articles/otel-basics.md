@@ -4,8 +4,6 @@ date: 2022-08-13T17:43:00+08:00
 tags: [observability, opentelemetry, otel-slack, honeycomb]
 ---
 
-{{ template "_internal/twitter_cards.html" . }}
-
 # OpenTelemetry Basics
 
 I got to work on integrating [OpenTelemetry](https://opentelemetry.io/) in an application that our team maintains recently so I'm starting a series documenting my learnings throughout this journey.
