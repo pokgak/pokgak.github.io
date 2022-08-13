@@ -1,6 +1,6 @@
 baseurl = "https://pokgak.xyz"
 languageCode = "en-us"
-#title = "Aiman Ismail"
+title = "Home"
 theme = "hugo-tania"
 paginate = 6
 
