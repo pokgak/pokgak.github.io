@@ -1,4 +1,235 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 19 Sep 2021 12:25:34 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Generate fail HCL menggunakan library hclwrite</title><link>https://pokgak.xyz/articles/hclwrite-basics/</link><pubDate>Sun, 19 Sep 2021 12:25:34 +0800</pubDate><guid>https://pokgak.xyz/articles/hclwrite-basics/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 13 Aug 2022 17:43:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>OpenTelemetry Basics</title><link>https://pokgak.xyz/articles/otel-basics/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-basics/</guid><description>
+&lt;h1 id="opentelemetry-basics">
+&lt;a href="#opentelemetry-basics" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+OpenTelemetry Basics
+&lt;/h1>
+&lt;p>I got to work on integrating OpenTelemetry in the application that our team maintains recently so I&amp;rsquo;m starting a series documenting my learnings throughout this journey.&lt;/p>
+&lt;p>A little background info on the application I&amp;rsquo;m working on: it&amp;rsquo;s a Slack chatbot written in Typescript using BoltJS. Our goal is to know how many users are using our Slack bot with a breakdown of the percentage of successful and error interactions. When an error happened, we also want to know what exactly the user did and the current state of the application that caused it to error. Based on my reading, the last sentence is exactly what observability promises, So that&amp;rsquo;s why we&amp;rsquo;re giving it a try.&lt;/p>
+&lt;p>OpenTelemetry can be divided into three categories: tracing, logging, and metrics; but I&amp;rsquo;ll be focusing on tracing in
+this series.&lt;/p>
+&lt;h2 id="tracing-primers">
+&lt;a href="#tracing-primers" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Tracing primers
+&lt;/h2>
+&lt;h3 id="traces-spans">
+&lt;a href="#traces-spans" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Traces, Spans
+&lt;/h3>
+&lt;p>To get started you should know some basic concepts about tracing. A trace consists of multiple spans and a span is a unit of work with a start and end time. In a span, you can create events that marks when something happened in the lifetime of the span.&lt;/p>
+&lt;p>A span can also have nested spans and these are called child spans. The parent span is usually representing some abstract unit of work, like the lifetime of a HTTP request when it from when it hits the application
+until the response is sent. Child spans can be used to get more details into the operations done during the lifetime of that parent span ie. API call to another service to fetch more informations.&lt;/p>
+&lt;h3 id="span-attributes-status-errors">
+&lt;a href="#span-attributes-status-errors" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Span attributes, Status, Errors
+&lt;/h3>
+&lt;p>To add context to the spans, you can set custom attributes. Ideally, you want to send all the information that will help when debugging your application in the future so that later you don&amp;rsquo;t have to modify the code and add more attribute when you noticed an issue and realized that you don&amp;rsquo;t have enough information to debug the issue.&lt;/p>
+&lt;p>If your application encounters an error, you can set the span status to ERROR and also add the stack trace to the context for use in debugging. By default your span status will be set to OK.&lt;/p>
+&lt;h3 id="span-exporter">
+&lt;a href="#span-exporter" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Span Exporter
+&lt;/h3>
+&lt;p>Once the span is ended, you&amp;rsquo;ll want to send it to a backend service that will store and process it so that you can use it later. The sending is done by OTel Exporters. There are multiple backend available that accepts OTel traces as inputs but for my testing I&amp;rsquo;m using Honeycomb.&lt;/p>
+&lt;h3 id="debugging">
+&lt;a href="#debugging" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Debugging
+&lt;/h3>
+&lt;p>For debugging, there&amp;rsquo;s also the &lt;code>ConsoleSpanExporter&lt;/code> which will print out your spans in the console instead of sending it anywhere. I find this very useful to get fast response on what is being sent over but it&amp;rsquo;s hard to do analysis with it so in production environment you should configure the exporter to use other backends instead.&lt;/p>
+&lt;h2 id="automatic-instrumentation-vs-manual-instrumentation">
+&lt;a href="#automatic-instrumentation-vs-manual-instrumentation" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Automatic Instrumentation vs Manual Instrumentation
+&lt;/h2>
+&lt;p>Now we got the basics out of the way, let&amp;rsquo;s look at how you can start adding spans to your application to build traces.&lt;/p>
+&lt;p>The easiest way to get started is to use auto instrumentation which will automatically injects code in the HTTP,
+requests, DNS, libraries that you&amp;rsquo;re using to create spans and events. In nodejs, this can be done by installing the [&lt;code>auto-instrumentations-node&lt;/code>][1] NPM package. This package pulls in several other packages to automatically instrument your application.&lt;/p>
+&lt;p>This is a nice onboarding experience but I get overwhelmed by the amount of data sent when by these auto instrumentation package. Therefore, I recommend to you to start with manual instrumentation instead.&lt;/p>
+&lt;p>With manual instrumentation, you&amp;rsquo;re forced to be intentional with the data that you&amp;rsquo;re sending to the backend. With this I get to decide which information I want to send over and already have in mind what I want to do with it and which information I would like to gain from it.&lt;/p>
+&lt;h3 id="nodesdk-vs-nodetracerprovider-confusion">
+&lt;a href="#nodesdk-vs-nodetracerprovider-confusion" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+NodeSDK vs NodeTracerProvider Confusion
+&lt;/h3>
+&lt;p>One thing that made me confused is how different the code for initializing auto instrumentation compared to manual instrumentation.&lt;/p>
+&lt;p>This is the code provided by Honeycomb to use auto instrumentation. The key there is the &lt;code>getNodeAutoInstrumentation()&lt;/code> function which will register all the supported auto instrumentation libraries. One more thing is that it is using the &lt;code>NodeSDK&lt;/code> class.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-typescript" data-lang="typescript">&lt;span class="line">&lt;span class="cl">&lt;span class="c1">// tracing.js
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;use strict&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">NodeSDK&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/sdk-node&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">getNodeAutoInstrumentations&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/auto-instrumentations-node&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">OTLPTraceExporter&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/exporter-trace-otlp-proto&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">// The Trace Exporter exports the data to Honeycomb and uses
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">// the environment variables for endpoint, service name, and API Key.
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">&lt;/span>&lt;span class="kr">const&lt;/span> &lt;span class="nx">traceExporter&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nx">OTLPTraceExporter&lt;/span>&lt;span class="p">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">sdk&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nx">NodeSDK&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">traceExporter&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">instrumentations&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="nx">getNodeAutoInstrumentations&lt;/span>&lt;span class="p">()]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">});&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">sdk&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">start&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>On the other hand, this is the code example from opentelemetry.io to start manual instrumentation. Notice that it&amp;rsquo;s not using the &lt;code>NodeSDK&lt;/code> class anymore and you need to create the Resource and &lt;code>NodeTracerProvider&lt;/code> objects and configure it yourself.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-typescript" data-lang="typescript">&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">opentelemetry&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/api&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">Resource&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/resources&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">SemanticResourceAttributes&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/semantic-conventions&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">NodeTracerProvider&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/sdk-trace-node&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">registerInstrumentations&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/instrumentation&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="nx">ConsoleSpanExporter&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">BatchSpanProcessor&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kr">require&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;@opentelemetry/sdk-trace-base&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">// Optionally register automatic instrumentation libraries
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="c1">&lt;/span>&lt;span class="nx">registerInstrumentations&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">instrumentations&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="p">[],&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">});&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">resource&lt;/span> &lt;span class="o">=&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">Resource&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">default&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nx">merge&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">new&lt;/span> &lt;span class="nx">Resource&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">[&lt;/span>&lt;span class="nx">SemanticResourceAttributes&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">SERVICE_NAME&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="s2">&amp;#34;service-name-here&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">[&lt;/span>&lt;span class="nx">SemanticResourceAttributes&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">SERVICE_VERSION&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="s2">&amp;#34;0.1.0&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">provider&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nx">NodeTracerProvider&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">resource&lt;/span>: &lt;span class="kt">resource&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">});&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">exporter&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nx">ConsoleSpanExporter&lt;/span>&lt;span class="p">();&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">const&lt;/span> &lt;span class="nx">processor&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nx">BatchSpanProcessor&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">exporter&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">provider&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">addSpanProcessor&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">processor&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">provider&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">register&lt;/span>&lt;span class="p">();&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>TBH I&amp;rsquo;m still not clear what is the difference betwen using &lt;code>NodeSDK&lt;/code> vs manually configuring the &lt;code>NodeTracerProvider&lt;/code>. When using &lt;code>NodeSDK&lt;/code> does the &lt;code>NodeTracerProvider&lt;/code> got configured automatically?&lt;/p>
+&lt;h2 id="how-and-when-to-start-tracing">
+&lt;a href="#how-and-when-to-start-tracing" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+How and when to start tracing?
+&lt;/h2>
+&lt;p>To start manually instrumenting your application, you&amp;rsquo;ll have to create a root span. A root span is the first span you create once the request enters your application.&lt;/p>
+&lt;p>&lt;img loading="lazy"
+src="https://pokgak.xyz/images/request-flow.png"
+alt="Request/Response Flow"
+width=1844
+height="611" />&lt;/p>
+&lt;p>Now, if you have a normal HTTP request/response-based application, it is easy to figure out where to start and end your root spans. All your incoming requests will most likely be handled by a controller and each endpoint will be handled by a method. In this type of application, your root span can be started once the request hits the application in the method in your controller and ends before you send the response.&lt;/p>
+&lt;p>During the lifetime of that request, you can create child spans to track other works done while processing the request. There&amp;rsquo;s only one entry point for requests and exiting the entry point means the request is finished. If your application encountered errors during the execution, it can set the span status to ERROR and add the stack trace info to the span.&lt;/p>
+&lt;h2 id="conclusion">
+&lt;a href="#conclusion" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Conclusion
+&lt;/h2>
+&lt;p>Once you managed to create spans, set attributes, and then export it to a backend. You&amp;rsquo;re pretty much done with the basics of instrumenting your application. Go ahead and add more traces to your application!&lt;/p></description></item><item><title>Generate fail HCL menggunakan library hclwrite</title><link>https://pokgak.xyz/articles/hclwrite-basics/</link><pubDate>Sun, 19 Sep 2021 12:25:34 +0800</pubDate><guid>https://pokgak.xyz/articles/hclwrite-basics/</guid><description>
 &lt;p>HCL adalah bahasa yang digunakan dalam produk-produk daripada Hashicorp seperti Terraform dan Packer. Kebiasaannya, fail HCL ini ditulis secara manual tetapi jika anda ingin menulis atau mengubah fail-fail tersebut secara programmatik menggunakan code, maka anda boleh menggunakan &lt;a href="https://pkg.go.dev/github.com/hashicorp/hcl/v2@v2.10.1/hclwrite#Tokens">&lt;code>hclwrite&lt;/code>&lt;/a>, sebuah library yang ditulis dalam Go.&lt;/p>
 &lt;p>Blog post ini dibahagikan kepada dua bahagian. Bahagian pertama menunjukkan cara untuk menghasilkan block baru from scratch dan simpan ke fail. Ini adalah asas untuk bahagian kedua di mana kita akan mengubah fail HCL sedia ada dan memastikan format fail tersebut terjaga dan tidak melakukan pengubahan secara semberono.&lt;/p>
 &lt;p>Saya tidak akan memberi penerangan penuh syntax fail HCL kerana ia boleh didapati di &lt;a href="https://www.terraform.io/docs/language/syntax/configuration.html">halaman ini&lt;/a>.&lt;/p>
