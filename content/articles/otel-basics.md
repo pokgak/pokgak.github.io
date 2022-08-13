@@ -6,8 +6,6 @@ images:
 - "https://cncf-branding.netlify.app/img/projects/opentelemetry/horizontal/color/opentelemetry-horizontal-color.png"
 ---
 
-# OpenTelemetry Basics
-
 I got to work on integrating [OpenTelemetry](https://opentelemetry.io/) in an application that our team maintains recently so I'm starting a series documenting my learnings throughout this journey.
 
 A little background info on the application I'm working on: it's a Slack chatbot written in Typescript using BoltJS. Our goal is to know how many users are using our Slack bot with a breakdown of the percentage of successful and error interactions. When an error happened, we also want to know what exactly the user did and the current state of the application that caused it to error. Based on my reading, the last sentence is exactly what observability promises, So that's why we're giving it a try.
