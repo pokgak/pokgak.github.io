@@ -13,7 +13,7 @@ A little background info on the application I'm working on: it's a Slack chatbot
 OpenTelemetry can be divided into three categories: tracing, logging, and metrics; but I'll be focusing on tracing in
 this series.
 
-## Tracing primers
+## Tracing Primers
 
 ### Traces, Spans
 
@@ -30,13 +30,13 @@ If your application encounters an error, you can set the span status to ERROR an
 
 ### Span Exporter
 
-Once the span is ended, you'll want to send it to a backend service that will store and process it so that you can use it later. The sending is done by OTel Exporters. There are multiple backend available that accepts OTel traces as inputs but for my testing I'm using Honeycomb. 
+After the span ends, you'll want to send it to a backend service that will store and process it so that you can use it later. The sending is done by [OTel Exporters][2]. There are multiple backend available that accepts OTel traces as inputs but such as Jaeger, Zipkin but for my testing I'm using Honeycomb with the OLTP Collector. 
 
 ### Debugging
 
 For debugging, there's also the `ConsoleSpanExporter` which will print out your spans in the console instead of sending it anywhere. I find this very useful to get fast response on what is being sent over but it's hard to do analysis with it so in production environment you should configure the exporter to use other backends instead.
 
-## Automatic Instrumentation vs Manual Instrumentation
+## Automatic vs Manual Instrumentation
 
 Now we got the basics out of the way, let's look at how you can start adding spans to your application to build traces. 
 
@@ -46,6 +46,31 @@ requests, DNS, libraries that you're using to create spans and events. In nodejs
 This is a nice onboarding experience but I get overwhelmed by the amount of data sent when by these auto instrumentation package. Therefore, I recommend to you to start with manual instrumentation instead.
 
 With manual instrumentation, you're forced to be intentional with the data that you're sending to the backend. With this I get to decide which information I want to send over and already have in mind what I want to do with it and which information I would like to gain from it.
+
+### Initialization
+
+Whatever approach you end up with for the instrumentation, you'll want to make sure that you're initializing the OTel libraries at the start of your application. This is required because if you starts it later, your application might already be handling request when your OTel libraries are not initialized yet, causing it to miss some requests, or worse encounter errors.
+
+The recommended way to do it is to use the `-r` flag from the `node` command:
+
+> -r, --require module
+>             Preload the specified module at startup.  Follows `require()`'s module resolution rules.  module may be either a path to a file, or a Node.js module name.
+
+So in your `package.json` you'll have to add that to your `start` command:
+
+```json
+scripts: {
+    "start": "node -r ./tracing.js app.js",
+}
+```
+
+If you're using Typescript like me, you'll want to use the `NODE_OPTIONS` shell variable to specify the flag instead:
+
+```json
+scripts: {
+    "start": "NODE_OPTIONS='-r ./tracing.js' ts-node app.ts",
+}
+```
  
 ### NodeSDK vs NodeTracerProvider Confusion
 
@@ -121,3 +146,6 @@ During the lifetime of that request, you can create child spans to track other w
 ## Conclusion
 
 Once you managed to create spans, set attributes, and then export it to a backend. You're pretty much done with the basics of instrumenting your application. Go ahead and add more traces to your application!
+
+[1]: https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node
+[2]: https://opentelemetry.io/docs/instrumentation/js/exporters/
