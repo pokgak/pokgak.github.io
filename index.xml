@@ -1194,7 +1194,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-Keyword &amp;lt;code&amp;gt;on&amp;lt;/code&amp;gt;
+Keyword &lt;code>on&lt;/code>
 &lt;/h3>
 &lt;p>Satu ciri-ciri penting Github Actions adalah, workflow anda perlu dimulakan melalui &amp;ldquo;triggers&amp;rdquo;. Hampir semua aktiviti yang anda boleh lakukan secara manual di Github boleh dijadikan trigger untuk workflow anda. Sebagai contoh, anda boleh menetapkan workflow untuk dijalankan apabila seseorang telah push codenya ke repo, atau apabila pull request baru dibuka. Ini cara bagaimana anda melakukan kedua-dua contoh tersebut:&lt;/p>
 &lt;div class="highlight">&lt;div class="chroma">
@@ -1220,7 +1220,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-Keyword &amp;lt;code&amp;gt;jobs&amp;lt;/code&amp;gt;
+Keyword &lt;code>jobs&lt;/code>
 &lt;/h3>
 &lt;p>Okay, kita telah tetapkan &lt;strong>bila&lt;/strong> workflow ini patut dijalankan menggunakan keyword &lt;code>on&lt;/code>. Seterusnya kita akan menetapkan &lt;strong>apa&lt;/strong> yang workflow ini patut buat menggunakan keyword &lt;a href="https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobs">&lt;code>jobs&lt;/code>&lt;/a>. Sesebuah workflow mestilah mempunyai paling kurang satu job. Untuk mencipta job baru, anda boleh menggunakan apa-apa perkataan sebagai &lt;code>id&lt;/code> cuma perlu dipastikan tiada space. Contohnya seperti berikut:&lt;/p>
 &lt;div class="highlight">&lt;div class="chroma">
@@ -1269,7 +1269,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-Keyword &amp;lt;code&amp;gt;uses&amp;lt;/code&amp;gt;
+Keyword &lt;code>uses&lt;/code>
 &lt;/h3>
 &lt;p>Kita telah melihat bagaimana cara untuk menjalankan sebarang command melalui keyword &lt;code>run&lt;/code>. Untuk sesetengah perkara, sekadar bergantung kepada command mungkin akan membataskan apa yang anda boleh lakukan. Oleh itu, Github Actions juga mempunyai fungsi untuk memanggil code luar dari fail workflow anda. Code ini boleh berasal dari repo yang sama ataupun daripada repo developer lain di Github.&lt;/p>
 &lt;p>Actions ini boleh ditulis dengan pelbagai cara sama ada menggunakan Javascript atau melalui Docker. Github juga menyediakan &lt;a href="https://github.com/marketplace?type=actions">marketplace&lt;/a> untuk anda mencari actions yang sesuai untuk digunakan dalam fail workflow anda. Github sendiri mempunyai beberapa Actions yang essential seperti &lt;a href="https://github.com/marketplace/actions/checkout">checkout&lt;/a> untuk checkout git repo anda sewaktu workflow dijalankan dan juga &lt;a href="https://github.com/actions/setup-node">setup-node&lt;/a> untuk setup environment node/javascript anda.&lt;/p>
