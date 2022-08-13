@@ -19,14 +19,14 @@ I got to work on integrating [OpenTelemetry](https://opentelemetry.io/) in an ap
 
 A little background info on the application I'm working on: it's a Slack chatbot written in Typescript using BoltJS. Our goal is to know how many users are using our Slack bot with a breakdown of the percentage of successful and error interactions. When an error happened, we also want to know what exactly the user did and the current state of the application that caused it to error. Based on my reading, the last sentence is exactly what observability promises, So that's why we're giving it a try.
 
-OpenTelemetry can be divided into three categories: tracing, logging, and metrics; but I'll be focusing on tracing in
-this series.
+OpenTelemetry can be divided into three categories: tracing, logging, and metrics; but I'll be focusing on tracing in this series.
 
 ## Tracing Primers
 
+To get started you should know some basic concepts about tracing.
 ### Traces, Spans
 
-To get started you should know some basic concepts about tracing. A trace consists of multiple spans and a span is a unit of work with a start and end time. In a span, you can create events that marks when something happened in the lifetime of the span. 
+A trace consists of multiple spans and a span is a unit of work with a start and end time. In a span, you can create events that marks when something happened in the lifetime of the span. 
 
 A span can also have nested spans and these are called child spans. The parent span is usually representing some abstract unit of work, like the lifetime of a HTTP request when it from when it hits the application
 until the response is sent. Child spans can be used to get more details into the operations done during the lifetime of that parent span ie. API call to another service to fetch more informations. 
