@@ -17,7 +17,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 OpenTelemetry Basics
 &lt;/h1>
-&lt;p>I got to work on integrating OpenTelemetry in the application that our team maintains recently so I&amp;rsquo;m starting a series documenting my learnings throughout this journey.&lt;/p>
+&lt;p>I got to work on integrating &lt;a href="https://opentelemetry.io/">OpenTelemetry&lt;/a> in an application that our team maintains recently so I&amp;rsquo;m starting a series documenting my learnings throughout this journey.&lt;/p>
 &lt;p>A little background info on the application I&amp;rsquo;m working on: it&amp;rsquo;s a Slack chatbot written in Typescript using BoltJS. Our goal is to know how many users are using our Slack bot with a breakdown of the percentage of successful and error interactions. When an error happened, we also want to know what exactly the user did and the current state of the application that caused it to error. Based on my reading, the last sentence is exactly what observability promises, So that&amp;rsquo;s why we&amp;rsquo;re giving it a try.&lt;/p>
 &lt;p>OpenTelemetry can be divided into three categories: tracing, logging, and metrics; but I&amp;rsquo;ll be focusing on tracing in
 this series.&lt;/p>
