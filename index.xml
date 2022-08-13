@@ -27,11 +27,11 @@ Bahagian 1: Cipta block baru daripada mula
 &lt;/span>&lt;span class="lnt">4
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-hcl" data-lang="hcl">&lt;span class="k">resource&lt;/span> &lt;span class="s2">&amp;#34;github_membership&amp;#34; &amp;#34;user&amp;#34;&lt;/span> {
-&lt;span class="n"> username&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;github_username&amp;#34;&lt;/span>
-&lt;span class="n"> role&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;member&amp;#34;&lt;/span>
-}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-hcl" data-lang="hcl">&lt;span class="line">&lt;span class="cl">&lt;span class="k">resource&lt;/span> &lt;span class="s2">&amp;#34;github_membership&amp;#34; &amp;#34;user&amp;#34;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> username&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;github_username&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> role&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;member&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Inilah code yang diperlukan untuk generate block tersebut:&lt;/p>
 &lt;div class="highlight">&lt;div class="chroma">
@@ -47,15 +47,16 @@ Bahagian 1: Cipta block baru daripada mula
 &lt;/span>&lt;span class="lnt">9
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">newMemberBlock&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;resource&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">})&lt;/span>
-&lt;span class="nx">body&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="nx">body&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SetAttributeValue&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">cty&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">StringVal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">githubUsername&lt;/span>&lt;span class="p">))&lt;/span>
-&lt;span class="nx">body&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SetAttributeValue&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;role&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">cty&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">StringVal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">))&lt;/span>
-&lt;span class="nx">f&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewEmptyFile&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendNewline&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_members.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newMemberBlock&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;resource&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">body&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">body&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SetAttributeValue&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">cty&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">StringVal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">githubUsername&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">body&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SetAttributeValue&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;role&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">cty&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">StringVal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">f&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewEmptyFile&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendNewline&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_members.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;h3 id="cipta-block">
 &lt;a href="#cipta-block" class="anchor">
@@ -88,11 +89,11 @@ Simpan block ke dalam fail
 &lt;/span>&lt;span class="lnt">4
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">f&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewEmptyFile&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendNewline&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_members.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">f&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewEmptyFile&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMemberBlock&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">AppendNewline&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_members.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Dengan itu selesai bahagian pertama iaitu mencipta block tersebut menggunakan code. Seterusnya, kita perlu menyimpan block yang telah kita cipta ini ke dalam fail. Untuk memudahkan, kali ini kita akan bermula dengan fail baru yang kosong. Untuk bermula dengan fail kosong, kita boleh menggunakan function &lt;code>hclwrite.NewEmptyFile()&lt;/code>. Fuction ini seolah-olah memberi kita kanvas kosong untuk kita isikan dengan block-block yang akan kita reka.&lt;/p>
 &lt;p>Untuk menambah block ke fail tersebut, kita tidak boleh menambahnya terus ke objek &lt;code>File&lt;/code> yang dipulangkan oleh function NewEmptyFile. Semua content dalam sebuah fail perlu diletakkan dalam bahagian &lt;code>Body&lt;/code> block tersebut. Kita boleh mengakses Body melalui function &lt;code>Body()&lt;/code>.&lt;/p>
@@ -130,15 +131,17 @@ Bahagian 2: Mengubah block sedia ada
 &lt;/span>&lt;span class="lnt">10
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-hcl" data-lang="hcl">&lt;span class="k">module&lt;/span> &lt;span class="s2">&amp;#34;team_itsm_team&amp;#34;&lt;/span> {
-&lt;span class="n"> source&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;../../modules/github/team_nx&amp;#34;&lt;/span>
-&lt;span class="n"> team_name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;ITSM Team&amp;#34;&lt;/span>
-&lt;span class="n"> members&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span>
-&lt;span class="k">github_membership&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">kasan&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">username&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="k">github_membership&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">mismail&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">username&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="err">//&lt;/span> &lt;span class="err">*&lt;/span>&lt;span class="k">kita&lt;/span> &lt;span class="k">ingin&lt;/span> &lt;span class="k">menambah&lt;/span> &lt;span class="k">baris&lt;/span> &lt;span class="k">ini&lt;/span>
-&lt;span class="p">]&lt;/span>
-}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-hcl" data-lang="hcl">&lt;span class="line">&lt;span class="cl">&lt;span class="k">module&lt;/span> &lt;span class="s2">&amp;#34;team_itsm_team&amp;#34;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> source&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;../../modules/github/team_nx&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> team_name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;ITSM Team&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> members&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">github_membership&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">kasan&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">username&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">github_membership&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">mismail&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">username&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="err">//&lt;/span> &lt;span class="err">*&lt;/span>&lt;span class="k">kita&lt;/span> &lt;span class="k">ingin&lt;/span> &lt;span class="k">menambah&lt;/span> &lt;span class="k">baris&lt;/span> &lt;span class="k">ini&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;div class="highlight">&lt;div class="chroma">
 &lt;table class="lntable">&lt;tr>&lt;td class="lntd">
@@ -171,30 +174,34 @@ Bahagian 2: Mengubah block sedia ada
 &lt;/span>&lt;span class="lnt">27
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ReadFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;.tf&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">f&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ParseConfig&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">InitialPos&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">block&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">FirstMatchingBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;module&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;team_&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;_team&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
-&lt;span class="nx">oldMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">GetAttribute&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">Expr&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">newEntry&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewExpressionAbsTraversal&lt;/span>&lt;span class="p">(&lt;/span>
-&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Traversal&lt;/span>&lt;span class="p">{&lt;/span>
-&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseRoot&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
-&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">},&lt;/span>
-&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
-&lt;span class="p">},&lt;/span>
-&lt;span class="p">).&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">newMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>
-&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">[:&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">],&lt;/span>
-&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
-&lt;span class="p">)&lt;/span>
-&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newEntry&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Tokens&lt;/span>&lt;span class="p">{&lt;/span>
-&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenComma&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;,&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
-&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
-&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenCBrack&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;]&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
-&lt;span class="p">}&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">SetAttributeRaw&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newMembers&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_itsm.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ReadFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;.tf&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">f&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ParseConfig&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">InitialPos&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">block&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">FirstMatchingBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;module&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;team_&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;_team&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">oldMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">GetAttribute&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">Expr&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newEntry&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewExpressionAbsTraversal&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Traversal&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseRoot&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">).&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">[:&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">],&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newEntry&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Tokens&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenComma&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;,&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenCBrack&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;]&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">SetAttributeRaw&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newMembers&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_itsm.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;h3 id="baca-dan-parse-fail-hcl-sedia-ada">
 &lt;a href="#baca-dan-parse-fail-hcl-sedia-ada" class="anchor">
@@ -213,9 +220,9 @@ Baca dan parse fail HCL sedia ada
 &lt;/span>&lt;span class="lnt">2
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ReadFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;.tf&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">f&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ParseConfig&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">InitialPos&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ReadFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;.tf&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">f&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ParseConfig&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">content&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">InitialPos&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Kita menggunakan function &lt;code>ReadFile&lt;/code> untuk membaca keseluruhan fail tersebut. Function tersebut akan memulangkan content dalam bentuk &lt;code>[]byte&lt;/code> yang akan kita berikan kepada function &lt;code>hclwrite.ParseConfig()&lt;/code>. Function inilah yang bertanggungjawab memahami syntax sedia ada fail HCL tersebut dan membolehkan kita mengubah fail itu dengan tepat. Function ini akan memulangkan objeck &lt;code>hclwrite.File&lt;/code>, sama seperti function &lt;code>hclwrite.NewEmptyFile()&lt;/code> di bahagian 1.&lt;/p>
 &lt;h3 id="cari-bahagian-untuk-kita-ubah">
@@ -235,8 +242,8 @@ Kita perlu menetapkan jenis (type) block yang ingin dicari, kemudian diikuti den
 &lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">block&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">FirstMatchingBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;module&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;team_&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;_team&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">block&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">FirstMatchingBlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;module&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s">&amp;#34;team_&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="nx">pod&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34;_team&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;h3 id="tambah-pengubahan-yang-diinginkan">
 &lt;a href="#tambah-pengubahan-yang-diinginkan" class="anchor">
@@ -273,26 +280,28 @@ Tambah pengubahan yang diinginkan
 &lt;/span>&lt;span class="lnt">21
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">oldMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">GetAttribute&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">Expr&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">newEntry&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewExpressionAbsTraversal&lt;/span>&lt;span class="p">(&lt;/span>
-&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Traversal&lt;/span>&lt;span class="p">{&lt;/span>
-&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseRoot&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
-&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">},&lt;/span>
-&lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
-&lt;span class="p">},&lt;/span>
-&lt;span class="p">).&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">newMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>
-&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">[:&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">],&lt;/span>
-&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
-&lt;span class="p">)&lt;/span>
-&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newEntry&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Tokens&lt;/span>&lt;span class="p">{&lt;/span>
-&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenComma&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;,&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
-&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
-&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenCBrack&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;]&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
-&lt;span class="p">}&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">SetAttributeRaw&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newMembers&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">oldMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">GetAttribute&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">Expr&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newEntry&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">NewExpressionAbsTraversal&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Traversal&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseRoot&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;github_membership&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">mlId&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">hcl&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TraverseAttr&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Name&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s">&amp;#34;username&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">).&lt;/span>&lt;span class="nf">BuildTokens&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kc">nil&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newMembers&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">[:&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">oldMembers&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">],&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newEntry&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">newMembers&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">append&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">newMembers&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Tokens&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenComma&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;,&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenNewline&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;\n&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Token&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="nx">Type&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nx">hclsyntax&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">TokenCBrack&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">Bytes&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="sc">&amp;#39;]&amp;#39;&lt;/span>&lt;span class="p">}},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>&lt;span class="o">...&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nx">block&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Body&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="nf">SetAttributeRaw&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;members&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newMembers&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Dapatkan nilai attribute yang ingin kita ubah melalui function &lt;code>GetAttribute()&lt;/code>. Nilai attribute ini merupakan sebuah expression. Untuk mengubahnya kita perlu menukarkannya kepada &lt;code>Token&lt;/code>.&lt;/p>
 &lt;h4 id="apa-itu-token">
@@ -332,8 +341,8 @@ Simpan fail yang diubah
 &lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_itsm.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">ioutil&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">WriteFile&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;data/result_itsm.tf&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">hclwrite&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Format&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">f&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Bytes&lt;/span>&lt;span class="p">()),&lt;/span> &lt;span class="mo">0644&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;h2 id="konklusi">
 &lt;a href="#konklusi" class="anchor">
@@ -420,50 +429,50 @@ Konfigurasi penuh
 &lt;/span>&lt;span class="lnt">43
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Update Graphs&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="nt">on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">push&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">branches&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="l">main]&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">workflow_dispatch&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">schedule&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">cron&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;0 0 * * *&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># Run workflow everyday at 12 AM &lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">vax-count-by-state&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">token&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">${{ secrets.GITHUB_TOKEN }}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/setup-python@v2&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">python-version&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;3.8&amp;#34;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Cache pip&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/cache@v2&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># This path is specific to Ubuntu&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">path&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">~/.cache/pip&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># Look to see if there is a cache hit for the corresponding requirements file&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">key&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">${{ runner.os }}-pip-${{ hashFiles(&amp;#39;requirements.txt&amp;#39;) }}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">restore-keys&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="sd">
-&lt;/span>&lt;span class="sd"> ${{ runner.os }}-pip-
-&lt;/span>&lt;span class="sd"> ${{ runner.os }}-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Install dependencies&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">pip3 install -r requirements.txt&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Fetch latest data &amp;amp; generate new graph&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">python3 main.py&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">id&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">get-date&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo &amp;#34;::set-output name=value::$(date --iso-8601)&amp;#34;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">stefanzweifel/git-auto-commit-action@v4&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">commit_message&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;bot: update graph for ${{ steps.get-date.outputs.value }}&amp;#34;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Update Graphs&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">push&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">branches&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="l">main]&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">workflow_dispatch&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">schedule&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">cron&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;0 0 * * *&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># Run workflow everyday at 12 AM &lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">vax-count-by-state&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">token&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">${{ secrets.GITHUB_TOKEN }}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/setup-python@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">python-version&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;3.8&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Cache pip&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/cache@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="c"># This path is specific to Ubuntu&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">path&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">~/.cache/pip&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="c"># Look to see if there is a cache hit for the corresponding requirements file&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">key&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">${{ runner.os }}-pip-${{ hashFiles(&amp;#39;requirements.txt&amp;#39;) }}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">restore-keys&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="sd">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="sd"> ${{ runner.os }}-pip-
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="sd"> ${{ runner.os }}-&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Install dependencies&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">pip3 install -r requirements.txt&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Fetch latest data &amp;amp; generate new graph&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">python3 main.py&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">id&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">get-date&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo &amp;#34;::set-output name=value::$(date --iso-8601)&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">stefanzweifel/git-auto-commit-action@v4&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">commit_message&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;bot: update graph for ${{ steps.get-date.outputs.value }}&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;h2 id="bahagian-bahagian">
 &lt;a href="#bahagian-bahagian" class="anchor">
@@ -500,10 +509,10 @@ Bahagian 1: Jadual Auto-update
 &lt;/span>&lt;span class="lnt">3
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">schedule&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">cron&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;0 0 * * *&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># Run workflow everyday at 12 AM&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">schedule&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">cron&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;0 0 * * *&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># Run workflow everyday at 12 AM&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Keyword &lt;code>schedule&lt;/code> ini menerima jadual dalam format syntax &lt;code>cron&lt;/code>. Jika anda tahu selok-belok sesebuah sistem UNIX atau Linux anda mungkin tahu mengenai &lt;code>cron&lt;/code>. Untuk yang belum tahu apa syntax &lt;code>cron&lt;/code> itu, ia mempunyai 5 bahagian yang dipisahkan dengan paling kurang satu karakter &lt;code>whitespace&lt;/code> seperti &lt;code>space&lt;/code> atau &lt;code>tab&lt;/code>. Bermula dari kiri, bahagian-bahagian tersebut melambangkan nilai berikut, nilai yang boleh diterima saya letakkan dalam kotak disebelah:&lt;/p>
 &lt;ul>
@@ -554,31 +563,31 @@ Bahagian 2: Melakukan kemaskini graf
 &lt;/span>&lt;span class="lnt">24
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">token&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">${{ secrets.GITHUB_TOKEN }}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/setup-python@v2&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">python-version&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;3.8&amp;#34;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Cache pip&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/cache@v2&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># This path is specific to Ubuntu&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">path&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">~/.cache/pip&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># Look to see if there is a cache hit for the corresponding requirements file&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">key&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">${{ runner.os }}-pip-${{ hashFiles(&amp;#39;requirements.txt&amp;#39;) }}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">restore-keys&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="sd">
-&lt;/span>&lt;span class="sd"> ${{ runner.os }}-pip-
-&lt;/span>&lt;span class="sd"> ${{ runner.os }}- &lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Install dependencies&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">pip3 install -r requirements.txt&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Fetch latest data &amp;amp; generate new graph&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">python3 main.py&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">token&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">${{ secrets.GITHUB_TOKEN }}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/setup-python@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">python-version&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;3.8&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Cache pip&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/cache@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="c"># This path is specific to Ubuntu&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">path&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">~/.cache/pip&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="c"># Look to see if there is a cache hit for the corresponding requirements file&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">key&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">${{ runner.os }}-pip-${{ hashFiles(&amp;#39;requirements.txt&amp;#39;) }}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">restore-keys&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="sd">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="sd"> ${{ runner.os }}-pip-
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="sd"> ${{ runner.os }}- &lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Install dependencies&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">pip3 install -r requirements.txt&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Fetch latest data &amp;amp; generate new graph&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">python3 main.py&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;h3 id="bahagian-3-commit-dan-push-kemaskini-ke-repository">
 &lt;a href="#bahagian-3-commit-dan-push-kemaskini-ke-repository" class="anchor">
@@ -599,10 +608,10 @@ Bahagian 3: Commit dan Push kemaskini ke repository
 &lt;/span>&lt;span class="lnt">3
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">stefanzweifel/git-auto-commit-action@v4&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">commit_message&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;bot: update graph for ${{ steps.get-date.outputs.value }}&amp;#34;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">stefanzweifel/git-auto-commit-action@v4&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">with&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">commit_message&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;bot: update graph for ${{ steps.get-date.outputs.value }}&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Seperti yang anda boleh lihat, mudah sahaja cara penggunaan actions ini. Kita hanya perlu menggunakan keyword &lt;code>uses&lt;/code> untuk menanda bahawa kita ingin menggunakan Actions luar dalam fail workflow ini, diikuti dengan nama Actions tersebut. Senarai semua actions yang ada boleh dilihat di &lt;a href="https://github.com/marketplace?type=actions">Github Actions Marketplace&lt;/a>. Tambahan pula, anda juga boleh &lt;a href="https://docs.github.com/en/actions/creating-actions">menulis Actions anda sendiri&lt;/a>!.&lt;/p>
 &lt;h2 id="konklusi">
@@ -620,66 +629,7 @@ Konklusi
 src="https://pokgak.xyz/images/github-activity.png"
 alt="Cuba teka bila saya mula pakai workflow ni?"
 width=782
-height="207" />&lt;/p></description></item><item><title>Alkisah Syarikat A</title><link>https://pokgak.xyz/articles/alkisah-syarikat-a/</link><pubDate>Thu, 26 Aug 2021 18:24:00 +0800</pubDate><guid>https://pokgak.xyz/articles/alkisah-syarikat-a/</guid><description>
-&lt;p>&lt;em>Berikut adalah cerita fiksyen untuk menggambarkan permasalahan yang perlu dihadapi setiap kali kita ingin menyebarkan (deploy) aplikasi baru untuk pengguna tanpa teknologi cloud computing.&lt;/em>&lt;/p>
-&lt;p>Syarikat A telah berjaya membangunkan aplikasi baru yang mereka yakin akan mengubah dunia tetapi mereka belum punyai infrastruktur untuk menyebarkan (deploy) aplikasi tersebut.&lt;/p>
-&lt;h3 id="konfigurasi">
-&lt;a href="#konfigurasi" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Konfigurasi
-&lt;/h3>
-&lt;p>Syarikat A ingin memesan server tersebut daripada vendor B, tapi sebelum itu, perlu ditentukan dahulu konfigurasi server tersebut. Berapakah jumlah RAM diperlukan, CPU apakah yang sesuai dengan beban profail (load profile) aplikasi tersebut, berapa banyak simpanan yang akan digunakan.&lt;/p>
-&lt;p>Selain itu, perlu dipertimbangkan juga bagaimana aplikasi itu akan berkembang di masa depan. Bagaimana jika tiba-tiba aplikasi itu mendapat sambutan hangat dan mendapat sejuta pengguna baru dalam masa semalaman? Oleh kerana proses pemesanan akan mengambil masa beberapa minggu (bulan?), maka server tersebut perlu dikalis masa-depan (future proofing) supaya konfigurasi dipesan hari ini masih mencukupi untuk beban masa depan. Jadi kos asal konfigurasi tadi mungkin perlu digandakan untuk memilih konfigurasi yang lebih mahal. Selepas semua ini, syarikat A berjaya memesan server tersebut daripada vendor.&lt;/p>
-&lt;h3 id="pemasangan">
-&lt;a href="#pemasangan" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Pemasangan
-&lt;/h3>
-&lt;p>Sesudah server yang dipesan siap dihantar ke data center syarikat A, server itu masih tidak boleh terus dihidupkan begitu saja dan siap untuk melayan aplikasi. Server itu perlu diusung ke rak server dan diletakkan bersama server-server lain. Wayar tenaga dan internet perlu disambung. Kemudian, apabila server telah berjaya dihidupkan, perlu dikonfigurasi pula sistem operasi (OS) tersebut dengan software yang diperlukan untuk aplikasi tersebut.&lt;/p>
-&lt;h3 id="masa-untuk-mengubah-dunia">
-&lt;a href="#masa-untuk-mengubah-dunia" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Masa untuk mengubah dunia!
-&lt;/h3>
-&lt;p>Selepas semua proses itu selesai, maka aplikasi baru syarikat A sedia dilayan dari server baru tersebut dan seperti dijangkakan, aplikasi tersebut mendapat sambutan yang amat bagus! Tersangat bagus hinggakan pengguna dari negara-negara lain mula menggunakan aplikasi itu. Mereka perlu menahan waktu tunggu (waiting time) yang lebih lama berbanding pengguna lokal di negara syarikat A kerana pesanan mereka terpaksa merentas dunia sebelum sampai ke server baru syarikat A ini.&lt;/p>
-&lt;h3 id="komplikasi">
-&lt;a href="#komplikasi" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Komplikasi
-&lt;/h3>
-&lt;p>24 jam berlalu dan tiba-tiba pengguna lokal di negara syarikat A tidak dapat mengakses aplikasi itu lagi. Locked. Bahkan bukan pengguna lokal sahaja, &lt;em>semua&lt;/em> pengguna seluruh dunia tak dapat mengakses aplikasi itu. Setelah disiasat, rupa-rupanya ada influencer zaman itu (YouTube, Twitter, Facebook, Instagram masih belum wujud pada masa ini ya) telah menghantar &lt;em>telegraf&lt;/em> ke peminatnya di seluruh dunia. Hasilnya semua future-proofing yang dirancang sebelum ni semua kelaut, tak cukup untuk menampung beban tiba-tiba dari penambahan pengguna-pengguna baru.&lt;/p>
-&lt;h3 id="kesimpulan">
-&lt;a href="#kesimpulan" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Kesimpulan
-&lt;/h3>
-&lt;p>Pilihan syarikat A sekarang adalah untuk mengulang proses pesanan server tadi dan menunggu beberapa minggu untuk server baru itu pula sampai. Sementara menunggu itu syarikat A telah rugi berjuta-juta kerana kehilangan pelanggan dan semua pengguna aplikasi baru itu telah pun lari ke aplikasi yang dibangunkan syarikat B yang dikatakan lebih bagus dari aplikasi syarikat A.&lt;/p>
-&lt;p>&lt;em>TAMMAT.&lt;/em>&lt;/p></description></item><item><title>Apa itu Cloud Computing?</title><link>https://pokgak.xyz/articles/cloud-computing/</link><pubDate>Wed, 25 Aug 2021 23:47:19 +0800</pubDate><guid>https://pokgak.xyz/articles/cloud-computing/</guid><description>
+height="207" />&lt;/p></description></item><item><title>Apa itu Cloud Computing?</title><link>https://pokgak.xyz/articles/cloud-computing/</link><pubDate>Wed, 25 Aug 2021 23:47:19 +0800</pubDate><guid>https://pokgak.xyz/articles/cloud-computing/</guid><description>
 &lt;p>Perkataan &amp;ldquo;cloud&amp;rdquo; rasanya tak asing lagi dalam kamus anak muda zaman sekarang tapi kebanyakannya merujuk kepada &amp;ldquo;cloud storage&amp;rdquo; iaitu servis penyimpanan data online. Kali ini saya ingin menerangkan konsep cloud computing dari sudut seorang programmer.&lt;/p>
 &lt;h2 id="apa-itu-cloud">
 &lt;a href="#apa-itu-cloud" class="anchor">
@@ -796,9 +746,10 @@ Pembersihan Data
 &lt;/span>&lt;span class="lnt">3
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="n">STATE_DATA_URL&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;https://raw.githubusercontent.com/CITF-Malaysia/citf-public/main/vaccination/vax_state.csv&amp;#34;&lt;/span>
-&lt;span class="n">df&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">pd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">read_csv&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">StringIO&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">requests&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data_url&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="p">))&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="n">STATE_DATA_URL&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;https://raw.githubusercontent.com/CITF-Malaysia/citf-public/main/vaccination/vax_state.csv&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">df&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">pd&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">read_csv&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">StringIO&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">requests&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">data_url&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Function &lt;code>read_csv&lt;/code> akan mengambil output data yang diambil dari Github dan menukarkannya ke format DataFrame yang digunakan oleh library pandas. Format DataFrame adalah 2D seakan-akan Excel. Ia mempunyai rows dan columns yang mempunyai data dan menawarkan fungsi-fungsi untuk memanipulasi data tersebut (gabung, pisah, transpose, etc) dengan mudah. Berikut adalah code yang saya gunakan untuk menyiapkan data raw tadi untuk visualisasi:&lt;/p>
 &lt;div class="highlight">&lt;div class="chroma">
@@ -811,13 +762,13 @@ Pembersihan Data
 &lt;/span>&lt;span class="lnt">6
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="n">df&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">set_index&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">])&lt;/span>
-&lt;span class="o">.&lt;/span>&lt;span class="n">loc&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;cumul_partial&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul_full&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul&amp;#34;&lt;/span>&lt;span class="p">]]&lt;/span>
-&lt;span class="o">.&lt;/span>&lt;span class="n">rename&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">columns&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s2">&amp;#34;cumul_partial&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;partially_vaxed&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul_full&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;fully_vaxed&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
-&lt;span class="o">.&lt;/span>&lt;span class="n">sort_values&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">by&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;cumul&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">ascending&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="o">.&lt;/span>&lt;span class="n">sort_index&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">level&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">sort_remaining&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="o">.&lt;/span>&lt;span class="n">reset_index&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="n">df&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">set_index&lt;/span>&lt;span class="p">([&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">.&lt;/span>&lt;span class="n">loc&lt;/span>&lt;span class="p">[:,&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;cumul_partial&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul_full&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul&amp;#34;&lt;/span>&lt;span class="p">]]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">.&lt;/span>&lt;span class="n">rename&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">columns&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s2">&amp;#34;cumul_partial&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;partially_vaxed&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;cumul_full&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;fully_vaxed&amp;#34;&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">.&lt;/span>&lt;span class="n">sort_values&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">by&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;cumul&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">ascending&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">.&lt;/span>&lt;span class="n">sort_index&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">level&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">sort_remaining&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="kc">False&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="o">.&lt;/span>&lt;span class="n">reset_index&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Secara ringkasnya,&lt;/p>
 &lt;ol>
@@ -854,16 +805,16 @@ Visualisasi Data menggunakan Plotly
 &lt;/span>&lt;span class="lnt">9
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="n">fig&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">px&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">bar&lt;/span>&lt;span class="p">(&lt;/span>
-&lt;span class="n">state_data&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="n">x&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="n">y&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;partially_vaxed&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;fully_vaxed&amp;#34;&lt;/span>&lt;span class="p">],&lt;/span>
-&lt;span class="n">animation_frame&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="n">animation_group&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="n">labels&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s2">&amp;#34;value&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;Total vaccinated&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;variable&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;Dose Type&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
-&lt;span class="n">title&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Vaccination Count in Malaysia by State&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="n">fig&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">px&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">bar&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">state_data&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">x&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">y&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;partially_vaxed&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;fully_vaxed&amp;#34;&lt;/span>&lt;span class="p">],&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">animation_frame&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;date&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">animation_group&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">labels&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="s2">&amp;#34;value&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;Total vaccinated&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;state&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;variable&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;Dose Type&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">title&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Vaccination Count in Malaysia by State&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Jika anda perasan, saya hanyalah menggunakan &lt;strong>satu&lt;/strong> function sahaja daripada Plotly Express iaitu &lt;code>bar&lt;/code>. Function ini digunakan untuk menghasilkan visualisasi graf bar. Sebagai parameter, saya berikan data vaksinasi yang telah dibersihkan dan ditukarkan ke format DataFrame. Menerusi parameter &lt;code>x&lt;/code> dan &lt;code>y&lt;/code>, saya menetapkan data daripada column manakah dalam DataFrame tersebut yang akan digunakan sebagai paksi X dan paksi Y dalam graf.&lt;/p>
 &lt;p>Seterusnya, untuk menghasilkan animasi bergerak, saya menggunakan parameter &lt;code>animation_frame&lt;/code> dan ditetapkan column &amp;ldquo;date&amp;rdquo; sebagai nilainya (value). Dengan parameter ini, Plotly akan menghasilkan satu graf untuk setiap nilai dalam column tersebut. Jadi bila saya menggunakan column &amp;ldquo;date&amp;rdquo;, Plotly akan menghasilkan satu graf untuk setiap tarikh dalam data vaksinasi. Untuk menghasilkan animasi, graf-graf ini akan disusun mengikut tarikh dan dipaparkan seolah-olah slideshow. Hasil akhirnya kita akan dapat perkembangan kadar vaksinasi selaras dengan masa.&lt;/p>
@@ -937,17 +888,17 @@ Anatomi fail workflow Github Actions
 &lt;/span>&lt;span class="lnt">10
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Ikuti penjelasan saya di bawah untuk memahami apakah yang akan dilakukan apabila workflow ini dijalankan.&lt;/p>
 &lt;h2 id="keyword-dalam-fail-workflow-github-actions">
@@ -979,10 +930,10 @@ Keyword &amp;lt;code&amp;gt;on&amp;lt;/code&amp;gt;
 &lt;/span>&lt;span class="lnt">3
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">push&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">pull_request&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">push&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">pull_request&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Keyword &lt;code>on&lt;/code> digunakan untuk menanda bahawa semua keyword dibawahnya adalah event-event dimana fail workflow anda patut dijalankan. &lt;code>push&lt;/code> bermakna apabila seseorang telah push codenya ke repo anda, maka Github Actions akan menjalankan fail workflow tersebut. &lt;code>pull_request&lt;/code> pula bermakna jika seseorang telah membuka pull request (PR) baru di repository anda, maka fail workflow tersebut akan dijalankan.&lt;/p>
 &lt;p>Kedua-dua keyword &lt;code>push&lt;/code> dan &lt;code>pull_request&lt;/code> ini juga boleh menerima sub-keyword lain untuk tujuan menapis dengan lebih spesifik bila workflow itu patut dijalankan. Antara sub-keyword yang boleh digunakan adalah &lt;code>branches&lt;/code> untuk menapis hanya push atau pull request kepada branch yang dinyatakan sahaja. Anda juga boleh menapis mengikut lokasi fail code anda di dalam repo menggunakan sub-keyword &lt;code>paths&lt;/code>.&lt;/p>
@@ -1005,10 +956,10 @@ Keyword &amp;lt;code&amp;gt;jobs&amp;lt;/code&amp;gt;
 &lt;/span>&lt;span class="lnt">3
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Di sini, &lt;code>job-pertama&lt;/code> adalah &lt;code>id&lt;/code> untuk job kita. Seterusnya, setiap job perlulah menetapkan di bawah environment manakah job ini akan dijalankan. Github Actions menawarkan platform Windows, Linux, dan macOS yang anda boleh gunakan secara percuma. Senarai penuh versi yang disokong boleh dibaca di &lt;a href="https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on">halaman&lt;/a> ini. Di sini saya menggunakan &lt;code>ubuntu-latest&lt;/code> yang bermakna, job ini akan dijalankan di platform Ubuntu yang terbaru (pada masa tulisan ini adalah Ubuntu 20.04.&lt;/p>
 &lt;p>Setelah menetapkan platform, tiba masa untuk kita senaraikan apakah yang patut workflow kita ini buat. Untuk itu kita perlukan keyword &lt;code>steps&lt;/code>. Seperti keyword &lt;code>jobs&lt;/code>, keyword &lt;code>steps&lt;/code> mengandungi sub-keywords yang, satu untuk setiap apa yang kita mahu jalankan.&lt;/p>
@@ -1025,15 +976,15 @@ Keyword &amp;lt;code&amp;gt;jobs&amp;lt;/code&amp;gt;
 &lt;/span>&lt;span class="lnt">8
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Dalam contoh di atas, saya telah menetapkan step itu untuk run command &lt;code>echo&lt;/code>. Command ini akan print perkataan selepas itu ke terminal anda, dalam kes ini anda akan melihat &amp;ldquo;Hello, world&amp;rdquo; di log result workflow anda nanti. Dalam contoh di atas juga, saya telah menetapkan workflow ini untuk run command echo tapi kali ini dengan perkataan lain pula. Selain daripada keyword &lt;code>run&lt;/code>, setiap step juga boleh ditetapkan dengan keyword-keyword lain seperti &lt;code>name&lt;/code>, &lt;code>id&lt;/code> dan pelbagai lagi. Senarai penuh boleh anda lihat di &lt;a href="https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idsteps">halaman&lt;/a> ini. Fungsi simbol &lt;code>-&lt;/code> di sini adalah untuk membantu mengumpul semua keyword yang berkaitan dengan step itu. Setiap simbol &lt;code>-&lt;/code> bermakna satu step dalam job itu.&lt;/p>
 &lt;h3 id="keyword-uses">
@@ -1063,17 +1014,17 @@ Keyword &amp;lt;code&amp;gt;uses&amp;lt;/code&amp;gt;
 &lt;/span>&lt;span class="lnt">10
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">jobs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">job-pertama&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">runs-on&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ubuntu-latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Hello, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Selamat tinggal dunia&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">echo Bye, world!&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">uses&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">actions/checkout@v2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>Dalam contoh di atas, saya menggunakan Actions dari Github &lt;code>actions/checkout&lt;/code> untuk melakukan git checkout repo saya ke sewaktu workflow dijalankan. &lt;code>@v2&lt;/code> di bahagian belakang itu menandakan versi Action tersebut yang ingin saya gunakan. Versi yang ditawarkan oleh Action tersebut boleh disemak di page Releases Action tersebut.&lt;/p>
 &lt;h2 id="konklusi">
