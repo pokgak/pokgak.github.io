@@ -2,11 +2,15 @@
 title: "Instrumenting a Slack bot with OpenTelemetry"
 date: 2022-08-13T17:43:00+08:00
 tags: [Observability, otel-slack]
+images:
+- images/slack-span-lifetime.png
 ---
 
 *Note: I'm using pseudocode in the code example in this article to keep the article brief. Please refer to the official Slack and OpenTelemetry documentation for the actual code.*
 
 I've talked about the basics of OpenTelemetry in my previous article. In this one, I'll explain more on how we're integrating OpenTelemetry with our Slack-based application.
+
+![Summary of spans and events created](images/slack-span-lifetime.png)
 
 ## Slack BoltJS Socket Mode
 
