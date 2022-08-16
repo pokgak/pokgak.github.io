@@ -10,6 +10,8 @@ images:
 
 I've talked about the basics of OpenTelemetry in my previous article. In this one, I'll explain more on how we're integrating OpenTelemetry with our Slack-based application.
 
+At the end of this article, this is roughly how the span lifetime and events created will look like:
+
 ![Summary of spans and events created](images/slack-span-lifetime.png)
 
 ## Slack BoltJS Socket Mode
