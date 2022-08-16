@@ -1,6 +1,7 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 13 Aug 2022 17:43:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Instrumenting a Slack bot with OpenTelemetry</title><link>https://pokgak.xyz/articles/otel-slack-integration/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-slack-integration/</guid><description>
 &lt;p>&lt;em>Note: I&amp;rsquo;m using pseudocode in the code example in this article to keep the article brief. Please refer to the official Slack and OpenTelemetry documentation for the actual code.&lt;/em>&lt;/p>
 &lt;p>I&amp;rsquo;ve talked about the basics of OpenTelemetry in my previous article. In this one, I&amp;rsquo;ll explain more on how we&amp;rsquo;re integrating OpenTelemetry with our Slack-based application.&lt;/p>
+&lt;p>At the end of this article, this is roughly how the span lifetime and events created will look like:&lt;/p>
 &lt;p>&lt;img loading="lazy"
 src="https://pokgak.xyz/images/slack-span-lifetime.png"
 alt="Summary of spans and events created"
