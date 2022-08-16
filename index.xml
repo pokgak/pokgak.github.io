@@ -1,4 +1,119 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 13 Aug 2022 17:43:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>OpenTelemetry Basics</title><link>https://pokgak.xyz/articles/otel-basics/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-basics/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 13 Aug 2022 17:43:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Instrumenting a Slack bot with OpenTelemetry</title><link>https://pokgak.xyz/articles/otel-slack-integration/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-slack-integration/</guid><description>
+&lt;p>&lt;em>Note: I&amp;rsquo;m using pseudocode in the code example in this article to keep the article brief. Please refer to the official Slack and OpenTelemetry documentation for the actual code.&lt;/em>&lt;/p>
+&lt;p>I&amp;rsquo;ve talked about the basics of OpenTelemetry in my previous article. In this one, I&amp;rsquo;ll explain more on how we&amp;rsquo;re integrating OpenTelemetry with our Slack-based application.&lt;/p>
+&lt;h2 id="slack-boltjs-socket-mode">
+&lt;a href="#slack-boltjs-socket-mode" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Slack BoltJS Socket Mode
+&lt;/h2>
+&lt;p>Compared to the a standard HTTP request/response, we&amp;rsquo;re using BoltJS with socket mode. This gives us the advantage of not having the application exposed publicly to be able to accept requests from Slack but this also means that we cannot just use the auto-instrumentation for HTTP developed by the community.&lt;/p>
+&lt;p>Socket mode uses WebSocket to establish connection to Slack and exchange messages through that connection. There is no official auto-instrumentation support for the &lt;code>ws&lt;/code> library that is used by BoltJS socket mode but I found &lt;a href="https://www.npmjs.com/package/opentelemetry-instrumentation-ws">opentelemetry-instrumentation-ws&lt;/a>, a 3rd-party library for &lt;code>ws&lt;/code> library auto-instrumentation.&lt;/p>
+&lt;p>Spent a few days integrating it into our application and in the end I concluded that the auto-instrumentation provided by the opentelemetry-instrumentation-ws is too low-level. Our goal is to track user interactions with the application - when they use the bot, which option they choose, what were they trying to do, and whether the interaction ends successfully or with an error. The library, however, created spans when a new connection is established between our application and Slack but no spans or events for user interactions.&lt;/p>
+&lt;p>So, the conclusion? We&amp;rsquo;ll instrument the application manually.&lt;/p>
+&lt;h2 id="creating-and-ending-spans">
+&lt;a href="#creating-and-ending-spans" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Creating and Ending Spans
+&lt;/h2>
+&lt;p>Since this application is used company-wide, it&amp;rsquo;s highly likely that multiple users will be using it in parallel. To track user interactions independent from each other, we&amp;rsquo;ll also need separate spans for each user.&lt;/p>
+&lt;p>I decided to go with an object &lt;code>spanStore&lt;/code> storing the user spans. Like a singleton pattern, a new span will be created for that user if it doesn&amp;rsquo;t exist yet in &lt;code>spanStore&lt;/code>, otherwise it will just return the existing user span.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-javascript" data-lang="javascript">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">spanStore&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kd">function&lt;/span> &lt;span class="nx">getUserSpan&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">username&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">user&lt;/span> &lt;span class="k">in&lt;/span> &lt;span class="nx">spanStore&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="nx">spanStore&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="nx">username&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">span&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">startSpan&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">username&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">spanStore&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="nx">username&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">span&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="nx">span&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Now that we have a function to create the span, when in the lifetime of the incoming event do we create the span? Ideally, as early as possible before anything else so that we can track everything. BoltJS supports setting a &lt;a href="https://slack.dev/bolt-js/concepts#global-middleware">global middleware&lt;/a> that will be called before the event handler function are called. This is where I call the &lt;code>getUserSpan()&lt;/code> function above. For the first event for that user, it will create a new span and for the next events it will just return the existing spans that I can use.&lt;/p>
+&lt;p>Next, when do you end the span? Due to how the application works, we&amp;rsquo;re assuming that each user can only have one session at one time and at the end there will always be an finishing event triggered when the user finished their interaction with the application. Based on that fact, I wrote an event listener that will respond to this finishing event by calling the OTel function to end the span and remove the span from the &lt;code>spanStore&lt;/code> object above.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-javascript" data-lang="javascript">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">app&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">event&lt;/span>&lt;span class="p">({&lt;/span>&lt;span class="nx">id&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="s1">&amp;#39;finishing_event&amp;#39;&lt;/span>&lt;span class="p">},&lt;/span> &lt;span class="kr">async&lt;/span> &lt;span class="p">({&lt;/span>&lt;span class="nx">username&lt;/span>&lt;span class="p">})&lt;/span> &lt;span class="p">=&amp;gt;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">span&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">getUserSpan&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">username&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">span&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">end&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">removeSpanFromSpanStore&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">span&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="tracking-user-actions-with-span-events">
+&lt;a href="#tracking-user-actions-with-span-events" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Tracking User Actions with Span Events
+&lt;/h2>
+&lt;p>With these, we have a separate span for each user for the whole duration of their interaction with the application. With only one span, we don&amp;rsquo;t have insights yet into what the user are doing, which actions are taken by the user, so we&amp;rsquo;ll need a way to track user actions.&lt;/p>
+&lt;p>With Slack BoltJS, we can trigger a listener function on every user interaction. I wrote a function that will create a new span event using the user input id as the event name. I also passed in the whole payload so that the we can see the payload of user actions later when debugging issues. Add this as another global middleware, now we&amp;rsquo;re creating a new event for every user actions.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-javascript" data-lang="javascript">&lt;span class="line">&lt;span class="cl">&lt;span class="nx">app&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">action&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s1">&amp;#39;callback_id&amp;#39;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kr">async&lt;/span> &lt;span class="p">({&lt;/span>&lt;span class="nx">username&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">action_id&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">payload&lt;/span>&lt;span class="p">})&lt;/span> &lt;span class="p">=&amp;gt;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">span&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">getUserSpan&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">username&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">span&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">addEvent&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">action_id&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="nx">payload&lt;/span>&lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="confession">
+&lt;a href="#confession" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Confession
+&lt;/h2>
+&lt;p>I&amp;rsquo;m actually not convinced that my way of doing this is correct. One of the reason is that since I use one root span for the whole interaction for a user, I&amp;rsquo;m also tracking the duration taken by the user to do the next action. From our perpective, this made the duration of the span tracked is now kinda useless for us since it also includes factors that are not controllable by us (time taken for users to do the next action).&lt;/p>
+&lt;p>Instead of one root span and creating new span events for every user interaction, maybe a new span for each interaction, linked to the previous span would be better since we only track the duration that we are in control of, not how long the user takes to click a button.&lt;/p>
+&lt;p>Nevertheless, since I already implemented like this now, let&amp;rsquo;s see how that will turn out. Like the saying, you either die a hero, or you live long enough to see yourself become the villain.&lt;/p></description></item><item><title>OpenTelemetry Basics</title><link>https://pokgak.xyz/articles/otel-basics/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-basics/</guid><description>
 &lt;p>I got to work on integrating &lt;a href="https://opentelemetry.io/">OpenTelemetry&lt;/a> in an application that our team maintains recently so I&amp;rsquo;m starting a series documenting my learnings throughout this journey.&lt;/p>
 &lt;p>A little background info on the application I&amp;rsquo;m working on: it&amp;rsquo;s a Slack chatbot written in Typescript using BoltJS. Our goal is to know how many users are using our Slack bot with a breakdown of the percentage of successful and error interactions. When an error happened, we also want to know what exactly the user did and the current state of the application that caused it to error. Based on my reading, the last sentence is exactly what observability promises, So that&amp;rsquo;s why we&amp;rsquo;re giving it a try.&lt;/p>
 &lt;p>OpenTelemetry can be divided into three categories: tracing, logging, and metrics; but I&amp;rsquo;ll be focusing on tracing in this series.&lt;/p>
