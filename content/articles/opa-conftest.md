@@ -6,9 +6,11 @@ tags: [OPA, conftest, policy]
 
 I started using OPA at my `$dayJob` recently and there are some parts that I think is not intuitive to grok for beginners.
 
-First, what is the relationship between OPA, Rego, and conftest? Rego is a declarative language used to write OPA policies. Then, OPA is the engine that takes in the policies written in Rego and evaluates it, producing a set of documents called "rules". You can use OPA and the Rego language directly to write policies for your config files but using conftest will make the DX much better.
-
 If you want to play around with the rules and input, you can use the [Rego Playground](https://play.openpolicyagent.org/). It's super useful and I used it to test out policies and test my hypothesis when playing around with Rego language.
+
+## How does OPA, Rego, and conftest related to each other?
+
+Rego is a declarative language used to write OPA policies. Then, OPA is the engine that takes in the policies written in Rego and evaluates it, producing a set of documents called "rules". You can use OPA and the Rego language directly to write policies for your config files but using conftest will make the DX much better. conftest builds on top of OPA and provide some extra functionality that makes using OPA easier.
 
 ## Rego Basics
 
