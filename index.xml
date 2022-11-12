@@ -42,8 +42,7 @@ Declarative Rego Language
 &lt;/h3>
 &lt;p>The Rego language is declarative and useful to query data structures for any value. Consider the following example (&lt;a href="https://play.openpolicyagent.org/p/gZcwi6zzAA">Rego playground link&lt;/a>):&lt;/p>
 &lt;p>Let&amp;rsquo;s assume our input is an array of object, each containing the keys &amp;ldquo;id&amp;rdquo; and &amp;ldquo;name&amp;rdquo;. In this policy we&amp;rsquo;re checking that the objects doesn&amp;rsquo;t have any forbiden value for &amp;ldquo;name&amp;rdquo;.&lt;/p>
-&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa"># policy
-forbidden_names := [&amp;#34;foobar&amp;#34;, &amp;#34;john&amp;#34;]
+&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa">forbidden_names := [&amp;#34;foobar&amp;#34;, &amp;#34;john&amp;#34;]
 user_forbidden if input.users[i].name == forbidden_names[j]
 &lt;/code>&lt;/pre>&lt;p>This code would look something like this in Python:&lt;/p>
 &lt;div class="highlight">&lt;div class="chroma">
@@ -146,8 +145,30 @@ msg := sprintf(&amp;#34;id %v is not allowed&amp;#34;, [id])
 WARN - input.json - main - id 2 is not allowed
 FAIL - input.json - main - username john is not allowed
 2 tests, 0 passed, 0 warnings, 2 failures, 0 exceptions
-&lt;/code>&lt;/pre>&lt;p>Here, conftest takes the output values from the OPA engine and formats the output for us to make it easier to interpret or integrate with other tools.&lt;/p>
-&lt;h3 id="parsers-using-other-format-as-input-files">
+&lt;/code>&lt;/pre>&lt;p>Note the values output here, the &lt;code>deny&lt;/code> rule will be output as &lt;code>FAIL&lt;/code> if the rule passes while the &lt;code>warn&lt;/code> rule is counted as &lt;code>WARN&lt;/code>. Here, conftest takes the output values from the OPA engine and formats the output for us to make it easier to interpret or integrate with other tools. You can also change the output format of conftest by passing in the &lt;code>--output&lt;/code> flag. I like the &lt;code>github&lt;/code> output since it will automatically prints the output in a format that Github Actions understoods and will surface error in Github UI approriately. You can also output it as JSON, which is great if you want to process the result output using tools like &lt;code>jq&lt;/code>.&lt;/p>
+&lt;pre tabindex="0">&lt;code>➜ conftest test --help
+[...]
+-o, --output string Output format for conftest results - valid options are: [stdout json tap table junit github] (default &amp;#34;stdout&amp;#34;)
+&lt;/code>&lt;/pre>&lt;p>JSON output:&lt;/p>
+&lt;pre tabindex="0">&lt;code>➜ conftest test input.json --output json
+[
+{
+&amp;#34;filename&amp;#34;: &amp;#34;input.json&amp;#34;,
+&amp;#34;namespace&amp;#34;: &amp;#34;main&amp;#34;,
+&amp;#34;successes&amp;#34;: 0,
+&amp;#34;warnings&amp;#34;: [
+{
+&amp;#34;msg&amp;#34;: &amp;#34;id 2 is not allowed&amp;#34;
+}
+],
+&amp;#34;failures&amp;#34;: [
+{
+&amp;#34;msg&amp;#34;: &amp;#34;username john is not allowed&amp;#34;
+}
+]
+}
+]
+&lt;/code>&lt;/pre>&lt;h3 id="parsers-using-other-format-as-input-files">
 &lt;a href="#parsers-using-other-format-as-input-files" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"

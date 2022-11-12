@@ -9,8 +9,7 @@ result := true if foo == &#34;hello&#34;
 
 # Rego implicitly assigns `true` to `result` when condition is satisfied
 result if foo == &#34;hello&#34;
-</code></pre><p>Let&rsquo;s bring this up to next level. Most of the time, the condition you&rsquo;re checking is not as straight forward as checking the value against a static value. You might also need to evaluate expressions in between and save the intermediary values in a variable to help improve readability. In previous example we only used a one-liner for the rule body but you can also have more complex rule body like the following using curly braces.</p><h3 id=declarative-rego-language><a href=#declarative-rego-language class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg></a>Declarative Rego Language</h3><p>The Rego language is declarative and useful to query data structures for any value. Consider the following example (<a href=https://play.openpolicyagent.org/p/gZcwi6zzAA>Rego playground link</a>):</p><p>Let&rsquo;s assume our input is an array of object, each containing the keys &ldquo;id&rdquo; and &ldquo;name&rdquo;. In this policy we&rsquo;re checking that the objects doesn&rsquo;t have any forbiden value for &ldquo;name&rdquo;.</p><pre tabindex=0><code class=language-opa data-lang=opa># policy
-forbidden_names := [&#34;foobar&#34;, &#34;john&#34;]
+</code></pre><p>Let&rsquo;s bring this up to next level. Most of the time, the condition you&rsquo;re checking is not as straight forward as checking the value against a static value. You might also need to evaluate expressions in between and save the intermediary values in a variable to help improve readability. In previous example we only used a one-liner for the rule body but you can also have more complex rule body like the following using curly braces.</p><h3 id=declarative-rego-language><a href=#declarative-rego-language class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg></a>Declarative Rego Language</h3><p>The Rego language is declarative and useful to query data structures for any value. Consider the following example (<a href=https://play.openpolicyagent.org/p/gZcwi6zzAA>Rego playground link</a>):</p><p>Let&rsquo;s assume our input is an array of object, each containing the keys &ldquo;id&rdquo; and &ldquo;name&rdquo;. In this policy we&rsquo;re checking that the objects doesn&rsquo;t have any forbiden value for &ldquo;name&rdquo;.</p><pre tabindex=0><code class=language-opa data-lang=opa>forbidden_names := [&#34;foobar&#34;, &#34;john&#34;]
 
 user_forbidden if input.users[i].name == forbidden_names[j]
 </code></pre><p>This code would look something like this in Python:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
@@ -71,17 +70,16 @@ import future.keywords.contains
 import future.keywords.if
 
 deny contains msg if {
-	forbidden_names := [&#34;john&#34;]
-    
+    forbidden_names := [&#34;john&#34;]
     name := input.users[_].name
-	name == forbidden_names[_]
+    name == forbidden_names[_]
     
     msg := sprintf(&#34;username %v is not allowed&#34;, [name])
 }
 
 warn contains msg if {    
     id := input.users[_].id
-	id == 2
+    id == 2
     
     msg := sprintf(&#34;id %v is not allowed&#34;, [id])
 }
@@ -90,7 +88,28 @@ WARN - input.json - main - id 2 is not allowed
 FAIL - input.json - main - username john is not allowed
 
 2 tests, 0 passed, 0 warnings, 2 failures, 0 exceptions
-</code></pre><p>Here, conftest takes the output values from the OPA engine and formats the output for us to make it easier to interpret or integrate with other tools.</p><h3 id=parsers-using-other-format-as-input-files><a href=#parsers-using-other-format-as-input-files class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg></a>parsers: using other format as input files</h3><p>Until now all our input has been in JSON format but conftest also has built-in parsers that can automatically detect the input format and converts it to JSON for us. Example is for HCL2 code used for Terraform:</p><pre tabindex=0><code class=language-hcl2 data-lang=hcl2># input.tf
+</code></pre><p>Note the values output here, the <code>deny</code> rule will be output as <code>FAIL</code> if the rule passes while the <code>warn</code> rule is counted as <code>WARN</code>. Here, conftest takes the output values from the OPA engine and formats the output for us to make it easier to interpret or integrate with other tools. You can also change the output format of conftest by passing in the <code>--output</code> flag. I like the <code>github</code> output since it will automatically prints the output in a format that Github Actions understoods and will surface error in Github UI approriately. You can also output it as JSON, which is great if you want to process the result output using tools like <code>jq</code>.</p><pre tabindex=0><code>➜ conftest test --help
+[...]
+  -o, --output string         Output format for conftest results - valid options are: [stdout json tap table junit github] (default &#34;stdout&#34;)
+</code></pre><p>JSON output:</p><pre tabindex=0><code>➜ conftest test input.json --output json
+[
+  {
+    &#34;filename&#34;: &#34;input.json&#34;,
+    &#34;namespace&#34;: &#34;main&#34;,
+    &#34;successes&#34;: 0,
+    &#34;warnings&#34;: [
+      {
+        &#34;msg&#34;: &#34;id 2 is not allowed&#34;
+      }
+    ],
+    &#34;failures&#34;: [
+      {
+        &#34;msg&#34;: &#34;username john is not allowed&#34;
+      }
+    ]
+  }
+]
+</code></pre><h3 id=parsers-using-other-format-as-input-files><a href=#parsers-using-other-format-as-input-files class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg></a>parsers: using other format as input files</h3><p>Until now all our input has been in JSON format but conftest also has built-in parsers that can automatically detect the input format and converts it to JSON for us. Example is for HCL2 code used for Terraform:</p><pre tabindex=0><code class=language-hcl2 data-lang=hcl2># input.tf
 resource &#34;aws_imaginary_resource&#34; &#34;this&#34; {
   name = &#34;this&#34;
   instance_type = &#34;r5.4xlarge&#34;
