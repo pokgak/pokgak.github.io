@@ -219,7 +219,17 @@ cidr = [&amp;#34;0.0.0.0/0&amp;#34;]
 }
 }
 }
-&lt;/code>&lt;/pre></description></item><item><title>Instrumenting a Slack bot with OpenTelemetry</title><link>https://pokgak.xyz/articles/otel-slack-integration/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-slack-integration/</guid><description>
+&lt;/code>&lt;/pre>&lt;h2 id="conclusion">
+&lt;a href="#conclusion" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Conclusion
+&lt;/h2>
+&lt;p>I just got started with OPA but considering the flexibility of it when used with conftest, I feel like you can use this for a lot of use cases. The ability to separate the policy logic from your application is powerful and the declarative nature of the Rego language also helps simplify the policy a lot as demonstrated in my comparison of the Python code above.&lt;/p></description></item><item><title>Instrumenting a Slack bot with OpenTelemetry</title><link>https://pokgak.xyz/articles/otel-slack-integration/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-slack-integration/</guid><description>
 &lt;p>&lt;em>Note: I&amp;rsquo;m using pseudocode in the code example in this article to keep the article brief. Please refer to the official Slack and OpenTelemetry documentation for the actual code.&lt;/em>&lt;/p>
 &lt;p>I&amp;rsquo;ve talked about the basics of OpenTelemetry in my previous article. In this one, I&amp;rsquo;ll explain more on how we&amp;rsquo;re integrating OpenTelemetry with our Slack-based application.&lt;/p>
 &lt;p>At the end of this article, this is roughly how the span lifetime and events created will look like:&lt;/p>
