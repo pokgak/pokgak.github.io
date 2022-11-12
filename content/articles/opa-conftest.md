@@ -37,7 +37,6 @@ The Rego language is declarative and useful to query data structures for any val
 Let's assume our input is an array of object, each containing the keys "id" and "name". In this policy we're checking that the objects doesn't have any forbiden value for "name".
 
 ```opa
-# policy
 forbidden_names := ["foobar", "john"]
 
 user_forbidden if input.users[i].name == forbidden_names[j]
@@ -124,17 +123,16 @@ import future.keywords.contains
 import future.keywords.if
 
 deny contains msg if {
-	forbidden_names := ["john"]
-    
+    forbidden_names := ["john"]
     name := input.users[_].name
-	name == forbidden_names[_]
+    name == forbidden_names[_]
     
     msg := sprintf("username %v is not allowed", [name])
 }
 
 warn contains msg if {    
     id := input.users[_].id
-	id == 2
+    id == 2
     
     msg := sprintf("id %v is not allowed", [id])
 }
@@ -149,8 +147,35 @@ FAIL - input.json - main - username john is not allowed
 2 tests, 0 passed, 0 warnings, 2 failures, 0 exceptions
 ```
 
-Here, conftest takes the output values from the OPA engine and formats the output for us to make it easier to interpret or integrate with other tools.
+Note the values output here, the `deny` rule will be output as `FAIL` if the rule passes while the `warn` rule is counted as `WARN`. Here, conftest takes the output values from the OPA engine and formats the output for us to make it easier to interpret or integrate with other tools. You can also change the output format of conftest by passing in the `--output` flag. I like the `github` output since it will automatically prints the output in a format that Github Actions understoods and will surface error in Github UI approriately. You can also output it as JSON, which is great if you want to process the result output using tools like `jq`.
 
+```
+➜ conftest test --help
+[...]
+  -o, --output string         Output format for conftest results - valid options are: [stdout json tap table junit github] (default "stdout")
+```
+
+JSON output:
+```
+➜ conftest test input.json --output json
+[
+  {
+    "filename": "input.json",
+    "namespace": "main",
+    "successes": 0,
+    "warnings": [
+      {
+        "msg": "id 2 is not allowed"
+      }
+    ],
+    "failures": [
+      {
+        "msg": "username john is not allowed"
+      }
+    ]
+  }
+]
+```
 
 ### parsers: using other format as input files
 
