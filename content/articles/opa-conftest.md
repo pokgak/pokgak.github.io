@@ -178,7 +178,9 @@ JSON output:
 
 ### parsers: using other format as input files
 
-Until now all our input has been in JSON format but conftest also has built-in parsers that can automatically detect the input format and converts it to JSON for us. Example is for HCL2 code used for Terraform:
+Until now all our input has been in JSON format but conftest also has built-in parsers that can automatically detect the input format and converts it to JSON for us. As of this moment, here is the list of valid parsers: [cue dockerfile edn hcl1 hcl2 hocon ignore ini json jsonnet properties spdx toml vcl xml yaml dotenv].
+
+Example is for HCL2 code used for Terraform:
 
 ```hcl2
 # input.tf
