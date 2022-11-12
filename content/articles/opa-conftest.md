@@ -231,4 +231,6 @@ We can use `conftest parse` to see how conftest will parse the Terraform file an
 }
 ```
 
+## Conclusion
 
+I just got started with OPA but considering the flexibility of it when used with conftest, I feel like you can use this for a lot of use cases. The ability to separate the policy logic from your application is powerful and the declarative nature of the Rego language also helps simplify the policy a lot as demonstrated in my comparison of the Python code above.
