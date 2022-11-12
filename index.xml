@@ -177,7 +177,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 parsers: using other format as input files
 &lt;/h3>
-&lt;p>Until now all our input has been in JSON format but conftest also has built-in parsers that can automatically detect the input format and converts it to JSON for us. Example is for HCL2 code used for Terraform:&lt;/p>
+&lt;p>Until now all our input has been in JSON format but conftest also has built-in parsers that can automatically detect the input format and converts it to JSON for us. As of this moment, here is the list of valid parsers: [cue dockerfile edn hcl1 hcl2 hocon ignore ini json jsonnet properties spdx toml vcl xml yaml dotenv].&lt;/p>
+&lt;p>Example is for HCL2 code used for Terraform:&lt;/p>
 &lt;pre tabindex="0">&lt;code class="language-hcl2" data-lang="hcl2"># input.tf
 resource &amp;#34;aws_imaginary_resource&amp;#34; &amp;#34;this&amp;#34; {
 name = &amp;#34;this&amp;#34;
