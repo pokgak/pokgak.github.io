@@ -84,8 +84,7 @@ More complex policies
 &lt;/h3>
 &lt;p>Before this our policies are all simple one liner but Rego also supports writing the rule body in multiple lines. In the example below, we are adding an exception to the rule that the previous rule doesn&amp;rsquo;t apply to user with &lt;code>id == 5&lt;/code>. So if one our user &lt;code>name&lt;/code> value is &lt;code>john&lt;/code> but have &lt;code>id == 5&lt;/code> then &lt;code>user_forbidden&lt;/code> won&amp;rsquo;t evaluate to &lt;code>true&lt;/code>. Note that we are using the same index &lt;code>i&lt;/code> when accessing the &lt;code>name&lt;/code> and &lt;code>id&lt;/code> property. This means we are referring to the same user. If we use &lt;code>_&lt;/code> or a different index when accessing the &lt;code>name&lt;/code> and &lt;code>id&lt;/code>, the rule will evaluate to &lt;code>true&lt;/code>.&lt;/p>
 &lt;p>If any of the expressions inside the rule body evaluates to &lt;code>false&lt;/code> or &lt;code>undefined&lt;/code> then it will stop evaluating the rule body and return &lt;code>undefined&lt;/code> for &lt;code>user_forbidden&lt;/code>.&lt;/p>
-&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa"># policy
-forbidden_names := [&amp;#34;foobar&amp;#34;, &amp;#34;john&amp;#34;]
+&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa">forbidden_names := [&amp;#34;foobar&amp;#34;, &amp;#34;john&amp;#34;]
 user_forbidden if {
 input.users[i].name == forbidden_names[_]
 input.users[i].id != 5
