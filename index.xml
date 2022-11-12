@@ -1,4 +1,204 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 13 Aug 2022 17:43:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Instrumenting a Slack bot with OpenTelemetry</title><link>https://pokgak.xyz/articles/otel-slack-integration/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-slack-integration/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 12 Nov 2022 13:00:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Wrapping my head around conftest and OPA</title><link>https://pokgak.xyz/articles/opa-conftest/</link><pubDate>Sat, 12 Nov 2022 13:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/opa-conftest/</guid><description>
+&lt;p>I started using OPA at my $dayJob recently and there are some parts that I think is not intuitive to grok for beginners.&lt;/p>
+&lt;p>First, what is the relationship between OPA, Rego, and conftest? Rego is a declarative language used to write OPA policies. Then, OPA is the engine that takes in the policies written in Rego and evaluates it, producing a set of documents called &amp;ldquo;rules&amp;rdquo;. You can use OPA and the Rego language directly to write policies for your config files but using conftest will make the DX much better.&lt;/p>
+&lt;h2 id="rego-basics">
+&lt;a href="#rego-basics" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Rego Basics
+&lt;/h2>
+&lt;p>The Rego language focuses on querying the input to look for a given condition. If the input satisfies the query, then it will produce the document.&lt;/p>
+&lt;h3 id="variable-assignments">
+&lt;a href="#variable-assignments" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Variable Assignments
+&lt;/h3>
+&lt;p>Variable assignment in Rego works the same like in other language. The expression &lt;code>foo := &amp;quot;hello&amp;quot;&lt;/code> will assign the value &lt;code>&amp;quot;hello&amp;quot;&lt;/code> to the variable &lt;code>foo&lt;/code>.&lt;/p>
+&lt;p>One difference in Rego is that it implicitly assigns value &lt;code>true&lt;/code> to the document if the condition given evaluates to &lt;code>true&lt;/code>. In the example below, there&amp;rsquo;s two ways to write the Rego expression. Rego actually implicitly assigns the value &lt;code>true&lt;/code> so we can also remove&lt;/p>
+&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa">foo := &amp;#34;hello&amp;#34;
+# first way: explicitly assigns `true` to `result` when condition is satisfied
+result := true if foo == &amp;#34;hello&amp;#34;
+# Rego implicitly assigns `true` to `result` when condition is satisfied
+result if foo == &amp;#34;hello&amp;#34;
+&lt;/code>&lt;/pre>&lt;p>Let&amp;rsquo;s bring this up to next level. Most of the time, the condition you&amp;rsquo;re checking is not as straight forward as checking the value against a static value. You might also need to evaluate expressions in between and save the intermediary values in a variable to help improve readability. In previous example we only used a one-liner for the rule body but you can also have more complex rule body like the following using curly braces.&lt;/p>
+&lt;h3 id="declarative-rego-language">
+&lt;a href="#declarative-rego-language" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Declarative Rego Language
+&lt;/h3>
+&lt;p>The Rego language is declarative and useful to query data structures for any value. Consider the following example (&lt;a href="https://play.openpolicyagent.org/p/gZcwi6zzAA">Rego playground link&lt;/a>):&lt;/p>
+&lt;p>Let&amp;rsquo;s assume our input is an array of object, each containing the keys &amp;ldquo;id&amp;rdquo; and &amp;ldquo;name&amp;rdquo;. In this policy we&amp;rsquo;re checking that the objects doesn&amp;rsquo;t have any forbiden value for &amp;ldquo;name&amp;rdquo;.&lt;/p>
+&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa"># policy
+forbidden_names := [&amp;#34;foobar&amp;#34;, &amp;#34;john&amp;#34;]
+user_forbidden if input.users[i].name == forbidden_names[j]
+&lt;/code>&lt;/pre>&lt;p>This code would look something like this in Python:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;span class="lnt">9
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="line">&lt;span class="cl">&lt;span class="n">users&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[{&lt;/span>&lt;span class="s2">&amp;#34;name&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;foo&amp;#34;&lt;/span>&lt;span class="p">},&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="s2">&amp;#34;name&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;bar&amp;#34;&lt;/span>&lt;span class="p">}]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">forbidden_names&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;foobar&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;john&amp;#34;&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">user_forbidden&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">for&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">input&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">users&lt;/span>&lt;span class="p">):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">for&lt;/span> &lt;span class="n">j&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="nb">range&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">forbidden_names&lt;/span>&lt;span class="p">)):&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">user_forbidden&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">push&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">input&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">users&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">name&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="n">forbidden_names&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">j&lt;/span>&lt;span class="p">])&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">return&lt;/span> &lt;span class="nb">any&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">user_forbidden&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>For both codes, &lt;code>user_forbidden&lt;/code> will evaluate to &lt;code>true&lt;/code> if one of the user name is included in the &lt;code>forbidden_names&lt;/code> list. In the Python code, we used &lt;code>for&lt;/code> loops with the &lt;code>any()&lt;/code> function to check that none of the value is true. In the Rego code, we don&amp;rsquo;t have to use any for loop or iterate through the user list. &lt;code>forbidden_names[i]&lt;/code> means &amp;ldquo;for any of the values in &lt;code>forbidden_names&lt;/code>. So in our Rego code, we essentially tells OPA, if any of the value in &lt;code>input.users&lt;/code> is the same as any of the value in &lt;code>forbidden_name&lt;/code>, then return set the value of &lt;code>user_forbidden&lt;/code> to &lt;code>true&lt;/code>.&lt;/p>
+&lt;p>In this case, since we are not using the index &lt;code>i&lt;/code> and &lt;code>j&lt;/code> to reference the value at those index anywhere in the policy, we can simplify it more by using &lt;code>_&lt;/code> (underscore) instead for the index. &lt;code>_&lt;/code> is like a throwaway value and we don&amp;rsquo;t care about the index, we just care if one of the values is the same in &lt;code>user.input&lt;/code> and &lt;code>forbidden_names&lt;/code>.&lt;/p>
+&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa">user_forbidden if input.users[_].name == forbidden_names[_]
+&lt;/code>&lt;/pre>&lt;h3 id="more-complex-policies">
+&lt;a href="#more-complex-policies" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+More complex policies
+&lt;/h3>
+&lt;p>Before this our policies are all simple one liner but Rego also supports writing the rule body in multiple lines. In the example below, we are adding an exception to the rule that the previous rule doesn&amp;rsquo;t apply to user with &lt;code>id == 5&lt;/code>. So if one our user &lt;code>name&lt;/code> value is &lt;code>john&lt;/code> but have &lt;code>id == 5&lt;/code> then &lt;code>user_forbidden&lt;/code> won&amp;rsquo;t evaluate to &lt;code>true&lt;/code>. Note that we are using the same index &lt;code>i&lt;/code> when accessing the &lt;code>name&lt;/code> and &lt;code>id&lt;/code> property. This means we are referring to the same user. If we use &lt;code>_&lt;/code> or a different index when accessing the &lt;code>name&lt;/code> and &lt;code>id&lt;/code>, the rule will evaluate to &lt;code>true&lt;/code>.&lt;/p>
+&lt;p>If any of the expressions inside the rule body evaluates to &lt;code>false&lt;/code> or &lt;code>undefined&lt;/code> then it will stop evaluating the rule body and return &lt;code>undefined&lt;/code> for &lt;code>user_forbidden&lt;/code>.&lt;/p>
+&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa"># policy
+forbidden_names := [&amp;#34;foobar&amp;#34;, &amp;#34;john&amp;#34;]
+user_forbidden if {
+input.users[i].name == forbidden_names[_]
+input.users[i].id != 5
+false
+print(&amp;#34;this will not be printed&amp;#34;)
+}
+&lt;/code>&lt;/pre>&lt;h2 id="using-conftest">
+&lt;a href="#using-conftest" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Using conftest
+&lt;/h2>
+&lt;p>Previously, we used arbitrary names for our rules but conftest introduces a few keywords that we must use so that it can detect any failed rules and includes it in the output. Conftest will pick up any rules with name &lt;code>deny&lt;/code>, &lt;code>warn&lt;/code>, or &lt;code>violation&lt;/code> and the summary will be shown in conftest output.&lt;/p>
+&lt;pre tabindex="0">&lt;code>➜ tree conftest
+conftest
+├── input.json
+└── policy
+└── names.rego
+&lt;/code>&lt;/pre>&lt;pre tabindex="0">&lt;code># input.json
+{
+&amp;#34;users&amp;#34;: [
+{
+&amp;#34;id&amp;#34;: 1,
+&amp;#34;name&amp;#34;: &amp;#34;john&amp;#34;
+},
+{
+&amp;#34;id&amp;#34;: 2,
+&amp;#34;name&amp;#34;: &amp;#34;bar&amp;#34;
+},
+{
+&amp;#34;id&amp;#34;: 3,
+&amp;#34;name&amp;#34;: &amp;#34;foobar&amp;#34;
+}
+]
+}
+&lt;/code>&lt;/pre>&lt;pre tabindex="0">&lt;code class="language-opa" data-lang="opa"># policy/names.rego
+package main
+import future.keywords.contains
+import future.keywords.if
+deny contains msg if {
+forbidden_names := [&amp;#34;john&amp;#34;]
+name := input.users[_].name
+name == forbidden_names[_]
+msg := sprintf(&amp;#34;username %v is not allowed&amp;#34;, [name])
+}
+warn contains msg if {
+id := input.users[_].id
+id == 2
+msg := sprintf(&amp;#34;id %v is not allowed&amp;#34;, [id])
+}
+&lt;/code>&lt;/pre>&lt;p>Run conftest against our input file:&lt;/p>
+&lt;pre tabindex="0">&lt;code>➜ conftest test input.json --policy policy/
+WARN - input.json - main - id 2 is not allowed
+FAIL - input.json - main - username john is not allowed
+2 tests, 0 passed, 0 warnings, 2 failures, 0 exceptions
+&lt;/code>&lt;/pre>&lt;p>Here, conftest takes the output values from the OPA engine and formats the output for us to make it easier to interpret or integrate with other tools.&lt;/p>
+&lt;h3 id="parsers-using-other-format-as-input-files">
+&lt;a href="#parsers-using-other-format-as-input-files" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+parsers: using other format as input files
+&lt;/h3>
+&lt;p>Until now all our input has been in JSON format but conftest also has built-in parsers that can automatically detect the input format and converts it to JSON for us. Example is for HCL2 code used for Terraform:&lt;/p>
+&lt;pre tabindex="0">&lt;code class="language-hcl2" data-lang="hcl2"># input.tf
+resource &amp;#34;aws_imaginary_resource&amp;#34; &amp;#34;this&amp;#34; {
+name = &amp;#34;this&amp;#34;
+instance_type = &amp;#34;r5.4xlarge&amp;#34;
+security_groups = [&amp;#34;12345&amp;#34;, &amp;#34;45678&amp;#34;]
+}
+resource &amp;#34;aws_imaginary_resource&amp;#34; &amp;#34;that&amp;#34; {
+name = &amp;#34;that&amp;#34;
+instance_type = &amp;#34;t3.medium&amp;#34;
+ingress {
+port = 1234
+cidr = [&amp;#34;0.0.0.0/0&amp;#34;]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>We can use &lt;code>conftest parse&lt;/code> to see how conftest will parse the Terraform file and then write our policy based on the parsed input.&lt;/p>
+&lt;pre tabindex="0">&lt;code>➜ conftest parse input.tf
+{
+&amp;#34;resource&amp;#34;: {
+&amp;#34;aws_imaginary_resource&amp;#34;: {
+&amp;#34;that&amp;#34;: {
+&amp;#34;ingress&amp;#34;: {
+&amp;#34;cidr&amp;#34;: [
+&amp;#34;0.0.0.0/0&amp;#34;
+],
+&amp;#34;port&amp;#34;: 1234
+},
+&amp;#34;instance_type&amp;#34;: &amp;#34;t3.medium&amp;#34;,
+&amp;#34;name&amp;#34;: &amp;#34;that&amp;#34;
+},
+&amp;#34;this&amp;#34;: {
+&amp;#34;instance_type&amp;#34;: &amp;#34;r5.4xlarge&amp;#34;,
+&amp;#34;name&amp;#34;: &amp;#34;this&amp;#34;,
+&amp;#34;security_groups&amp;#34;: [
+&amp;#34;12345&amp;#34;,
+&amp;#34;45678&amp;#34;
+]
+}
+}
+}
+}
+&lt;/code>&lt;/pre></description></item><item><title>Instrumenting a Slack bot with OpenTelemetry</title><link>https://pokgak.xyz/articles/otel-slack-integration/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/otel-slack-integration/</guid><description>
 &lt;p>&lt;em>Note: I&amp;rsquo;m using pseudocode in the code example in this article to keep the article brief. Please refer to the official Slack and OpenTelemetry documentation for the actual code.&lt;/em>&lt;/p>
 &lt;p>I&amp;rsquo;ve talked about the basics of OpenTelemetry in my previous article. In this one, I&amp;rsquo;ll explain more on how we&amp;rsquo;re integrating OpenTelemetry with our Slack-based application.&lt;/p>
 &lt;p>At the end of this article, this is roughly how the span lifetime and events created will look like:&lt;/p>
