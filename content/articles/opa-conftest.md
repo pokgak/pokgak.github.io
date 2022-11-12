@@ -71,7 +71,6 @@ Before this our policies are all simple one liner but Rego also supports writing
 If any of the expressions inside the rule body evaluates to `false` or `undefined` then it will stop evaluating the rule body and return `undefined` for `user_forbidden`.
 
 ```opa
-# policy
 forbidden_names := ["foobar", "john"]
 
 user_forbidden if {
