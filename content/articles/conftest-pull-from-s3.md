@@ -1,5 +1,5 @@
 ---
-title: "Atlantis: run policy check using policies from S3"
+title: "How to use OPA policy from an S3 bucket when using Atlantis policy check"
 date: 2022-11-16T22:00:00+08:00
 tags: [atlantis, opa, conftest, policy, s3, terraform]
 ---
