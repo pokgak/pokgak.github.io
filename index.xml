@@ -1,4 +1,98 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 12 Nov 2022 13:00:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Getting started with OPA and conftest</title><link>https://pokgak.xyz/articles/opa-conftest/</link><pubDate>Sat, 12 Nov 2022 13:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/opa-conftest/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Wed, 16 Nov 2022 22:00:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Atlantis: run policy check using policies from S3</title><link>https://pokgak.xyz/articles/conftest-pull-from-s3/</link><pubDate>Wed, 16 Nov 2022 22:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/conftest-pull-from-s3/</guid><description>
+&lt;p>&lt;a href="https://www.runatlantis.io">Atlantis&lt;/a> is an application used for collaborating on a Terraform code base using pull requests and one of the feature that it has is to run &lt;a href="conftest.dev">conftest&lt;/a> and test a set of defined OPA policies. At the moment I&amp;rsquo;m writing this article, Atlantis only supports using local sources i.e. local filesystem as the source of the policy. In this article, I&amp;rsquo;ll show an example of how to use an S3 bucket instead as the source for the policies.&lt;/p>
+&lt;h2 id="custom-workflow-and-run-step">
+&lt;a href="#custom-workflow-and-run-step" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Custom workflow and &lt;code>run&lt;/code> step
+&lt;/h2>
+&lt;p>Atlantis supports using &lt;a href="https://www.runatlantis.io/docs/custom-workflows.html">custom workflows&lt;/a> to override the default commands that it runs and as part of that feature, it supports defining any &lt;a href="https://www.runatlantis.io/docs/custom-workflows.html#running-custom-commands">custom commands&lt;/a> to run as part of the steps for each stage. We will be ~abusing~using this feature to override the default &lt;code>conftest&lt;/code> command that Atlantis uses and specify our policy through the &lt;code>--update&lt;/code> flag of &lt;code>conftest&lt;/code>&lt;/p>
+&lt;h2 id="conftest---update-flag">
+&lt;a href="#conftest---update-flag" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+conftest &lt;code>--update&lt;/code> flag
+&lt;/h2>
+&lt;p>By using &lt;code>--update&lt;/code> you can tell &lt;code>conftest&lt;/code> to pull the policy first every time it wants to run the tests. We will be using an S3 bucket as our source but before we can pull from S3, you have to make sure that wherever the Atlantis server is running, it can access and have permission to pull objects from the bucket. In my case, Atlantis is running as a StatefulSet inside a Kubernetes cluster so I have already configured the IAM permission needed for it to access the bucket.&lt;/p>
+&lt;p>&lt;code>conftest&lt;/code> is using the &lt;a href="https://github.com/hashicorp/go-getter">go-getter package&lt;/a> underneath to pull these packages so technically it should be possible to also pull from other sources that &lt;code>go-getter&lt;/code> supports, other than just S3.&lt;/p>
+&lt;h2 id="result">
+&lt;a href="#result" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Result
+&lt;/h2>
+&lt;p>Combining both of the features described above, here&amp;rsquo;s an example of a simplified &lt;a href="https://www.runatlantis.io/docs/server-side-repo-config.html">repo config&lt;/a> that I use:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="c"># minimal config for brevity; you might need to configure more options to make atlantis works properly&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">repos&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>- &lt;span class="nt">id&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">github.com/$ORG/$REPO&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">workflow&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">custom&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">workflows&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">custom&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">policy_check&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">steps&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">show&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># important don&amp;#39;t skip this step&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">run&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">conftest test $SHOWFILE --update s3::https://s3-us-east-1.amazonaws.com/$BUCKET_NAME/policy&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">policies&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">policy_sets&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">policy-from-s3&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">path&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">/home/atlantis/policy&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">source&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">local&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>In the example above, you can see that I&amp;rsquo;m defining a custom workflow named &lt;code>custom&lt;/code> and inside that custom workflow, I&amp;rsquo;m overriding the default &lt;code>policy_check&lt;/code> steps with my own. My custom &lt;code>policy_check&lt;/code> steps consists of the &lt;code>show&lt;/code> step and the custom &lt;code>run&lt;/code> step. The &lt;code>show&lt;/code> step is crucial since this is when Atlantis will run &lt;code>terraform show&lt;/code> to convert your Terraform planfile to a JSON formatted file. When using the custom &lt;code>run&lt;/code> step, Atlantis will store the path to this JSON formatted file in variable &lt;code>$SHOWFILE&lt;/code> so when I ran my conftest command you can see that I&amp;rsquo;m using &lt;code>$SHOWFILE&lt;/code> to run &lt;code>conftest&lt;/code> against the file. Optional: if you want to run &lt;code>conftest&lt;/code> against the Terraform files too, you can add &lt;code>*.tf&lt;/code> after &lt;code>$SHOWFILE&lt;/code> and it will include all the &lt;code>*tf&lt;/code> files in that project directory.&lt;/p>
+&lt;p>Next comes the &lt;code>--update&lt;/code> flag, to specify the S3 bucket, I&amp;rsquo;m using a URL format that is &lt;a href="https://github.com/hashicorp/go-getter#s3-bucket-examples">specified by the &lt;code>go-getter&lt;/code> package&lt;/a> replacing &lt;code>$BUCKET_NAME&lt;/code> with the bucket name that I have configured with the correct permission and network access. Inside the S3 bucket, this is how I structured the files. I put all the OPA policies inside a folder &lt;code>policy&lt;/code> since &lt;code>conftest&lt;/code> complains when I just put all the policies directly at the root level inside the bucket. YMMV.&lt;/p>
+&lt;pre tabindex="0">&lt;code>$BUCKET_NAME/
+├─ policy/
+│ ├─ stop_it.rego
+│ ├─ dont_kill_server.rego
+&lt;/code>&lt;/pre>&lt;p>After defining our custom workflow, we can specify the custom worklow as the default workflow for a repo. This is done by setting the &lt;code>repos[].workflow&lt;/code> value to the name of our custom workflow, in my case it&amp;rsquo;s &lt;code>custom&lt;/code>.&lt;/p>
+&lt;p>Next, as part of the using the policy check feature in Atlantis, you are required to set the &lt;code>policies&lt;/code> values. You can refer to the &lt;a href="https://www.runatlantis.io/docs/server-side-repo-config.html#policies">docs&lt;/a> for the full configuration required. Inside the &lt;code>policies&lt;/code> key, there is a required &lt;code>policy_check&lt;/code> key that is used to specify where Atlantis can find the OPA policies to use when running &lt;code>conftest&lt;/code>. Usually, this is a folder on a local filesystem already containing the policies but in our case, since we&amp;rsquo;re using the &lt;code>--update&lt;/code> flag, we just need to specify any folder on the local filesystem that will be writable by the Atlantis user. You can see in the example above that I&amp;rsquo;m using &lt;code>/home/atlantis/policy&lt;/code>.&lt;/p>
+&lt;h2 id="conclusion">
+&lt;a href="#conclusion" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Conclusion
+&lt;/h2>
+&lt;p>That&amp;rsquo;s all you need to do configure to make Atlantis pulls policies from S3 (and include Terraform source code files in your &lt;code>contest&lt;/code> run). Shoutout to a &lt;a href="https://doordash.engineering/2022/09/20/how-doordash-ensures-velocity-and-reliability-through-policy-automation/">DoorDash engineering blog post&lt;/a> which mentioned briefly that they pulled their policies from S3 and made me curios how to do the same using Atlantis. You can mention me on Twitter (@pokgak73) if this article has helped you. That would most definitely made my day :)&lt;/p></description></item><item><title>Getting started with OPA and conftest</title><link>https://pokgak.xyz/articles/opa-conftest/</link><pubDate>Sat, 12 Nov 2022 13:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/opa-conftest/</guid><description>
 &lt;p>I started using OPA at my &lt;code>$dayJob&lt;/code> recently and there are some parts that I think is not intuitive to grok for beginners.&lt;/p>
 &lt;p>If you want to play around with the rules and input, you can use the &lt;a href="https://play.openpolicyagent.org/">Rego Playground&lt;/a>. It&amp;rsquo;s super useful and I used it to test out policies and test my hypothesis when playing around with Rego language.&lt;/p>
 &lt;h2 id="how-does-opa-rego-and-conftest-related-to-each-other">
