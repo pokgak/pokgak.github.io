@@ -23,15 +23,15 @@ Combining both of the features described above, here's an example of a simplifie
 ```yaml
 # minimal config for brevity; you might need to configure more options to make atlantis works properly
 repos:
-- id: github.com/$ORG/$REPO
-  workflow: custom
+  - id: github.com/$ORG/$REPO
+    workflow: custom
 
 workflows:
   custom:
     policy_check:
       steps:
-      - show # important don't skip this step
-      - run: conftest test $SHOWFILE --update s3::https://s3-us-east-1.amazonaws.com/$BUCKET_NAME/policy
+        - show # important don't skip this step
+        - run: conftest test $SHOWFILE --update s3::https://s3-us-east-1.amazonaws.com/$BUCKET_NAME/policy
 
 policies:
   policy_sets:
@@ -40,7 +40,7 @@ policies:
       source: local
 ```
 
-In the example above, you can see that I'm defining a custom workflow named `custom` and inside that custom workflow, I'm overriding the default `policy_check` steps with my own. My custom `policy_check` steps consists of the `show` step and the custom `run` step. The `show` step is crucial since this is when Atlantis will run `terraform show` to convert your Terraform planfile to a JSON formatted file. When using the custom `run` step, Atlantis will store the path to this JSON formatted file in variable `$SHOWFILE` so when I ran my conftest command you can see that I'm using `$SHOWFILE` to run `conftest` against the file. Optional: if you want to run `conftest` against the Terraform files too, you can add `*.tf` after `$SHOWFILE` and it will include all the `*tf` files in that project directory.
+In the example above, under the `workflows` key, I'm defining a custom workflow named `custom` and inside that custom workflow, I'm overriding the default `policy_check` steps with my own. My custom `policy_check` steps consists of the `show` step and the custom `run` step. The `show` step is crucial since this is when Atlantis will run `terraform show` to convert your Terraform planfile to a JSON formatted file. When using the custom `run` step, Atlantis will store the path to this JSON formatted file in variable `$SHOWFILE` so when I ran my conftest command you can see that I'm using `$SHOWFILE` to run `conftest` against the file. Optional: if you want to run `conftest` against the Terraform files too, you can add `*.tf` after `$SHOWFILE` and it will include all the `*tf` files in that project directory.
 
 Next comes the `--update` flag, to specify the S3 bucket, I'm using a URL format that is [specified by the `go-getter` package](https://github.com/hashicorp/go-getter#s3-bucket-examples) replacing `$BUCKET_NAME` with the bucket name that I have configured with the correct permission and network access. Inside the S3 bucket, this is how I structured the files. I put all the OPA policies inside a folder `policy` since `conftest` complains when I just put all the policies directly at the root level inside the bucket. YMMV.
 
