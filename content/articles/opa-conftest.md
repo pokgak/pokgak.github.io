@@ -1,7 +1,7 @@
 ---
 title: "Getting started with OPA and conftest"
 date: 2022-11-12T13:00:00+08:00
-tags: [OPA, conftest, policy]
+tags: [opa, conftest, policy, terraform, rego]
 ---
 
 I started using OPA at my `$dayJob` recently and there are some parts that I think is not intuitive to grok for beginners.

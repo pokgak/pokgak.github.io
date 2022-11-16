@@ -1,7 +1,7 @@
 ---
 title: "Atlantis: run policy check using policies from S3"
 date: 2022-11-16T22:00:00+08:00
-tags: [OPA, conftest, policy]
+tags: [atlantis, opa, conftest, policy, s3, terraform]
 ---
 
 [Atlantis](https://www.runatlantis.io) is an application used for collaborating on a Terraform code base using pull requests and one of the feature that it has is to run [conftest](conftest.dev) and test a set of defined OPA policies. At the moment I'm writing this article, Atlantis only supports using local sources i.e. local filesystem as the source of the policy. In this article, I'll show an example of how to use an S3 bucket instead as the source for the policies.
