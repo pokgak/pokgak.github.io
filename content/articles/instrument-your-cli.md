@@ -78,3 +78,7 @@ otel-cli exec --service my-service --name "My First Trace" echo "HELLO WORLD"
 Then you should be able to see the a new line in the other terminal that we ran `otel-cli server tui` just now.
 
 ![Result in otel-cli server](images/otel-cli-trace.png)
+
+## Conclusion
+
+In this article, I showed you the simplest way you can use otel-cli. To get more valuable information from your traces, you'll usually need to add nested spans to your trace. It'll help break down the execution of your program to more smaller unit that can be inspected. To get more advanced example, you should refer to the otel-cli [examples](https://github.com/equinix-labs/otel-cli#examples).
