@@ -77,4 +77,6 @@ You can use `exec` subcommand to wrap a command with otel-cli. It will automatic
 otel-cli exec --service my-service --name "My First Trace" echo "HELLO WORLD"
 ```
 
-Then you should be able to see the a new line 
+Then you should be able to see the a new line in the other terminal that we ran `otel-cli server tui` just now.
+
+![Result in otel-cli server](images/otel-cli-trace.png)
