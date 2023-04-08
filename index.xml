@@ -136,7 +136,18 @@ Sending our first trace
 src="https://pokgak.xyz/images/otel-cli-trace.png"
 alt="Result in otel-cli server"
 width=1115
-height="628" />&lt;/p></description></item><item><title>How to use OPA policy from an S3 bucket when using Atlantis policy check</title><link>https://pokgak.xyz/articles/conftest-pull-from-s3/</link><pubDate>Wed, 16 Nov 2022 22:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/conftest-pull-from-s3/</guid><description>
+height="628" />&lt;/p>
+&lt;h2 id="conclusion">
+&lt;a href="#conclusion" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Conclusion
+&lt;/h2>
+&lt;p>In this article, I showed you the simplest way you can use otel-cli. To get more valuable information from your traces, you&amp;rsquo;ll usually need to add nested spans to your trace. It&amp;rsquo;ll help break down the execution of your program to more smaller unit that can be inspected. To get more advanced example, you should refer to the otel-cli &lt;a href="https://github.com/equinix-labs/otel-cli#examples">examples&lt;/a>.&lt;/p></description></item><item><title>How to use OPA policy from an S3 bucket when using Atlantis policy check</title><link>https://pokgak.xyz/articles/conftest-pull-from-s3/</link><pubDate>Wed, 16 Nov 2022 22:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/conftest-pull-from-s3/</guid><description>
 &lt;p>&lt;a href="https://www.runatlantis.io">Atlantis&lt;/a> is an application used for collaborating on a Terraform code base using pull requests and one of the feature that it has is to run &lt;a href="conftest.dev">conftest&lt;/a> and test a set of defined OPA policies. At the moment I&amp;rsquo;m writing this article, Atlantis only supports using local sources i.e. local filesystem as the source of the policy. In this article, I&amp;rsquo;ll show an example of how to use an S3 bucket instead as the source for the policies.&lt;/p>
 &lt;h2 id="custom-workflow-and-run-step">
 &lt;a href="#custom-workflow-and-run-step" class="anchor">
