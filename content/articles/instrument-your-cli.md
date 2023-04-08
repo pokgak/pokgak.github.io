@@ -4,8 +4,6 @@ date: 2023-04-08T12:18:00+08:00
 tags: [opentelemetry, otel, tracing, ci]
 ---
 
-# Instrumenting your CI pipelines
-
 ## Why?
 
 Why not?
