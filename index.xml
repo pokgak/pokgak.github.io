@@ -1,169 +1,106 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Wed, 24 May 2023 23:00:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Interview Series: Explain How Kubernetes DNS works</title><link>https://pokgak.xyz/articles/explain-k8s-dns/</link><pubDate>Wed, 24 May 2023 23:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/explain-k8s-dns/</guid><description>
 &lt;p>This will be the first in my interview questions series. I&amp;rsquo;ll compile interesting questions that I got from my experience interviewing for DevOps/SRE role in Malaysia.&lt;/p>
-&lt;h2 id="can-you-explain-to-me-how-dns-works-in-kubernetes">
-&lt;a href="#can-you-explain-to-me-how-dns-works-in-kubernetes" class="anchor">
+&lt;p>&lt;img loading="lazy"
+src="https://pokgak.xyz/images/k8s-dns.png"
+alt=""
+width=2623
+height="1244" />&lt;/p>
+&lt;h2 id="calling-a-service-by-its-cluster-internal-dns">
+&lt;a href="#calling-a-service-by-its-cluster-internal-dns" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"
 d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-Can you explain to me how DNS works in Kubernetes?
+Calling a service by its cluster-internal DNS
 &lt;/h2>
-&lt;p>We&amp;rsquo;ll go from the highest to the lowest level in this journey.&lt;/p>
-&lt;h3 id="kubernetes-internal-dns-naming">
-&lt;a href="#kubernetes-internal-dns-naming" class="anchor">
+&lt;p>We&amp;rsquo;ll go from the highest to the lowest level in this journey. So let&amp;rsquo;s go through the scenario a bit: you have two services, foo and bar. those two services live in the same namespace &lt;code>app&lt;/code> in your cluster. Now, inside service foo code, it makes a HTTP request to service bar. Probably something like so:&lt;/p>
+&lt;pre tabindex="0">&lt;code>http.get(&amp;#34;https://bar/&amp;#34;)
+&lt;/code>&lt;/pre>&lt;p>What happens behind the scene from when the request is made to service bar and until the response is received back by service foo?&lt;/p>
+&lt;h2 id="what-is-that-weird-dns-format">
+&lt;a href="#what-is-that-weird-dns-format" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"
 d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-Kubernetes Internal DNS naming
-&lt;/h3>
-&lt;p>The application layer would be the highest level: service A calling service B using its cluster internal DNS name.&lt;/p>
-&lt;p>In kubernetes, an application is run inside a resource called Pod. A Pod is usually ephemeral which means it can go away any time and replaced by another pod. Each time a new pod is started, new IP will be assigned to the pod.&lt;/p>
-&lt;h3 id="if-the-ip-address-always-changes-how-do-i-send-a-request-to-the-correct-pod-then">
-&lt;a href="#if-the-ip-address-always-changes-how-do-i-send-a-request-to-the-correct-pod-then" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-If the IP address always changes, how do I send a request to the correct Pod then?
-&lt;/h3>
-&lt;p>I present to you the kubernetes Service resource.&lt;/p>
-&lt;p>A Service in kubernetes helps abstracts a set of Pods running behind it. Instead of the ever changing IP addresss of the Pods, you now only have to keep track of the Service IP.&lt;/p>
-&lt;p>A Service is given a selector that it will use to know which Pod will be abstracted behind it. This is usually a label on the pod.&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">apiVersion&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">v1&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">kind&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Service&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">metadata&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">service-a&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">spec&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">selector&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">app.kubernetes.io/name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">service-a&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">ports&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">protocol&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">TCP&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">port&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">80&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">targetPort&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">8080&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h3 id="different-ways-to-call-a-service-using-dns">
-&lt;a href="#different-ways-to-call-a-service-using-dns" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Different ways to call a service using DNS
-&lt;/h3>
-&lt;p>Depending on where the services are running inside the cluster, there are few ways the services can call each other. If both services are running inside the same namespace&lt;/p>
-&lt;h4 id="within-same-namespace">
-&lt;a href="#within-same-namespace" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Within same namespace
-&lt;/h4>
-&lt;p>You can just use the service name directly: &lt;code>service-a&lt;/code>. By calling this from a pod inside a namespace, you are limiting the DNS query to only the services inside the namespace.&lt;/p>
-&lt;h4 id="across-namespaces">
-&lt;a href="#across-namespaces" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Across namespaces
-&lt;/h4>
-&lt;p>You have to add the namespace after the service name: &lt;code>service-a.namespace-a&lt;/code>.&lt;/p>
-&lt;h2 id="inside-the-pod">
-&lt;a href="#inside-the-pod" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Inside the Pod
+What is that weird DNS format?
 &lt;/h2>
-&lt;p>kubelet configures &lt;code>/etc/resolv.conf&lt;/code> for each pod on a node. Here&amp;rsquo;s an sample example content for &lt;code>/etc/resolv.conf&lt;/code>:&lt;/p>
+&lt;p>You might&amp;rsquo;ve noticed that we&amp;rsquo;re just calling the service bar by the name using a weird name. Instead of the usual something.com domain, we&amp;rsquo;re just using &lt;code>bar&lt;/code> directly. How is this possible?&lt;/p>
+&lt;p>Kubernetes allows you to call other services by using the service resource name directly. It does this by automatically appending the full DNS domain to the given service name. So for example here, when you make a request to &lt;code>bar&lt;/code>, the application will make a DNS request to the local DNS server. The DNS server then notices that the domain that it received is not &amp;ldquo;complete&amp;rdquo; so it automatically appends the rest of the domain name based on the configuration that was given to it. If the service is running inside the namespace &lt;code>app&lt;/code>, it will turn &lt;code>bar&lt;/code> into &lt;code>bar.app.svc.cluster.local&lt;/code>.&lt;/p>
+&lt;p>This automatic appending to complete the domain name is called &amp;ldquo;search domain&amp;rdquo;. In our example the seach domain is configured as &lt;code>app.svc.cluster.local&lt;/code>. So, whenever the service makes a call to &lt;code>bar&lt;/code> it will automatically try to append the search domain and tries to resolve the domain name.&lt;/p>
+&lt;h2 id="how-and-where-is-this-configured">
+&lt;a href="#how-and-where-is-this-configured" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+How (and where) is this configured?
+&lt;/h2>
+&lt;p>Every pods in kubernetes has a file &lt;code>/etc/resolv.conf&lt;/code> that is configured by the kubelete when starting the pod. This file will contain the info where to find the DNS server inside the cluster and also what to use as the search domain. Here&amp;rsquo;s an example of the file (&lt;a href="https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/">source&lt;/a>):&lt;/p>
 &lt;pre tabindex="0">&lt;code>nameserver 10.32.0.10
 search &amp;lt;namespace&amp;gt;.svc.cluster.local svc.cluster.local cluster.local
 options ndots:5
-&lt;/code>&lt;/pre>&lt;p>The &lt;code>nameserver&lt;/code> value here will point to the DNS Server running inside the cluster which we will discuss more after this.&lt;/p>
-&lt;p>The &lt;code>search&lt;/code> here means the DNS search list for resolving DNS queries. If you just call &lt;code>service-a&lt;/code> for example, the DNS server will know to add the &lt;code>search&lt;/code> value suffix so that your given domain can resolve to a fully qualified domain name (FQDN).&lt;/p>
-&lt;h2 id="dns-server">
-&lt;a href="#dns-server" class="anchor">
+&lt;/code>&lt;/pre>&lt;h2 id="which-ip-will-be-returned-by-the-dns-query">
+&lt;a href="#which-ip-will-be-returned-by-the-dns-query" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"
 d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-DNS Server
+Which IP will be returned by the DNS query?
 &lt;/h2>
-&lt;p>Once you call a service by its cluster-internal DNS name, the request will be sent over to the DNS server running inside the cluster. Nowadays, this will usually be CoreDNS&lt;/p>
-&lt;h3 id="coredns">
-&lt;a href="#coredns" class="anchor">
+&lt;p>The DNS query will return us a virtual service IP. Why virtual? It&amp;rsquo;s because this IP doesn&amp;rsquo;t actually points to a pod that runs our services.&lt;/p>
+&lt;p>In kubernetes, pods can come and go at any time which also means that their IP will change all the time. How do we know then where to send our requests to? The Service resource is used to abstract dynamic nature of pod IPs and provide a consistent IP that your application can use to send requests to it.&lt;/p>
+&lt;h2 id="how-does-the-service-ip-maps-to-pod-ips">
+&lt;a href="#how-does-the-service-ip-maps-to-pod-ips" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"
 d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-CoreDNS
-&lt;/h3>
-&lt;p>Acts as the DNS server inside the cluster. Since the cluster internal DNS names doesn&amp;rsquo;t exist in external DNS server, CoreDNS resolves all the cluster-internal DNS based on the data from the kubernetes API. The&lt;/p>
-&lt;h2 id="on-the-node">
-&lt;a href="#on-the-node" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-On the node
+How does the service IP maps to pod IPs?
 &lt;/h2>
-&lt;p>On each kubernetes there will be at least two components running: the kubelet and the kube-proxy. The kubelet manages the containers running on the node while kube-proxy handles the networking of those containers.&lt;/p>
-&lt;p>kube-proxy watches the kubernetes API for any changes in the Service and Endpoint objects in the cluster. Once it detects that the resources has changed, it will update the routing rules on the node to correctly forward traffic to the right pod running on the node. There are several ways it can do the routing but by default it will use &lt;code>iptables&lt;/code>.&lt;/p>
-&lt;p>More details in this &lt;a href="https://mayankshah.dev/blog/demystifying-kube-proxy/">blog post&lt;/a>.&lt;/p>
-&lt;h2 id="references">
-&lt;a href="#references" class="anchor">
+&lt;p>The Service resource always comes with its pair, the Endpoint (or EndpointSlice) resource. This Endpoint resource tracks the pod IPs and also have information which pod IP is ready to receive traffic. This information can be queried using the kubernetes API. On the node where the pod runs, there is a program called kube-proxy that runs and updates the routing to map from service IP to pod IP. This routing can be done in multiple ways but currently the default is using iptables.&lt;/p>
+&lt;h2 id="when-does-this-routing-happens">
+&lt;a href="#when-does-this-routing-happens" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"
 d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-References
+When does this routing happens?
 &lt;/h2>
-&lt;ul>
-&lt;li>&lt;a href="https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/">https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://kubernetes.io/docs/concepts/services-networking/service/">https://kubernetes.io/docs/concepts/services-networking/service/&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://kubernetes.io/docs/concepts/overview/components/">https://kubernetes.io/docs/concepts/overview/components/&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://mayankshah.dev/blog/demystifying-kube-proxy/">https://mayankshah.dev/blog/demystifying-kube-proxy/&lt;/a>&lt;/li>
-&lt;/ul></description></item><item><title>Instrumenting CI Pipelines using otel-cli</title><link>https://pokgak.xyz/articles/instrument-your-ci/</link><pubDate>Sat, 08 Apr 2023 12:18:00 +0800</pubDate><guid>https://pokgak.xyz/articles/instrument-your-ci/</guid><description>
+&lt;p>When a request is first sent from the application code, its destination will be set to the service IP but before the request is sent out over the network, iptables modifies the destination and changes the service IP to pod IP. If there are multiple pods that sits behind a service, the pod IP will be selected randomly. Once the destination IP is changed, the packet is then sent out over the network.&lt;/p>
+&lt;h2 id="how-do-you-know-which-node-to-send-the-packet-to">
+&lt;a href="#how-do-you-know-which-node-to-send-the-packet-to" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+How do you know which node to send the packet to?
+&lt;/h2>
+&lt;p>A kubernetes cluster can contain a lot of nodes. Sending the packet to the correct node is important. To know which node to send the packet to, the router in your network will need to know which node to send this packet to. If you setup your own cluster ala kubernetes-the-hard-way, you might need to &lt;a href="https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/11-pod-network-routes.md">configure these routes yourself&lt;/a> but if you&amp;rsquo;re using kubernetes on top of any cloud providers, they usually will do these setup for you and you don&amp;rsquo;t have to do anything here. Once that is sorted, your packet now can reach the correct node and the packet is sent to the correct pod on the node based on the destination pod IP set in the packet header. The response then will be sent to the source pod IP in the request packet header.&lt;/p>
+&lt;h2 id="response-now-sent-back-to-the-source-node-all-done">
+&lt;a href="#response-now-sent-back-to-the-source-node-all-done" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Response now sent back to the source node. All done?
+&lt;/h2>
+&lt;p>Not yet. There&amp;rsquo;s one more last thing to do. Remember when we sent the request originally, iptables had rewrote the destination from service IP to pod IP? Now for the response packet to be received back by the pod, the pod IP that we rewrote before needs to be converted back to the service IP. This is needed because as far as the application knows, it sends a request to the service IP and not the pod IP. If it suddenly receives a response from a pod IP that it doesn&amp;rsquo;t know of, then it will just drop the response. So, here iptable will have to remember what it did before and convert pod IP on the response packet back to service IP. Finally, our foo service can receive the response that it wants from the bar service.&lt;/p></description></item><item><title>Instrumenting CI Pipelines using otel-cli</title><link>https://pokgak.xyz/articles/instrument-your-ci/</link><pubDate>Sat, 08 Apr 2023 12:18:00 +0800</pubDate><guid>https://pokgak.xyz/articles/instrument-your-ci/</guid><description>
 &lt;h2 id="why">
 &lt;a href="#why" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
