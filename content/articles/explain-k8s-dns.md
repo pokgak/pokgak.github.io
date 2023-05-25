@@ -28,7 +28,7 @@ This automatic appending to complete the domain name is called "search domain". 
 
 ## How (and where) is this configured?
 
-Every pods in kubernetes has a file `/etc/resolv.conf` that is configured by the kubelete when starting the pod. This file will contain the info where to find the DNS server inside the cluster and also what to use as the search domain. Here's an example of the file ([source][1]):
+Every pods in kubernetes has a file `/etc/resolv.conf` that is configured by the kubelet when starting the pod. This file will contain the info where to find the DNS server inside the cluster and also what to use as the search domain. Here's an example of the file ([source][1]):
 
 ```
 nameserver 10.32.0.10
