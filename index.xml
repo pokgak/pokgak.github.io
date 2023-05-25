@@ -67,7 +67,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 How does the service IP maps to pod IPs?
 &lt;/h2>
-&lt;p>The Service resource always comes with its pair, the Endpoint (or EndpointSlice) resource. This Endpoint resource tracks the pod IPs and also have information which pod IP is ready to receive traffic. This information can be queried using the kubernetes API. On the node where the pod runs, there is a program called kube-proxy that runs and updates the routing to map from service IP to pod IP. This routing can be done in multiple ways but currently the default is using iptables.&lt;/p>
+&lt;p>The Service resource always comes with its pair, the Endpoint (or EndpointSlice) resource. This Endpoint resource tracks the pod IPs and also have information which pod IP is ready to receive traffic. This information can be queried using the kubernetes API.&lt;/p>
+&lt;p>On the node where the pod runs, there is a program called kube-proxy that runs and updates the routing to map from service IP to pod IP. This routing can be done in multiple ways but currently the default is using iptables.&lt;/p>
 &lt;h2 id="when-does-this-routing-happens">
 &lt;a href="#when-does-this-routing-happens" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -78,7 +79,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 When does this routing happens?
 &lt;/h2>
-&lt;p>When a request is first sent from the application code, its destination will be set to the service IP but before the request is sent out over the network, iptables modifies the destination and changes the service IP to pod IP. If there are multiple pods that sits behind a service, the pod IP will be selected randomly. Once the destination IP is changed, the packet is then sent out over the network.&lt;/p>
+&lt;p>When a request is first sent from the application code, its destination will be set to the service IP but before the request is sent out over the network, iptables modifies the destination and changes the service IP to pod IP. If there are multiple pods that sits behind a service, the pod IP will be load balanced using a round-robin. Once the destination IP is changed, the packet is then sent out over the network.&lt;/p>
 &lt;h2 id="how-do-you-know-which-node-to-send-the-packet-to">
 &lt;a href="#how-do-you-know-which-node-to-send-the-packet-to" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -89,7 +90,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 How do you know which node to send the packet to?
 &lt;/h2>
-&lt;p>A kubernetes cluster can contain a lot of nodes. Sending the packet to the correct node is important. To know which node to send the packet to, the router in your network will need to know which node to send this packet to. If you setup your own cluster ala kubernetes-the-hard-way, you might need to &lt;a href="https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/11-pod-network-routes.md">configure these routes yourself&lt;/a> but if you&amp;rsquo;re using kubernetes on top of any cloud providers, they usually will do these setup for you and you don&amp;rsquo;t have to do anything here. Once that is sorted, your packet now can reach the correct node and the packet is sent to the correct pod on the node based on the destination pod IP set in the packet header. The response then will be sent to the source pod IP in the request packet header.&lt;/p>
+&lt;p>A kubernetes cluster can contain a lot of nodes. Sending the packet to the correct node is important. To know which node to send the packet to, the router in your network will need to know which node to send this packet to. If you setup your own cluster ala kubernetes-the-hard-way, you might need to &lt;a href="https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/11-pod-network-routes.md">configure these routes yourself&lt;/a> but if you&amp;rsquo;re using kubernetes on top of any cloud providers, they usually will do these setup for you and you don&amp;rsquo;t have to do anything here.&lt;/p>
+&lt;p>Once that is sorted, your packet now can reach the correct node and the packet is sent to the correct pod on the node based on the destination pod IP set in the packet header. The response then will be sent to the source pod IP in the request packet header.&lt;/p>
 &lt;h2 id="response-now-sent-back-to-the-source-node-all-done">
 &lt;a href="#response-now-sent-back-to-the-source-node-all-done" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -100,7 +102,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Response now sent back to the source node. All done?
 &lt;/h2>
-&lt;p>Not yet. There&amp;rsquo;s one more last thing to do. Remember when we sent the request originally, iptables had rewrote the destination from service IP to pod IP? Now for the response packet to be received back by the pod, the pod IP that we rewrote before needs to be converted back to the service IP. This is needed because as far as the application knows, it sends a request to the service IP and not the pod IP. If it suddenly receives a response from a pod IP that it doesn&amp;rsquo;t know of, then it will just drop the response. So, here iptable will have to remember what it did before and convert pod IP on the response packet back to service IP. Finally, our foo service can receive the response that it wants from the bar service.&lt;/p></description></item><item><title>Instrumenting CI Pipelines using otel-cli</title><link>https://pokgak.xyz/articles/instrument-your-ci/</link><pubDate>Sat, 08 Apr 2023 12:18:00 +0800</pubDate><guid>https://pokgak.xyz/articles/instrument-your-ci/</guid><description>
+&lt;p>Not yet. There&amp;rsquo;s one more last thing to do. Remember when we sent the request originally, iptables had rewrote the destination from service IP to pod IP? Now for the response packet to be received back by the pod, the pod IP that we rewrote before needs to be converted back to the service IP.&lt;/p>
+&lt;p>This is needed because as far as the application knows, it sends a request to the service IP and not the pod IP. If it suddenly receives a response from a pod IP that it doesn&amp;rsquo;t know of, then it will just drop the response. So, here iptable will have to remember what it did before and convert pod IP on the response packet back to service IP. Finally, our foo service can receive the response that it wants from the bar service.&lt;/p></description></item><item><title>Instrumenting CI Pipelines using otel-cli</title><link>https://pokgak.xyz/articles/instrument-your-ci/</link><pubDate>Sat, 08 Apr 2023 12:18:00 +0800</pubDate><guid>https://pokgak.xyz/articles/instrument-your-ci/</guid><description>
 &lt;h2 id="why">
 &lt;a href="#why" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
