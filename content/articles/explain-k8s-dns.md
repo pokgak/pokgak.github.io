@@ -6,6 +6,8 @@ tags: [interview, kubernetes, dns, networking]
 
 This will be the first in my interview questions series. I'll compile interesting questions that I got from my experience interviewing for DevOps/SRE role in Malaysia.
 
+![](images/k8s-dns.png)
+
 ## Calling a service by its cluster-internal DNS
 
 We'll go from the highest to the lowest level in this journey. So let's go through the scenario a bit: you have two services, foo and bar. those two services live in the same namespace `app` in your cluster. Now, inside service foo code, it makes a HTTP request to service bar. Probably something like so:
