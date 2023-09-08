@@ -38,10 +38,14 @@ I'm not sure if there's any science behind this but one factor that I think cont
 
 My journey with public speaking started a long time ago. I used to be so nervous waiting for my turn to introduce myself to the class on the first day of school. Having all the attention on me even for a brief moment when I interjected my friend group during our lepak session at mamak made my ears turn red.
 
-My first time speaking in front of a large audience was in a high school public speaking competition when I was 13. I was chosen because my English was pretty good in the class, not because I was good at public speaking, mind you. Being the inexperienced public speaker that I am, I printed my speech text on a big A4 paper and brought it to the stage, holding it full like that, not folding the paper whatsoever. I didn't manage to memorize the whole thing so I kept looking at the text during my speech. After I finished, my friends told me they noticed how nervous I was from how the A4 paper in my hand was shaking so badly during the whole speech. I'll always remember that one.
+My first time speaking in front of a large audience was in a high school public speaking competition when I was 13. I was chosen because my English was pretty good in the class, not because I was good at public speaking, mind you. Being the inexperienced public speaker that I am, I printed my speech text on a big A4 paper and brought it to the stage, holding it full like that, not folding the paper whatsoever.
+
+I didn't manage to memorize the whole thing so I kept looking at the text during my speech. After I finished, my friends told me they noticed how nervous I was from how the A4 paper in my hand was shaking so badly during the whole speech. I'll always remember that one.
 
 ### Final Note
 
-I can gladly say that I've improved a lot since then. Being exposed to these situations multiple times made me realize that it is natural to feel nervous and I know that I'll come out better after going through it. For those who might struggle with the same issue, just know that others are going through the same thing too and most importantly, take the risk and put yourself out there and eventually you'll get to the point where you'll overcome that fear.
+I can gladly say that I've improved a lot since then. Being exposed to these situations multiple times made me realize that it is natural to feel nervous and I know that I'll come out better after going through it. 
+
+For those who might struggle with the same issue, just know that others are going through the same thing too and most importantly, take the risk and put yourself out there and eventually you'll get to the point where you'll overcome that fear.
 
 Special thanks to the organizers for giving me the chance to put myself out there and my colleagues and friends for supporting me.
