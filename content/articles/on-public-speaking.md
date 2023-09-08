@@ -46,7 +46,7 @@ I didn't manage to memorize the whole thing so I kept looking at the text during
 
 ### Final Note
 
-I can gladly say that I've improved a lot since then. Being exposed to these situations multiple times made me realize that it is natural to feel nervous and I know that I'll come out better after going through it. 
+I can gladly say that I've improved a lot since then. Being exposed to these situations countless times made me realize that it is natural to feel nervous and I know that I'll come out better after going through it. 
 
 For those who might struggle with the same issue, just know that others are going through the same thing too and most importantly, take the risk and put yourself out there and eventually you'll get to the point where you'll overcome that fear.
 
