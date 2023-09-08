@@ -2,6 +2,8 @@
 title: "On Public Speaking"
 date: 2023-09-08T21:37:00+08:00
 tags: [personal, public speaking]
+images:
+- "images/devops-meetup.jpg"
 ---
 
 I had the chance to give a talk at my local DevOps meetup last July and recently, I gave another talk at a Tech Talk event hosted by my current employer. Both talks are related to OPA but this blog post will be more of a personal reflection for me just to document these moments in my career.
