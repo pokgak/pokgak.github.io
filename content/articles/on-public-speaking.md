@@ -38,7 +38,7 @@ For my second talk, I've been involved in the development process from day one -
 
 ### It's a journey
 
-My journey with public speaking started a long time ago. I used to be so nervous waiting for my turn to introduce myself to the class on the first day of school. Having all the attention on me even for a brief moment when I interjected my friend group during our lepak session at mamak made my ears turn red.
+My journey with public speaking started a long time ago. I used to be so nervous waiting for my turn to introduce myself to the class on the first day of school. Having all the attention on me even for a brief moment when I barged in the conversation with my friend group during our lepak session at mamak can make my ears turn red.
 
 My first time speaking in front of a large audience was in a high school public speaking competition when I was 13. I was chosen because my English was pretty good in the class, not because I was good at public speaking, mind you. Being the inexperienced public speaker that I am, I printed my speech text on a big A4 paper and brought it to the stage, holding it full like that, not folding the paper whatsoever.
 
