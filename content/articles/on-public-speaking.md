@@ -26,7 +26,7 @@ It might feel like I'm exaggerating here but I can tell you that me before and a
 
 As the host of the event invited me to the stage, I'll bring my laptop, set it up, and connect it to the projector. Then, holding the mic, I'll take a moment to look over the audience and take a deep breath.
 
-Once I start talking, it's like a switch flipped and all that nervousness is gone.
+Once I start talking, it's like a switch flipped and all that nervousness --- gone.
 
 Just like how I'd practiced, I would go through the slides, following the flow that I've set when putting the slides together. I like my presentation to have a story. I think it is more engaging to the audience and it is also a lot easier for me to remember what to say. I probably need to work on my tempo still (I blazed through 40+ slides in 20+ minutes 😆) but at least I wasn't too nervous and blanked out mid-speaking. In the most recent talk that I gave, I even managed to slip in a joke during my introduction. Quite proud of that one. Hah!
 
