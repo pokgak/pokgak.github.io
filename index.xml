@@ -55,7 +55,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 It&amp;rsquo;s a journey
 &lt;/h3>
 &lt;p>My journey with public speaking started a long time ago. I used to be so nervous waiting for my turn to introduce myself to the class on the first day of school. Having all the attention on me even for a brief moment when I interjected my friend group during our lepak session at mamak made my ears turn red.&lt;/p>
-&lt;p>My first time speaking in front of a large audience was in a high school public speaking competition when I was 13. I was chosen because my English was pretty good in the class, not because I was good at public speaking, mind you. Being the inexperienced public speaker that I am, I printed my speech text on a big A4 paper and brought it to the stage, holding it full like that, not folding the paper whatsoever. I didn&amp;rsquo;t manage to memorize the whole thing so I kept looking at the text during my speech. After I finished, my friends told me they noticed how nervous I was from how the A4 paper in my hand was shaking so badly during the whole speech. I&amp;rsquo;ll always remember that one.&lt;/p>
+&lt;p>My first time speaking in front of a large audience was in a high school public speaking competition when I was 13. I was chosen because my English was pretty good in the class, not because I was good at public speaking, mind you. Being the inexperienced public speaker that I am, I printed my speech text on a big A4 paper and brought it to the stage, holding it full like that, not folding the paper whatsoever.&lt;/p>
+&lt;p>I didn&amp;rsquo;t manage to memorize the whole thing so I kept looking at the text during my speech. After I finished, my friends told me they noticed how nervous I was from how the A4 paper in my hand was shaking so badly during the whole speech. I&amp;rsquo;ll always remember that one.&lt;/p>
 &lt;h3 id="final-note">
 &lt;a href="#final-note" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -66,7 +67,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Final Note
 &lt;/h3>
-&lt;p>I can gladly say that I&amp;rsquo;ve improved a lot since then. Being exposed to these situations multiple times made me realize that it is natural to feel nervous and I know that I&amp;rsquo;ll come out better after going through it. For those who might struggle with the same issue, just know that others are going through the same thing too and most importantly, take the risk and put yourself out there and eventually you&amp;rsquo;ll get to the point where you&amp;rsquo;ll overcome that fear.&lt;/p>
+&lt;p>I can gladly say that I&amp;rsquo;ve improved a lot since then. Being exposed to these situations multiple times made me realize that it is natural to feel nervous and I know that I&amp;rsquo;ll come out better after going through it.&lt;/p>
+&lt;p>For those who might struggle with the same issue, just know that others are going through the same thing too and most importantly, take the risk and put yourself out there and eventually you&amp;rsquo;ll get to the point where you&amp;rsquo;ll overcome that fear.&lt;/p>
 &lt;p>Special thanks to the organizers for giving me the chance to put myself out there and my colleagues and friends for supporting me.&lt;/p></description></item><item><title>Interview Series: Explain How Kubernetes DNS works</title><link>https://pokgak.xyz/articles/explain-k8s-dns/</link><pubDate>Wed, 24 May 2023 23:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/explain-k8s-dns/</guid><description>
 &lt;p>This will be the first in my interview questions series. I&amp;rsquo;ll compile interesting questions that I got from my experience interviewing for DevOps/SRE role in Malaysia.&lt;/p>
 &lt;p>&lt;img loading="lazy"
