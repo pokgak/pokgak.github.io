@@ -6,6 +6,8 @@ images:
 - "images/devops-meetup.jpg"
 ---
 
+![Giving my talk at the local DevOps meetup](images/devops-meetup.jpg)
+
 I had the chance to give a talk at my local DevOps meetup last July and recently, I gave another talk at a Tech Talk event hosted by my current employer. Both talks are related to OPA but this blog post will be more of a personal reflection for me just to document these moments in my career.
 
 There are two common things that I noticed about myself from giving the talk and I'm gonna describe them here.
