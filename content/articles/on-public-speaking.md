@@ -32,7 +32,9 @@ Just like how I'd practiced, I would go through the slides, following the flow t
 
 ### What's the magic?
 
-I'm not sure if there's any science behind this but one factor that I think contributed to this flip in the switch is my confidence in the topic. Before giving my first talk, I've been reading, thinking, and playing with the technology for about a year on and off. I won't say that I mastered the topic but at least for the topic that I'm sharing, I feel like I have something to give to that the audience can benefit. For my second talk, I've been involved in the development process from day one --- together with my team members, of course. So, at this point, I can say that I know the topic quite well.
+I'm not sure if there's any science behind this but one factor that I think contributed to this flip in the switch is my confidence in the topic. Before giving my first talk, I've been reading, thinking, and playing with the technology for about a year on and off. I won't say that I mastered the topic but at least for the topic that I'm sharing, I feel like I have something to give to that the audience can benefit. 
+
+For my second talk, I've been involved in the development process from day one --- together with my team members, of course. So, at this point, I can say that I know the topic quite well.
 
 ### It's a journey
 
