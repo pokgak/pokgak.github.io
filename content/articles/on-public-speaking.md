@@ -20,7 +20,7 @@ On the day of the talk itself, my productivity will be out of the window. I'd be
 
 Usually at these events, there will be food served before the event starts. For the first one, they had pizza and for the second event, they served rice with chicken curry and some kuih. They look really good tbh but I definitely won't be touching those. I'm already struggling enough to keep my nerves together and the thought of having a taste of the food at the back of my throat when talking later will throw me into a full-blown panic mode. It's like my sense is heightened and I get so sensitive to my surrounding that even keeping a conversation with others made me feel overwhelmed. My best companion at this moment is a bottle of mineral water --- tasteless, and I can fiddle with the bottle cap to distract myself.
 
-It might feel like I'm exaggerating here but I can tell you that me before and after finishing the talk is so different it's like we're a different people.
+It might feel like I'm exaggerating here but I can tell you that me before and after finishing the talk is so different I feel like we're a totally different person.
 
 ### The Second Common Thing
 
