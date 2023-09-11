@@ -1,27 +1,23 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Tue, 12 Sep 2023 02:05:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Access your kubernetes service from anywhere using Tailscale</title><link>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</link><pubDate>Tue, 12 Sep 2023 02:05:00 +0800</pubDate><guid>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</guid><description>
 &lt;p>&lt;img loading="lazy"
 src="https://pokgak.xyz/images/k8s-external-dns-tailscale.png"
-alt=""
+alt="Full flow"
 width=5207
 height="1886" />&lt;/p>
-&lt;p>I&amp;rsquo;ve recently setup a local kubernetes in my home network to play around with and one of the issues that I faced is that it is hard to access the services inside the cluster from the outside or the internet.&lt;/p>
-&lt;p>Usually, in cloud environments like AWS you would setup an ingress-controller that will provision a load balancer for you and to expose a service to the internet, you&amp;rsquo;ll create an Ingress resource. Your incoming traffic from the internet will then be routed through the load balancer into your cluster and to your pods. Unfortunately, you don&amp;rsquo;t get the same thing when hosting your cluster locally outside of the cloud environment. There won&amp;rsquo;t be any load balancer created.&lt;/p>
-&lt;h3 id="so-what-choice-do-we-have">
-&lt;a href="#so-what-choice-do-we-have" class="anchor">
+&lt;p>I recently setup a local kubernetes in my home network to play with and one of the issues that I faced is that it is hard to access the services inside the cluster from my laptop. I don&amp;rsquo;t have a load-balancer setup in my setup so everytime I want to access a service from laptop, I&amp;rsquo;ll have to run &lt;code>kubectl port-forward&lt;/code>. It works but it&amp;rsquo;s annoying.&lt;/p>
+&lt;p>Usually, in cloud environments like AWS you would setup an ingress-controller that will provision a load balancer for you and use that load balancer to expose your services inside the cluster to the internet using Ingress resources. Your incoming traffic from the internet will then be routed through the load balancer into your cluster onto your pods. Unfortunately, you don&amp;rsquo;t get the same thing when hosting your cluster locally outside of the cloud environment. You have to manually configure your network to allow access from the internet.&lt;/p>
+&lt;h3 id="so-what-options-do-we-have">
+&lt;a href="#so-what-options-do-we-have" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"
 d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
 &lt;/path>
 &lt;/svg>
 &lt;/a>
-So what choice do we have?
+So what options do we have?
 &lt;/h3>
-&lt;p>There&amp;rsquo;s a few options we can choose from.&lt;/p>
-&lt;ol>
-&lt;li>Open a port on your router to route to the cluster&lt;/li>
-&lt;li>Use Service type NodePort to use the host port and access the pods using the host IP&lt;/li>
-&lt;/ol>
-&lt;p>I&amp;rsquo;m not a fan of opening my home network to the internet for anyone to scan. Home routers is infamous for being vulnerable and easily exploitable. I don&amp;rsquo;t want mine to be part of a new legion of botnets that will break a new record. The second choice is much safer from these attacks but it gives away the flexibility of load balancing across all the workers. With NodePort service, you&amp;rsquo;ll have to specify the node IP to access along with the port assigned and your traffic will always go to that node and the pods running on it. More reason on why NodePort is a bad idea on &lt;a href="https://devops.stackexchange.com/a/17084">StackOverflow&lt;/a>.&lt;/p>
+&lt;p>One option that we can have is to use a Service with type NodePort to use the host port and access the pods using the host IP, this will allow access to services inside the cluster to your local network but still no internet. To allow access from the internet, you&amp;rsquo;ll have to open a port on your router to route to the host IP from the NodePort service.&lt;/p>
+&lt;p>I&amp;rsquo;m not a fan of opening my home network to the internet. Home routers is infamous for being vulnerable and easily exploitable. I don&amp;rsquo;t want mine to be part of a new legion of botnets that will &lt;a href="https://blog.cloudflare.com/cloudflare-mitigates-record-breaking-71-million-request-per-second-ddos-attack/">break a new record for biggest DDoS attack&lt;/a>. Using the NodePort service type also is not that great. With NodePort service, you&amp;rsquo;ll have to specify the node IP to access along with the port assigned and your traffic will always go to that node and the pods running on it. More reason on why NodePort is a bad idea on &lt;a href="https://devops.stackexchange.com/a/17084">StackOverflow&lt;/a>.&lt;/p>
 &lt;p>What other option do we have? Tailscale!&lt;/p>
 &lt;h3 id="tailscale-subnet-router">
 &lt;a href="#tailscale-subnet-router" class="anchor">
@@ -33,8 +29,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Tailscale Subnet Router
 &lt;/h3>
-&lt;p>Tailscale is a mesh VPN built on top of Wireguard. I&amp;rsquo;ve been using it for a long time for accessing my personal servers at home while I&amp;rsquo;m outside. Tailscale will create a peer-to-peer network from your client to your other Tailscale devices and it is also really smart in figuring out a way to punch a hole through your home network ([see Resources section][###Resources]) to connect to the internet so you don&amp;rsquo;t have to open a port on your home router anymore. Bot legion problem solved!&lt;/p>
-&lt;p>One of the way you can use Tailscale is by configuring a Tailscale node as a subnet router. Usually, when you have 10 devices in your network, you&amp;rsquo;ll have to install Tailscale on each of those devices to connect it to your VPN network but with a subnet router only one Tailscale node in that network is enough, as long as that subnet router node have network access to all the devices in that network. You&amp;rsquo;ll have to configure your subnet router to advertise the route of the internal cluster network that the subnet router is in using CIDR range e.g. &lt;code>10.43.0.0/16&lt;/code> so that other devices outside of that network will know to look for the subnet router if they want to access the IP address from that CIDR range.&lt;/p>
+&lt;p>Tailscale is a mesh VPN built on top of Wireguard. I&amp;rsquo;ve been using it for a long time for accessing my personal servers at home while I&amp;rsquo;m outside and I love it. It is so simple to setup you don&amp;rsquo;t have to know any networking magic to use it. No need to mess around with creating your own CA (*cough*OpenVPN*cough*). Tailscale will create a peer-to-peer network from your client to your other Tailscale devices and it is also really smart in figuring out a way to punch a hole through your home network ([see Resources section][###Resources]) to connect to the internet so you don&amp;rsquo;t have to open a port on your home router anymore. Bot legion problem solved!&lt;/p>
+&lt;p>One of the way you can use Tailscale is by configuring a Tailscale node as a &lt;strong>subnet router&lt;/strong>. Usually, when you have 10 devices in your network, you&amp;rsquo;ll have to install Tailscale on each of those devices to connect it to your VPN network but with a subnet router only one Tailscale node in that network is enough, as long as that subnet router node have network access to all the devices in that network. You&amp;rsquo;ll have to configure your subnet router to advertise the route of the internal cluster network that the subnet router is in using CIDR range e.g. &lt;code>10.43.0.0/16&lt;/code> so that other devices outside of that network will know to look for the subnet router if they want to access the IP address from that CIDR range.&lt;/p>
 &lt;h4 id="eli5-subnet-router-advertisement">
 &lt;a href="#eli5-subnet-router-advertisement" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -70,7 +66,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 External-dns to the rescue
 &lt;/h3>
 &lt;p>External-dns is an application that runs inside your kubernetes cluster and it periodically queries the kubernetes API for the list of all Service and Ingress resources. From the list, it checks whether it should create a DNS record for the resources based on the resource annotation. It supports a lot of DNS providers like AWS Route53, Cloudflare, Google Cloud DNS and more. For my setup I&amp;rsquo;m using Cloudflare.&lt;/p>
-&lt;p>By default, external-dns will create DNS records for Ingress or Service with type LoadBalancer. For my setup, since I&amp;rsquo;m self-hosting the kubernetes in my home network and don&amp;rsquo;t have access to a load balancer, I have to &lt;a href="https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/external-dns.yaml#L18">add an extra configuration parameter&lt;/a> to external-dns so that it will create DNS records for ClusterIP Service type. On the Service resource itself, usually external-dns searches for the &lt;a href="https://github.com/kubernetes-sigs/external-dns/blob/master/docs/annotations/annotations.md#external-dnsalphakubernetesiohostname">&lt;code>external-dns.alpha.kubernetes.io/hostname&lt;/code> annotation &lt;/a> but since we&amp;rsquo;re using it with ClusterIP, I have to change it to &lt;a href="https://github.com/kubernetes-sigs/external-dns/blob/master/docs/annotations/annotations.md#external-dnsalphakubernetesiointernal-hostname">&lt;code>external-dns.alpha.kubernetes.io/internal-hostname&lt;/code>&lt;/a>.&lt;/p>
+&lt;p>By default, external-dns will only create DNS records for Ingress resource or Service with type LoadBalancer. For my setup, since I&amp;rsquo;m self-hosting the kubernetes inside my home network and don&amp;rsquo;t have access to a load balancer, I have to &lt;a href="https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/external-dns.yaml#L18">add an extra configuration parameter&lt;/a> to external-dns so that it will create DNS records for ClusterIP Service type. On the Service resource itself, usually external-dns searches for the &lt;a href="https://github.com/kubernetes-sigs/external-dns/blob/master/docs/annotations/annotations.md#external-dnsalphakubernetesiohostname">&lt;code>external-dns.alpha.kubernetes.io/hostname&lt;/code> annotation &lt;/a> but since we&amp;rsquo;re using it with ClusterIP, I have to change it to &lt;a href="https://github.com/kubernetes-sigs/external-dns/blob/master/docs/annotations/annotations.md#external-dnsalphakubernetesiointernal-hostname">&lt;code>external-dns.alpha.kubernetes.io/internal-hostname&lt;/code>&lt;/a>.&lt;/p>
 &lt;h3 id="tailscale--external-dns--">
 &lt;a href="#tailscale--external-dns--" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -81,10 +77,10 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Tailscale + external-dns = ❤️
 &lt;/h3>
-&lt;p>With those changes applied. All new Service resources in my kubernetes cluster that have the annotation will get one DNS record. Now, if I try to resolve a name for a service inside the cluster, it will return me a internal ClusterIP. Combined with the Tailscale subnet-router we&amp;rsquo;ve configured earlier, now you can access services inside your cluster from any of your Tailscale devices from any part of the world.&lt;/p>
 &lt;pre tabindex="0">&lt;code>➜ dig prometheus.k8s.pokgak.xyz +short
 10.43.170.163
-&lt;/code>&lt;/pre>&lt;h3 id="resources">
+&lt;/code>&lt;/pre>&lt;p>With those changes applied. All new Service resources in my kubernetes cluster that have the annotation will get one DNS record. Now, if I try to resolve a name for a service inside the cluster, it will return me a internal ClusterIP. Combined with the Tailscale subnet-router we&amp;rsquo;ve configured earlier, now you can access services inside your cluster from any of your Tailscale devices from any part of the world.&lt;/p>
+&lt;h3 id="resources">
 &lt;a href="#resources" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"
