@@ -54,7 +54,9 @@ By default, external-dns will only create DNS records for Ingress resource or Se
 
 With those changes applied. All new Service resources in my kubernetes cluster that have the annotation will get one DNS record on Cloudflare. Now, if I try to resolve a name for a service inside the cluster, it will return me an internal ClusterIP. Combined with the Tailscale subnet-router we've configured earlier, now you can access services inside your cluster from any of your Tailscale devices from any part of the world.
 
-With tailscale, you'll also have an additional layer of authentication. Only users in your Tailscale networks can access the exposed services. For others, they might be able to guess what you have running in your cluster from your DNS records but they won't be able to access it since all the IPs will be private IPs. For the next part, I'm looking into exposing some service inside my cluster to the internet **fully** without having to be in the Tailscale network. Tailscale Funnel suppose to do just that but I still haven't tested if it's working with services inside kubernetes.
+With tailscale, you'll also have an additional layer of authentication. Only users in your Tailscale networks can access the exposed services. For others, they might be able to guess what you have running in your cluster from your DNS records but they won't be able to access it since all the IPs will be private IPs. 
+
+For the next part, I'm looking into exposing some service inside my cluster to the internet **fully** without having to be in the Tailscale network. Tailscale Funnel suppose to do just that but I still haven't tested if it's working with services inside kubernetes.
 
 ### Resources
 
