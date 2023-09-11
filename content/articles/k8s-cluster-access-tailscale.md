@@ -38,9 +38,9 @@ With a subnet router, you can now reach any of the services inside the cluster u
 
 You can definitely create DNS records manually and map it to each of the ClusterIP for your services. That's what I did for testing when validating this setup actually. At scale, that won't work tho. You don't want to be the one to manually go to your DNS registrar and create the records one by one. Luckily, in kubernetes there is an application called external-dns.
 
-### External-dns to the rescue
+### external-dns to the rescue
 
-External-dns is an application that runs inside your kubernetes cluster and it periodically queries the kubernetes API for the list of all Service and Ingress resources. From the list, it checks whether it should create a DNS record for the resources based on the resource annotation. It supports a lot of DNS providers like AWS Route53, Cloudflare, Google Cloud DNS and more. For my setup I'm using Cloudflare.
+external-dns is an application that runs inside your kubernetes cluster and it periodically queries the kubernetes API for the list of all Service and Ingress resources. From the list, it checks whether it should create a DNS record for the resources based on the resource annotation. It supports a lot of DNS providers like AWS Route53, Cloudflare, Google Cloud DNS and more. For my setup I'm using Cloudflare.
 
 By default, external-dns will only create DNS records for Ingress resource or Service with type LoadBalancer. For my setup, since I'm self-hosting the kubernetes inside my home network and don't have access to a load balancer, I have to [add an extra configuration parameter](https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/external-dns.yaml#L18) to external-dns so that it will create DNS records for ClusterIP Service type. On the Service resource itself, usually external-dns searches for the [`external-dns.alpha.kubernetes.io/hostname` annotation ](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/annotations/annotations.md#external-dnsalphakubernetesiohostname) but since we're using it with ClusterIP, I have to change it to [`external-dns.alpha.kubernetes.io/internal-hostname`](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/annotations/annotations.md#external-dnsalphakubernetesiointernal-hostname).
 
