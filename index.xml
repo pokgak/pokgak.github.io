@@ -4,8 +4,8 @@ src="https://pokgak.xyz/images/k8s-external-dns-tailscale.png"
 alt="Full flow"
 width=5207
 height="1886" />&lt;/p>
-&lt;p>I recently setup a local kubernetes in my home network to play with and one of the issues that I faced is that it is hard to access the services inside the cluster from my laptop. I don&amp;rsquo;t have a load-balancer setup in my setup so everytime I want to access a service from laptop, I&amp;rsquo;ll have to run &lt;code>kubectl port-forward&lt;/code>. It works but it&amp;rsquo;s annoying.&lt;/p>
-&lt;p>Usually, in cloud environments like AWS you would setup an ingress-controller that will provision a load balancer for you and use that load balancer to expose your services inside the cluster to the internet using Ingress resources. Your incoming traffic from the internet will then be routed through the load balancer into your cluster onto your pods. Unfortunately, you don&amp;rsquo;t get the same thing when hosting your cluster locally outside of the cloud environment. You have to manually configure your network to allow access from the internet.&lt;/p>
+&lt;p>I recently setup a local kubernetes in my home network to play with and one of the issues that I faced is that it is hard to access the services inside the cluster from my laptop. I don&amp;rsquo;t have a load-balancer in my setup so everytime I want to access a service from my laptop, I&amp;rsquo;ll have to run &lt;code>kubectl port-forward&lt;/code> first before using the localhost address to access it. It works but it&amp;rsquo;s annoying.&lt;/p>
+&lt;p>Usually in cloud environments like AWS, you would setup an &lt;a href="https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/">ingress-controller&lt;/a> that will provision a load balancer for you and use that load balancer to expose your services inside the cluster to the internet using Ingress resources. Your incoming traffic from the internet will then be routed through the load balancer into your cluster onto your pods. Unfortunately, you don&amp;rsquo;t get the same thing when hosting your cluster locally outside of the cloud environment. You have to manually configure your network to allow access from the internet.&lt;/p>
 &lt;h3 id="so-what-options-do-we-have">
 &lt;a href="#so-what-options-do-we-have" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -16,7 +16,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 So what options do we have?
 &lt;/h3>
-&lt;p>One option that we can have is to use a Service with type NodePort to use the host port and access the pods using the host IP, this will allow access to services inside the cluster to your local network but still no internet. To allow access from the internet, you&amp;rsquo;ll have to open a port on your router to route to the host IP from the NodePort service.&lt;/p>
+&lt;p>One way we can do it is to use a Service with type NodePort to use the host port and access the pods using the host IP, this will allow access to services inside the cluster to your local network but still not from the internet. To allow access from the internet, you&amp;rsquo;ll have to open a port on your router to route to the host IP from the NodePort service.&lt;/p>
 &lt;p>I&amp;rsquo;m not a fan of opening my home network to the internet. Home routers is infamous for being vulnerable and easily exploitable. I don&amp;rsquo;t want mine to be part of a new legion of botnets that will &lt;a href="https://blog.cloudflare.com/cloudflare-mitigates-record-breaking-71-million-request-per-second-ddos-attack/">break a new record for biggest DDoS attack&lt;/a>. Using the NodePort service type also is not that great. With NodePort service, you&amp;rsquo;ll have to specify the node IP to access along with the port assigned and your traffic will always go to that node and the pods running on it. More reason on why NodePort is a bad idea on &lt;a href="https://devops.stackexchange.com/a/17084">StackOverflow&lt;/a>.&lt;/p>
 &lt;p>What other option do we have? Tailscale!&lt;/p>
 &lt;h3 id="tailscale-subnet-router">
@@ -54,7 +54,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 I don&amp;rsquo;t want to remember all this IP addresses
 &lt;/h3>
 &lt;p>With a subnet router, you can now reach any of the services inside the cluster using the ClusterIP of that service but IP address is not human-friendly and you don&amp;rsquo;t want to (you can&amp;rsquo;t!) memorize all the IP addresses for all the services inside the cluster. So, now we need something that will map our IP addresses to a human-friendly format. Sounds familiar? We can use DNS records.&lt;/p>
-&lt;p>You can definitely create DNS records manually and map it to each of the ClusterIP for your services. That&amp;rsquo;s what I did for testing when validating this setup actually. At scale, that won&amp;rsquo;t work tho. You don&amp;rsquo;t want to be the one to manually go to your DNS registrar and create the records one by one. Luckily, in kubernetes there is a application called external-dns.&lt;/p>
+&lt;p>You can definitely create DNS records manually and map it to each of the ClusterIP for your services. That&amp;rsquo;s what I did for testing when validating this setup actually. At scale, that won&amp;rsquo;t work tho. You don&amp;rsquo;t want to be the one to manually go to your DNS registrar and create the records one by one. Luckily, in kubernetes there is an application called external-dns.&lt;/p>
 &lt;h3 id="external-dns-to-the-rescue">
 &lt;a href="#external-dns-to-the-rescue" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -80,6 +80,7 @@ Tailscale + external-dns = ❤️
 &lt;pre tabindex="0">&lt;code>➜ dig prometheus.k8s.pokgak.xyz +short
 10.43.170.163
 &lt;/code>&lt;/pre>&lt;p>With those changes applied. All new Service resources in my kubernetes cluster that have the annotation will get one DNS record. Now, if I try to resolve a name for a service inside the cluster, it will return me a internal ClusterIP. Combined with the Tailscale subnet-router we&amp;rsquo;ve configured earlier, now you can access services inside your cluster from any of your Tailscale devices from any part of the world.&lt;/p>
+&lt;p>With tailscale, you&amp;rsquo;ll also have an additional layer of authentication. Only users in your Tailscale networks can access the exposed services. For others, they might be able to guess what you have running in your cluster from your DNS records but they won&amp;rsquo;t be able to access it since all the IPs will be private IPs. For the next part, I&amp;rsquo;m looking into exposing some service inside my cluster to the internet &lt;strong>fully&lt;/strong> without having to be in the Tailscale network. Tailscale Funnel suppose to do just that but I still haven&amp;rsquo;t tested if it&amp;rsquo;s working with services inside kubernetes.&lt;/p>
 &lt;h3 id="resources">
 &lt;a href="#resources" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
