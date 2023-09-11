@@ -41,7 +41,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 ELI5: subnet router advertisement
 &lt;/h4>
-&lt;p>You&amp;rsquo;re a postman trying to deliver a parcel. Your parcel destination is set to unit A-1-2-3 in the TRX Exchange 106 building. You&amp;rsquo;ve never been to TRX before so you don&amp;rsquo;t know which floor the office actually is but you noticed there&amp;rsquo;s a big signboard at the reception saying &amp;ldquo;Come here if you have parcel for unit A-1-0-0 to A-9-9-9&amp;rdquo;. So, you went the reception and then the nice lady at the reception gave you the direction to reach the office unit A-1-2-3 for your to deliver your parcel.&lt;/p>
+&lt;p>You&amp;rsquo;re a postman trying to deliver a parcel. Your parcel destination is set to unit A-1-2-3 in the TRX Exchange 106 building. You&amp;rsquo;ve never been to TRX before so you don&amp;rsquo;t know which floor the office actually is but you noticed there&amp;rsquo;s a big signboard at the reception saying &amp;ldquo;Come here if you have parcel for unit A-1-0-0 to A-9-9-9&amp;rdquo;. So, you went the reception and then the nice lady at the reception gave you the direction to reach the office unit A-1-2-3 for you to deliver your parcel.&lt;/p>
 &lt;p>The reception here is like our subnet router. All the traffic meant for the network have to go through the subnet router first, then they&amp;rsquo;re passed through to the actual packet destination.&lt;/p>
 &lt;h3 id="i-dont-want-to-remember-all-this-ip-addresses">
 &lt;a href="#i-dont-want-to-remember-all-this-ip-addresses" class="anchor">
