@@ -1,5 +1,5 @@
 ---
-title: "Access your kubernetes service from anywhere using Tailscale"
+title: "Access internal kubernetes services from anywhere using Tailscale"
 date: 2023-09-12T02:05:00+08:00
 tags: [kubernetes, tailscale, external-dns, networking]
 images:
