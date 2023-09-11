@@ -2,8 +2,8 @@
 &lt;p>&lt;img loading="lazy"
 src="https://pokgak.xyz/images/k8s-external-dns-tailscale.png"
 alt=""
-width=3471
-height="1257" />&lt;/p>
+width=5207
+height="1886" />&lt;/p>
 &lt;p>I&amp;rsquo;ve recently setup a local kubernetes in my home network to play around with and one of the issues that I faced is that it is hard to access the services inside the cluster from the outside or the internet.&lt;/p>
 &lt;p>Usually, in cloud environments like AWS you would setup an ingress-controller that will provision a load balancer for you and to expose a service to the internet, you&amp;rsquo;ll create an Ingress resource. Your incoming traffic from the internet will then be routed through the load balancer into your cluster and to your pods. Unfortunately, you don&amp;rsquo;t get the same thing when hosting your cluster locally outside of the cloud environment. There won&amp;rsquo;t be any load balancer created.&lt;/p>
 &lt;h3 id="so-what-choice-do-we-have">
