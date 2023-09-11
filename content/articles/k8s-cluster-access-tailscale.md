@@ -64,3 +64,5 @@ For the next part, I'm looking into exposing some service inside my cluster to t
 - [How NAT traversal works](https://tailscale.com/blog/how-nat-traversal-works/): recommended read even if you're not a networking geek. You'll learn a thing or two about networking for sure.
 - [Full cofiguration for external-dns helm chart](https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/external-dns.yaml)
 - [external-dns annotation for the services](https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/kube-prometheus-stack.yaml#L20)
+- [Tailscale subnet router inside kubernetes](https://tailscale.com/kb/1185/kubernetes/#subnet-router)
+- [k8s manifest for my subnet router](https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/tailscale-subnet-router.yaml)
