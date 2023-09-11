@@ -97,6 +97,8 @@ Resources
 &lt;li>&lt;a href="https://tailscale.com/blog/how-nat-traversal-works/">How NAT traversal works&lt;/a>: recommended read even if you&amp;rsquo;re not a networking geek. You&amp;rsquo;ll learn a thing or two about networking for sure.&lt;/li>
 &lt;li>&lt;a href="https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/external-dns.yaml">Full cofiguration for external-dns helm chart&lt;/a>&lt;/li>
 &lt;li>&lt;a href="https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/kube-prometheus-stack.yaml#L20">external-dns annotation for the services&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://tailscale.com/kb/1185/kubernetes/#subnet-router">Tailscale subnet router inside kubernetes&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/pokgak/gitops/blob/0a880ec3e08481a7c50e67995fd4092dfb3c92f4/system/tailscale-subnet-router.yaml">k8s manifest for my subnet router&lt;/a>&lt;/li>
 &lt;/ul></description></item><item><title>On Public Speaking</title><link>https://pokgak.xyz/articles/on-public-speaking/</link><pubDate>Fri, 08 Sep 2023 21:37:00 +0800</pubDate><guid>https://pokgak.xyz/articles/on-public-speaking/</guid><description>
 &lt;p>&lt;img loading="lazy"
 src="https://pokgak.xyz/images/devops-meetup.jpg"
