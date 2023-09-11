@@ -28,7 +28,7 @@ One of the way you can use Tailscale is by configuring a Tailscale node as a **s
 
 #### ELI5: subnet router advertisement
 
-You're a postman trying to deliver a parcel. Your parcel destination is set to unit A-1-2-3 in the TRX Exchange 106 building. You've never been to TRX before so you don't know which floor the office actually is but you noticed there's a big signboard at the reception saying "Come here if you have parcel for unit A-1-0-0 to A-9-9-9". So, you went the reception and then the nice lady at the reception gave you the direction to reach the office unit A-1-2-3 for your to deliver your parcel.
+You're a postman trying to deliver a parcel. Your parcel destination is set to unit A-1-2-3 in the TRX Exchange 106 building. You've never been to TRX before so you don't know which floor the office actually is but you noticed there's a big signboard at the reception saying "Come here if you have parcel for unit A-1-0-0 to A-9-9-9". So, you went the reception and then the nice lady at the reception gave you the direction to reach the office unit A-1-2-3 for you to deliver your parcel.
 
 The reception here is like our subnet router. All the traffic meant for the network have to go through the subnet router first, then they're passed through to the actual packet destination.
 
