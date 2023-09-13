@@ -1,6 +1,3 @@
-[submodule "themes/minimal"]
-	path = themes/minimal
-	url = https://github.com/calintat/minimal
 [submodule "themes/hugo-tania"]
 	path = themes/hugo-tania
-	url = https://github.com/WingLim/hugo-tania
+	url = https://github.com/pokgak/hugo-tania
