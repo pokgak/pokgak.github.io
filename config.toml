@@ -1,3 +1,5 @@
+# full config options: https://github.com/WingLim/hugo-tania/wiki/Configuration
+
 baseurl = "https://pokgak.xyz"
 languageCode = "en-us"
 title = "Aiman Ismail"
