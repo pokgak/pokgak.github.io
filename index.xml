@@ -1,4 +1,208 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Tue, 12 Sep 2023 02:05:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Access internal kubernetes services from anywhere using Tailscale</title><link>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</link><pubDate>Tue, 12 Sep 2023 02:05:00 +0800</pubDate><guid>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 08 Dec 2023 17:21:59 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Terraform modules: be opinionated</title><link>https://pokgak.xyz/articles/terraform-modules-opinionated/</link><pubDate>Fri, 08 Dec 2023 17:21:59 +0800</pubDate><guid>https://pokgak.xyz/articles/terraform-modules-opinionated/</guid><description>
+&lt;blockquote>
+&lt;p>Modules are containers for multiple resources that are used together.&lt;/p>
+&lt;/blockquote>
+&lt;p>Terraform modules is a way to bundle a bunch of Terraform resources into one group. Although not explicitly mentioned in the definition, it is also a way to provide an &lt;strong>abstraction&lt;/strong> to the resources inside the module and only expose inputs and outputs that are relevant to the users of the module.&lt;/p>
+&lt;h2 id="terraform-module-as-an-abstraction-layer">
+&lt;a href="#terraform-module-as-an-abstraction-layer" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Terraform Module as an Abstraction Layer
+&lt;/h2>
+&lt;p>A Terraform resource usually tends to be generic in that it allows you to configure it multiple ways through the input variables that it can accept. For example, the &lt;code>aws_mskconnect_connector&lt;/code> resource has &lt;a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/mskconnect_connector#worker_log_delivery-configuration-block">3 options&lt;/a> for log delivery: CloudWatch Logs, Kinesis Data Firehose, or S3. In most cases, your module &lt;strong>shouldn&amp;rsquo;t&lt;/strong> expose all 3 options to your users. Your organization probably already has some standard place where you send you logs to e.g. S3 for example where it gets forwarded to another logs search service for later use.&lt;/p>
+&lt;p>Therefore, your module should only expose the S3 option and leave out CloudWatch Logs and Kinesis Data Firehose from your module. By doing this you eliminate the choice from the user and they don&amp;rsquo;t have to think which one to use. Your Terraform code can be a lot simpler too.&lt;/p>
+&lt;h2 id="module-abstraction-in-action">
+&lt;a href="#module-abstraction-in-action" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Module Abstraction in Action
+&lt;/h2>
+&lt;p>Here&amp;rsquo;s an example module code when including all 3 options:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;span class="lnt">44
+&lt;/span>&lt;span class="lnt">45
+&lt;/span>&lt;span class="lnt">46
+&lt;/span>&lt;span class="lnt">47
+&lt;/span>&lt;span class="lnt">48
+&lt;/span>&lt;span class="lnt">49
+&lt;/span>&lt;span class="lnt">50
+&lt;/span>&lt;span class="lnt">51
+&lt;/span>&lt;span class="lnt">52
+&lt;/span>&lt;span class="lnt">53
+&lt;/span>&lt;span class="lnt">54
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-terraform" data-lang="terraform">&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nx">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nx">optional&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;mskconnect-logs&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_cloudwatch_logs&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">log_group&lt;/span> = &lt;span class="nx">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_firehose&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">delivery_stream&lt;/span> = &lt;span class="nx">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">resource&lt;/span> &lt;span class="s2">&amp;#34;aws_mskconnect_connector&amp;#34;&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">name&lt;/span> = &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">worker_log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">bucket_arn&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">prefix&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;cloudwatch_logs&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_cloudwatch_logs&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">log_group&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_cloudwatch_logs&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_group&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;firehose&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_firehose&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">delivery_stream&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_firehose&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">delivery_stream&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>And here&amp;rsquo;s an example when we only offer S3 option:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-terraform" data-lang="terraform">&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nx">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nx">optional&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;mskconnect-logs&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">resource&lt;/span> &lt;span class="s2">&amp;#34;aws_mskconnect_connector&amp;#34;&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">name&lt;/span> = &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">worker_log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">s3&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">bucket_arn&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">prefix&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>See how simple and shorter the code become? No need to use those &lt;code>dynamic&lt;/code> blocks just to conditionally add or remove the log delivery option block anymore.&lt;/p>
+&lt;h2 id="but-i-might-need-to-use-that-other-option-in-the-future">
+&lt;a href="#but-i-might-need-to-use-that-other-option-in-the-future" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+But I might need to use that other option in the future&amp;hellip;
+&lt;/h2>
+&lt;p>&lt;a href="https://martinfowler.com/bliki/Yagni.html">YAGNI.&lt;/a>&lt;/p></description></item><item><title>Access internal kubernetes services from anywhere using Tailscale</title><link>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</link><pubDate>Tue, 12 Sep 2023 02:05:00 +0800</pubDate><guid>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</guid><description>
 &lt;p>&lt;img loading="lazy"
 src="https://pokgak.xyz/images/k8s-external-dns-tailscale.png"
 alt="Full flow"
@@ -1146,211 +1350,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Conclusion
 &lt;/h2>
-&lt;p>Once you managed to create spans, set attributes, and then export it to a backend. You&amp;rsquo;re pretty much done with the basics of instrumenting your application. Go ahead and add more traces to your application!&lt;/p></description></item><item><title>Terraform modules: be opinionated</title><link>https://pokgak.xyz/articles/terraform-modules-opinionated/</link><pubDate>Sat, 13 Aug 2022 17:43:00 +0800</pubDate><guid>https://pokgak.xyz/articles/terraform-modules-opinionated/</guid><description>
-&lt;blockquote>
-&lt;p>Modules are containers for multiple resources that are used together.&lt;/p>
-&lt;/blockquote>
-&lt;p>Terraform modules is a way to bundle a bunch of Terraform resources into one group. Although not explicitly mentioned in the definition, it is also a way to provide an &lt;strong>abstraction&lt;/strong> to the resources inside the module and only expose inputs and outputs that are relevant to the users of the module.&lt;/p>
-&lt;h2 id="terraform-module-as-an-abstraction-layer">
-&lt;a href="#terraform-module-as-an-abstraction-layer" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Terraform Module as an Abstraction Layer
-&lt;/h2>
-&lt;p>A Terraform resource usually tends to be generic in that it allows you to configure it multiple ways through the input variables that it can accept. For example, the &lt;code>aws_mskconnect_connector&lt;/code> resource has &lt;a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/mskconnect_connector#worker_log_delivery-configuration-block">3 options&lt;/a> for log delivery: CloudWatch Logs, Kinesis Data Firehose, or S3. In most cases, your module &lt;strong>shouldn&amp;rsquo;t&lt;/strong> expose all 3 options to your users. Your organization probably already has some standard place where you send you logs to e.g. S3 for example where it gets forwarded to another logs search service for later use.&lt;/p>
-&lt;p>Therefore, your module should only expose the S3 option and leave out CloudWatch Logs and Kinesis Data Firehose from your module. By doing this you eliminate the choice from the user and they don&amp;rsquo;t have to think which one to use. Your Terraform code can be a lot simpler too.&lt;/p>
-&lt;h2 id="module-abstraction-in-action">
-&lt;a href="#module-abstraction-in-action" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-Module Abstraction in Action
-&lt;/h2>
-&lt;p>Here&amp;rsquo;s an example module code when including all 3 options:&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;span class="lnt">29
-&lt;/span>&lt;span class="lnt">30
-&lt;/span>&lt;span class="lnt">31
-&lt;/span>&lt;span class="lnt">32
-&lt;/span>&lt;span class="lnt">33
-&lt;/span>&lt;span class="lnt">34
-&lt;/span>&lt;span class="lnt">35
-&lt;/span>&lt;span class="lnt">36
-&lt;/span>&lt;span class="lnt">37
-&lt;/span>&lt;span class="lnt">38
-&lt;/span>&lt;span class="lnt">39
-&lt;/span>&lt;span class="lnt">40
-&lt;/span>&lt;span class="lnt">41
-&lt;/span>&lt;span class="lnt">42
-&lt;/span>&lt;span class="lnt">43
-&lt;/span>&lt;span class="lnt">44
-&lt;/span>&lt;span class="lnt">45
-&lt;/span>&lt;span class="lnt">46
-&lt;/span>&lt;span class="lnt">47
-&lt;/span>&lt;span class="lnt">48
-&lt;/span>&lt;span class="lnt">49
-&lt;/span>&lt;span class="lnt">50
-&lt;/span>&lt;span class="lnt">51
-&lt;/span>&lt;span class="lnt">52
-&lt;/span>&lt;span class="lnt">53
-&lt;/span>&lt;span class="lnt">54
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-terraform" data-lang="terraform">&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nx">string&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nx">optional&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;mskconnect-logs&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_cloudwatch_logs&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">log_group&lt;/span> = &lt;span class="nx">string&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_firehose&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">delivery_stream&lt;/span> = &lt;span class="nx">string&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">resource&lt;/span> &lt;span class="s2">&amp;#34;aws_mskconnect_connector&amp;#34;&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">name&lt;/span> = &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">worker_log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">bucket_arn&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">prefix&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;cloudwatch_logs&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_cloudwatch_logs&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">log_group&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_cloudwatch_logs&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_group&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;firehose&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_firehose&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">delivery_stream&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_firehose&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">delivery_stream&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>And here&amp;rsquo;s an example when we only offer S3 option:&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-terraform" data-lang="terraform">&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nx">string&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nx">optional&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;mskconnect-logs&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">resource&lt;/span> &lt;span class="s2">&amp;#34;aws_mskconnect_connector&amp;#34;&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">name&lt;/span> = &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">worker_log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">s3&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">bucket_arn&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">prefix&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>See how simple and shorter the code become? No need to use those &lt;code>dynamic&lt;/code> blocks just to conditionally add or remove the log delivery option block anymore.&lt;/p>
-&lt;h2 id="but-i-might-need-to-use-that-other-option-in-the-future">
-&lt;a href="#but-i-might-need-to-use-that-other-option-in-the-future" class="anchor">
-&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
-&lt;path fill-rule="evenodd"
-d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
-&lt;/path>
-&lt;/svg>
-&lt;/a>
-But I might need to use that other option in the future&amp;hellip;
-&lt;/h2>
-&lt;p>&lt;a href="https://martinfowler.com/bliki/Yagni.html">YAGNI.&lt;/a>&lt;/p></description></item><item><title>Generate fail HCL menggunakan library hclwrite</title><link>https://pokgak.xyz/articles/hclwrite-basics/</link><pubDate>Sun, 19 Sep 2021 12:25:34 +0800</pubDate><guid>https://pokgak.xyz/articles/hclwrite-basics/</guid><description>
+&lt;p>Once you managed to create spans, set attributes, and then export it to a backend. You&amp;rsquo;re pretty much done with the basics of instrumenting your application. Go ahead and add more traces to your application!&lt;/p></description></item><item><title>Generate fail HCL menggunakan library hclwrite</title><link>https://pokgak.xyz/articles/hclwrite-basics/</link><pubDate>Sun, 19 Sep 2021 12:25:34 +0800</pubDate><guid>https://pokgak.xyz/articles/hclwrite-basics/</guid><description>
 &lt;p>HCL adalah bahasa yang digunakan dalam produk-produk daripada Hashicorp seperti Terraform dan Packer. Kebiasaannya, fail HCL ini ditulis secara manual tetapi jika anda ingin menulis atau mengubah fail-fail tersebut secara programmatik menggunakan code, maka anda boleh menggunakan &lt;a href="https://pkg.go.dev/github.com/hashicorp/hcl/v2@v2.10.1/hclwrite#Tokens">&lt;code>hclwrite&lt;/code>&lt;/a>, sebuah library yang ditulis dalam Go.&lt;/p>
 &lt;p>Blog post ini dibahagikan kepada dua bahagian. Bahagian pertama menunjukkan cara untuk menghasilkan block baru from scratch dan simpan ke fail. Ini adalah asas untuk bahagian kedua di mana kita akan mengubah fail HCL sedia ada dan memastikan format fail tersebut terjaga dan tidak melakukan pengubahan secara semberono.&lt;/p>
 &lt;p>Saya tidak akan memberi penerangan penuh syntax fail HCL kerana ia boleh didapati di &lt;a href="https://www.terraform.io/docs/language/syntax/configuration.html">halaman ini&lt;/a>.&lt;/p>
