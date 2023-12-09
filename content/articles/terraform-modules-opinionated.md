@@ -1,6 +1,6 @@
 ---
 title: "Terraform modules: be opinionated"
-date: 2022-08-13T17:43:00+08:00
+date: 2023-12-08T17:21:59+08:00
 tags:
   - opinions
   - terraform
