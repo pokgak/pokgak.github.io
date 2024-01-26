@@ -46,7 +46,13 @@ Now we can see that the flow logs records only contains the network interface ID
 
 Steampipe is a tool that allows you to query APIs from SQL. It supports a lot of different APIs from AWS, GCP, Azure, Github, etc. You can also write your own plugins to support other APIs. I'll be using it to query my AWS account for the EC2 instance ID and name based on the ENI ID from the VPC flow logs.
 
-Under the hood, Steampipe is using PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows connecting to it from any third-party tools that can connect to a Postgresql instance. Here's where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.
+## Life before Steampipe
+
+Usually to do the things I'm about to show below, I'll pull the data from AWS using the aws-cli and then massage it using `jq/yq/awk/sed`, if I'm desperate maybe Python. Then I'll use some other tools to visualize it or export to CSV. With Steampipe, pulling the data from AWS is so simple and using SQL to correlate the data with other information source is a breeze.
+
+## Steampipe is just Postgresql
+
+Under the hood, Steampipe is running PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows [connecting to it from any third-party tools](https://steampipe.io/docs/query/third-party) that can connect to a Postgresql instance. Here's where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.
 
 ## Setting up Steampipe and DuckDB connection
 
