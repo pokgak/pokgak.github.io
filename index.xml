@@ -39,7 +39,28 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 Steampipe: directly query your APIs from SQL
 &lt;/h2>
 &lt;p>Steampipe is a tool that allows you to query APIs from SQL. It supports a lot of different APIs from AWS, GCP, Azure, Github, etc. You can also write your own plugins to support other APIs. I&amp;rsquo;ll be using it to query my AWS account for the EC2 instance ID and name based on the ENI ID from the VPC flow logs.&lt;/p>
-&lt;p>Under the hood, Steampipe is using PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows connecting to it from any third-party tools that can connect to a Postgresql instance. Here&amp;rsquo;s where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.&lt;/p>
+&lt;h2 id="life-before-steampipe">
+&lt;a href="#life-before-steampipe" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Life before Steampipe
+&lt;/h2>
+&lt;p>Usually to do the things I&amp;rsquo;m about to show below, I&amp;rsquo;ll pull the data from AWS using the aws-cli and then massage it using &lt;code>jq/yq/awk/sed&lt;/code>, if I&amp;rsquo;m desperate maybe Python. Then I&amp;rsquo;ll use some other tools to visualize it or export to CSV. With Steampipe, pulling the data from AWS is so simple and using SQL to correlate the data with other information source is a breeze.&lt;/p>
+&lt;h2 id="steampipe-is-just-postgresql">
+&lt;a href="#steampipe-is-just-postgresql" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Steampipe is just Postgresql
+&lt;/h2>
+&lt;p>Under the hood, Steampipe is running PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows &lt;a href="https://steampipe.io/docs/query/third-party">connecting to it from any third-party tools&lt;/a> that can connect to a Postgresql instance. Here&amp;rsquo;s where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.&lt;/p>
 &lt;h2 id="setting-up-steampipe-and-duckdb-connection">
 &lt;a href="#setting-up-steampipe-and-duckdb-connection" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
