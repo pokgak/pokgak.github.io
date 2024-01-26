@@ -60,7 +60,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Steampipe is just Postgresql
 &lt;/h2>
-&lt;p>Under the hood, Steampipe is running PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows &lt;a href="https://steampipe.io/docs/query/third-party">connecting to it from any third-party tools&lt;/a> that can connect to a Postgresql instance. Here&amp;rsquo;s where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.&lt;/p>
+&lt;p>Under the hood, Steampipe is running PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows &lt;a href="https://steampipe.io/docs/query/third-party">connecting to it from any third-party tools&lt;/a> that can connect to a Postgresql instance. Here&amp;rsquo;s where it gets interesting, DuckDB has the capability to &lt;a href="https://duckdb.org/docs/extensions/postgres.html">connect to any PostgreSQL database&lt;/a> through the Postgresql extension and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.&lt;/p>
 &lt;h2 id="setting-up-steampipe-and-duckdb-connection">
 &lt;a href="#setting-up-steampipe-and-duckdb-connection" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
