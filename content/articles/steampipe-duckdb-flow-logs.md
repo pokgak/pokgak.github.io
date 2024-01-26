@@ -4,8 +4,7 @@ date: 2024-01-26T20:00:00+08:00
 tags: [duckdb, steampipe, aws, cloud, tools, data, sql]
 ---
 
-As a so called Tech Janitor, I've been tasked to clean up one of our AWS accounts at work and that account have a bunch of EC2 instances that no one knows what they all do. So, I've decided to use the VPC Flow Logs to first identify which EC2 instances are still being used and which are not.
-
+As a so called [Tech Janitor](https://x.com/tevanraj/status/1747920076203057273?s=20), I've been tasked to clean up one of our AWS accounts at work and that account have a bunch of EC2 instances that no one knows what they all do. So, I've decided to use one of AWS features, VPC Flow Logs, to first identify which EC2 instances are still being used and which are not.
 
 ## Setting up the VPC Flow Logs and query using DuckDB
 
@@ -33,7 +32,9 @@ We also need to load our AWS credentials into DuckDB. Luckily, DuckDB has a buil
 
 This will look for your AWS credentials based on the standard AWS credentials file location. If you have multiple profiles in your credentials file, you can specify which profile to use by passing the profile name as an argument to the `load_aws_credentials` function.
 
-Now it's time to load our VPC flow logs from S3 into a table in DuckDB. You can replace the `year/month/day/hour` with the actual date and hour of the flow logs that you want to load or use `*` for any or all of them to load all the flow logs. This might take a while since DuckDB will have to download the Parquet files from S3 and load them into memory. It took several minutes to finish loading in my case.
+Now it's time to load our VPC flow logs from S3 into a table in DuckDB. You can replace the `year/month/day/hour` with the actual date and hour of the flow logs that you want to load or use `*` for any or all of them to load all the flow logs. I'll be loading all the flow log records into a table `flow_logs` in DuckDB.
+
+This might take a while since DuckDB will have to download the Parquet files from S3 and load them into memory. It took several minutes to finish loading in my case.
 
 ```
 > CREATE TABLE flow_logs AS SELECT * from read_parquet('s3://vpc-flow-logs-bucket/AWSLogs/<aws-account-id>/vpcflowlogs/<region>/<year>/<month>/<day>/<hour>/*.parquet')
@@ -45,7 +46,7 @@ Now we can see that the flow logs records only contains the network interface ID
 
 Steampipe is a tool that allows you to query APIs from SQL. It supports a lot of different APIs from AWS, GCP, Azure, Github, etc. You can also write your own plugins to support other APIs. I'll be using it to query my AWS account for the EC2 instance ID and name based on the ENI ID from the VPC flow logs.
 
-Under the hood, Steampipe is using PostgreSQL and it even allows you to run it as a service and allows connecting to it from any third-party tools that can connect to a Postgresql instance. Here's where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and query it using SQL.
+Under the hood, Steampipe is using PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows connecting to it from any third-party tools that can connect to a Postgresql instance. Here's where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.
 
 ## Setting up Steampipe and DuckDB connection
 
@@ -97,7 +98,9 @@ group by i.instance_name, fl.dstport
 order by traffic desc, dstport asc
 ```
 
+From this information I'll be able to guess which service is running on those instances and take the next step towards migrating or depecrating the instances.
+
 ## Conclusion
 
-It is kinda mindblowing that I can do all this from within SQL. Both Steampipe and DuckDB are great products and the flexibility of those tools allows me to
-pick and choose the best tool for the job. I first came across Steampipe in one of the podcasts that I listen to but haven't really tried used it much. Now, after having the opportunity to use it to solve one of my problems, I'll definitely pay more attention to it to make my tech janitor life easier ;)
+It is kinda mindblowing that I can do all this using SQL. Both Steampipe and DuckDB are great products and the flexibility of those tools allows me to
+pick and choose the best tool for the job. I first came across Steampipe in one of the podcasts that I listen to but haven't really used it much. Now, after having the opportunity to use it to solve one of my problems, I'll definitely pay more attention to it to make my tech janitor life easier in the future ;)
