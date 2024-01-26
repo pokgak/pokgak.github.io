@@ -52,7 +52,7 @@ Usually to do the things I'm about to show below, I'll pull the data from AWS us
 
 ## Steampipe is just Postgresql
 
-Under the hood, Steampipe is running PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows [connecting to it from any third-party tools](https://steampipe.io/docs/query/third-party) that can connect to a Postgresql instance. Here's where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.
+Under the hood, Steampipe is running PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows [connecting to it from any third-party tools](https://steampipe.io/docs/query/third-party) that can connect to a Postgresql instance. Here's where it gets interesting, DuckDB has the capability to [connect to any PostgreSQL database](https://duckdb.org/docs/extensions/postgres.html) through the Postgresql extension and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.
 
 ## Setting up Steampipe and DuckDB connection
 
