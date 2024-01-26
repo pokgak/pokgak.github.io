@@ -8,7 +8,7 @@ As a so called [Tech Janitor](https://x.com/tevanraj/status/1747920076203057273?
 
 ## Setting up the VPC Flow Logs and query using DuckDB
 
-For our purpose, I've setup VPC flow logs to send all the traffic data to a S3 bucket that we'll refer to as `vpc-flow-logs-bucket` in this post. The flow logs are stored in a Parquet format for querying later using DuckDB.
+For our purpose, I've setup VPC flow logs to send all the traffic data to a S3 bucket that we'll refer to as `vpc-flow-logs-bucket` in this post. The flow logs are stored in a Parquet format for querying later using [DuckDB](https://duckdb.org).
 
 Once the flow logs file are sent to S3, I'll be able to query them using DuckDB. To do that we will need to install the `aws` and `httpfs` extensions.
 
@@ -44,7 +44,7 @@ Now we can see that the flow logs records only contains the network interface ID
 
 ## Steampipe: directly query your APIs from SQL
 
-Steampipe is a tool that allows you to query APIs from SQL. It supports a lot of different APIs from AWS, GCP, Azure, Github, etc. You can also write your own plugins to support other APIs. I'll be using it to query my AWS account for the EC2 instance ID and name based on the ENI ID from the VPC flow logs.
+[Steampipe](https://steampipe.io) is a tool that allows you to query APIs from SQL. It supports a lot of different APIs from AWS, GCP, Azure, Github, etc. You can also write your own plugins to support other APIs. I'll be using it to query my AWS account for the EC2 instance ID and name based on the ENI ID from the VPC flow logs.
 
 ## Life before Steampipe
 
