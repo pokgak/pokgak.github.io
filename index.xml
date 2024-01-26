@@ -1,5 +1,5 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 26 Jan 2024 20:00:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Using Steampipe + DuckDB for VPC Flow Logs Analysis</title><link>https://pokgak.xyz/articles/steampipe-duckdb-flow-logs/</link><pubDate>Fri, 26 Jan 2024 20:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/steampipe-duckdb-flow-logs/</guid><description>
-&lt;p>As a so called Tech Janitor, I&amp;rsquo;ve been tasked to clean up one of our AWS accounts at work and that account have a bunch of EC2 instances that no one knows what they all do. So, I&amp;rsquo;ve decided to use the VPC Flow Logs to first identify which EC2 instances are still being used and which are not.&lt;/p>
+&lt;p>As a so called &lt;a href="https://x.com/tevanraj/status/1747920076203057273?s=20">Tech Janitor&lt;/a>, I&amp;rsquo;ve been tasked to clean up one of our AWS accounts at work and that account have a bunch of EC2 instances that no one knows what they all do. So, I&amp;rsquo;ve decided to use one of AWS features, VPC Flow Logs, to first identify which EC2 instances are still being used and which are not.&lt;/p>
 &lt;h2 id="setting-up-the-vpc-flow-logs-and-query-using-duckdb">
 &lt;a href="#setting-up-the-vpc-flow-logs-and-query-using-duckdb" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -24,7 +24,8 @@ Setting up the VPC Flow Logs and query using DuckDB
 │ &amp;lt;redacted&amp;gt; │ &amp;lt;redacted&amp;gt; │ │ eu-west-1 │
 └──────────────────────┴──────────────────────────┴──────────────────────┴───────────────┘
 &lt;/code>&lt;/pre>&lt;p>This will look for your AWS credentials based on the standard AWS credentials file location. If you have multiple profiles in your credentials file, you can specify which profile to use by passing the profile name as an argument to the &lt;code>load_aws_credentials&lt;/code> function.&lt;/p>
-&lt;p>Now it&amp;rsquo;s time to load our VPC flow logs from S3 into a table in DuckDB. You can replace the &lt;code>year/month/day/hour&lt;/code> with the actual date and hour of the flow logs that you want to load or use &lt;code>*&lt;/code> for any or all of them to load all the flow logs. This might take a while since DuckDB will have to download the Parquet files from S3 and load them into memory. It took several minutes to finish loading in my case.&lt;/p>
+&lt;p>Now it&amp;rsquo;s time to load our VPC flow logs from S3 into a table in DuckDB. You can replace the &lt;code>year/month/day/hour&lt;/code> with the actual date and hour of the flow logs that you want to load or use &lt;code>*&lt;/code> for any or all of them to load all the flow logs. I&amp;rsquo;ll be loading all the flow log records into a table &lt;code>flow_logs&lt;/code> in DuckDB.&lt;/p>
+&lt;p>This might take a while since DuckDB will have to download the Parquet files from S3 and load them into memory. It took several minutes to finish loading in my case.&lt;/p>
 &lt;pre tabindex="0">&lt;code>&amp;gt; CREATE TABLE flow_logs AS SELECT * from read_parquet(&amp;#39;s3://vpc-flow-logs-bucket/AWSLogs/&amp;lt;aws-account-id&amp;gt;/vpcflowlogs/&amp;lt;region&amp;gt;/&amp;lt;year&amp;gt;/&amp;lt;month&amp;gt;/&amp;lt;day&amp;gt;/&amp;lt;hour&amp;gt;/*.parquet&amp;#39;)
 &lt;/code>&lt;/pre>&lt;p>Now we can see that the flow logs records only contains the network interface ID (ENI) of the EC2 instance but not the EC2 instance ID or name itself. That won&amp;rsquo;t be enough for my use case since I want to identify which traffic is flowing to which EC2 instance. Therefore, we need to correlate the ENI with the EC2 instance ID and here&amp;rsquo;s where Steampipe comes in.&lt;/p>
 &lt;h2 id="steampipe-directly-query-your-apis-from-sql">
@@ -38,7 +39,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 Steampipe: directly query your APIs from SQL
 &lt;/h2>
 &lt;p>Steampipe is a tool that allows you to query APIs from SQL. It supports a lot of different APIs from AWS, GCP, Azure, Github, etc. You can also write your own plugins to support other APIs. I&amp;rsquo;ll be using it to query my AWS account for the EC2 instance ID and name based on the ENI ID from the VPC flow logs.&lt;/p>
-&lt;p>Under the hood, Steampipe is using PostgreSQL and it even allows you to run it as a service and allows connecting to it from any third-party tools that can connect to a Postgresql instance. Here&amp;rsquo;s where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and query it using SQL.&lt;/p>
+&lt;p>Under the hood, Steampipe is using PostgreSQL and it even allows you to run it as a standalone instance running in the background and allows connecting to it from any third-party tools that can connect to a Postgresql instance. Here&amp;rsquo;s where it gets interesting, DuckDB has the capability to connect to any PostgreSQL database and query it as if all the data inside that database is coming from the DuckDB. This means that we can use Steampipe as a data source for DuckDB and access all of the AWS resources data available in Steampipe.&lt;/p>
 &lt;h2 id="setting-up-steampipe-and-duckdb-connection">
 &lt;a href="#setting-up-steampipe-and-duckdb-connection" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -84,7 +85,8 @@ where
 fl.dstaddr = i.private_ip_address
 group by i.instance_name, fl.dstport
 order by traffic desc, dstport asc
-&lt;/code>&lt;/pre>&lt;h2 id="conclusion">
+&lt;/code>&lt;/pre>&lt;p>From this information I&amp;rsquo;ll be able to guess which service is running on those instances and take the next step towards migrating or depecrating the instances.&lt;/p>
+&lt;h2 id="conclusion">
 &lt;a href="#conclusion" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
 &lt;path fill-rule="evenodd"
@@ -94,8 +96,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Conclusion
 &lt;/h2>
-&lt;p>It is kinda mindblowing that I can do all this from within SQL. Both Steampipe and DuckDB are great products and the flexibility of those tools allows me to
-pick and choose the best tool for the job. I first came across Steampipe in one of the podcasts that I listen to but haven&amp;rsquo;t really tried used it much. Now, after having the opportunity to use it to solve one of my problems, I&amp;rsquo;ll definitely pay more attention to it to make my tech janitor life easier ;)&lt;/p></description></item><item><title>Terraform modules: be opinionated</title><link>https://pokgak.xyz/articles/terraform-modules-opinionated/</link><pubDate>Fri, 08 Dec 2023 17:21:59 +0800</pubDate><guid>https://pokgak.xyz/articles/terraform-modules-opinionated/</guid><description>
+&lt;p>It is kinda mindblowing that I can do all this using SQL. Both Steampipe and DuckDB are great products and the flexibility of those tools allows me to
+pick and choose the best tool for the job. I first came across Steampipe in one of the podcasts that I listen to but haven&amp;rsquo;t really used it much. Now, after having the opportunity to use it to solve one of my problems, I&amp;rsquo;ll definitely pay more attention to it to make my tech janitor life easier in the future ;)&lt;/p></description></item><item><title>Terraform modules: be opinionated</title><link>https://pokgak.xyz/articles/terraform-modules-opinionated/</link><pubDate>Fri, 08 Dec 2023 17:21:59 +0800</pubDate><guid>https://pokgak.xyz/articles/terraform-modules-opinionated/</guid><description>
 &lt;blockquote>
 &lt;p>Modules are containers for multiple resources that are used together.&lt;/p>
 &lt;/blockquote>
