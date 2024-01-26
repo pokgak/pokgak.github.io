@@ -10,7 +10,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Setting up the VPC Flow Logs and query using DuckDB
 &lt;/h2>
-&lt;p>For our purpose, I&amp;rsquo;ve setup VPC flow logs to send all the traffic data to a S3 bucket that we&amp;rsquo;ll refer to as &lt;code>vpc-flow-logs-bucket&lt;/code> in this post. The flow logs are stored in a Parquet format for querying later using DuckDB.&lt;/p>
+&lt;p>For our purpose, I&amp;rsquo;ve setup VPC flow logs to send all the traffic data to a S3 bucket that we&amp;rsquo;ll refer to as &lt;code>vpc-flow-logs-bucket&lt;/code> in this post. The flow logs are stored in a Parquet format for querying later using &lt;a href="https://duckdb.org">DuckDB&lt;/a>.&lt;/p>
 &lt;p>Once the flow logs file are sent to S3, I&amp;rsquo;ll be able to query them using DuckDB. To do that we will need to install the &lt;code>aws&lt;/code> and &lt;code>httpfs&lt;/code> extensions.&lt;/p>
 &lt;p>From DuckDB shell:&lt;/p>
 &lt;pre tabindex="0">&lt;code>&amp;gt; INSTALL aws;
@@ -38,7 +38,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Steampipe: directly query your APIs from SQL
 &lt;/h2>
-&lt;p>Steampipe is a tool that allows you to query APIs from SQL. It supports a lot of different APIs from AWS, GCP, Azure, Github, etc. You can also write your own plugins to support other APIs. I&amp;rsquo;ll be using it to query my AWS account for the EC2 instance ID and name based on the ENI ID from the VPC flow logs.&lt;/p>
+&lt;p>&lt;a href="https://steampipe.io">Steampipe&lt;/a> is a tool that allows you to query APIs from SQL. It supports a lot of different APIs from AWS, GCP, Azure, Github, etc. You can also write your own plugins to support other APIs. I&amp;rsquo;ll be using it to query my AWS account for the EC2 instance ID and name based on the ENI ID from the VPC flow logs.&lt;/p>
 &lt;h2 id="life-before-steampipe">
 &lt;a href="#life-before-steampipe" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
