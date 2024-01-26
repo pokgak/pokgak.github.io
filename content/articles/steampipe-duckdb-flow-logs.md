@@ -83,6 +83,8 @@ show tables;
 
 Now we can see all the tables from the Steampipe Postgresql instance. For my use case I'll be using the `aws_ec2_network_interface` table which contains both the network interface ID (ENI) and the EC2 instance ID that I can use `JOIN` together with the VPC flow logs records to map the records to the EC2 instance ID.
 
+## JOIN-ing it all together
+
 Here's an example query that will give me the count of all incoming traffic to the instances grouped by the port number:
 ```
 select
