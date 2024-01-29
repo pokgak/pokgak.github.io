@@ -48,9 +48,9 @@ show tables;
     i.title,
     fl.dstport,
     count(fl.dstaddr) traffic
-from network_interfaces ni
-left join flow_logs fl on fl.interface_id = ni.network_interface_id
-left join instances i on i.instance_id = ni.attached_instance_id
+from aws_ec2_network_interface ni
+left join memory.flow_logs fl on fl.interface_id = ni.network_interface_id
+left join aws_ec2_instance i on i.instance_id = ni.attached_instance_id
 where
     fl.dstaddr = i.private_ip_address
 group by i.instance_name, fl.dstport
