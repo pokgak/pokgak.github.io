@@ -4,7 +4,7 @@ date: 2024-06-24T13:00:00+08:00
 tags: [grafana, loki, mimir, tempo, observability, aws]
 ---
 
-At my latest $job, I was tasked of setting up the LGTM stack (Loki, Grafana, Tempo, Mimir) for observability. Fast forward a few months, I noticed there's a hidden aspect to running the stack that I was not expecting before and that is the network cost, specifically the network transfer cost for cross AZ traffic. At one point we were paying more than $100 per day just for the cross AZ network traffic. In a month, that amounts to $3000 which is a big sum when converted to my currency (MYR).
+At my latest $job, I was tasked of setting up the LGTM stack (Loki, Grafana, Tempo, Mimir) for observability. Fast forward a few months, I noticed there's a hidden aspect to running the stack that I was not expecting before and that is the network cost, specifically the network transfer cost for cross AZ traffic. At one point we were paying more than $100 per day just for the cross AZ network traffic.
 
 ## Cross AZ Traffic Amplification
 
