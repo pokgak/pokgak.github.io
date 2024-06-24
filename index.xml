@@ -1,4 +1,80 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 26 Jan 2024 20:00:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Using Steampipe + DuckDB for VPC Flow Logs Analysis</title><link>https://pokgak.xyz/articles/steampipe-duckdb-flow-logs/</link><pubDate>Fri, 26 Jan 2024 20:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/steampipe-duckdb-flow-logs/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Mon, 24 Jun 2024 13:00:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>The hidden cost of running your own observability stack</title><link>https://pokgak.xyz/articles/hidden-cost-lgtm/</link><pubDate>Mon, 24 Jun 2024 13:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/hidden-cost-lgtm/</guid><description>
+&lt;p>At my latest $job, I was tasked of setting up the LGTM stack (Loki, Grafana, Tempo, Mimir) for observability. Fast forward a few months, I noticed there&amp;rsquo;s a hidden aspect to running the stack that I was not expecting before and that is the network cost, specifically the network transfer cost for cross AZ traffic. At one point we were paying more than $100 per day just for the cross AZ network traffic. In a month, that amounts to $3000 which is a big sum when converted to my currency (MYR).&lt;/p>
+&lt;h2 id="distributor-write-amplification">
+&lt;a href="#distributor-write-amplification" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Distributor Write Amplification
+&lt;/h2>
+&lt;p>While investigating where does the traffic coming from I compared the load balancer &amp;ldquo;Processed Bytes&amp;rdquo; metrics with the Cost Explorer usage for cross AZ traffic and noticed that there&amp;rsquo;s a 10x increase in the reported values by the load balancer to the actual charged traffic. It baffled me a bit and made me step back and take a deeper look at the possible points where I&amp;rsquo;m getting charged.&lt;/p>
+&lt;ol>
+&lt;li>Collector to load balancer node&lt;/li>
+&lt;li>load balancer node to ingress controller pod&lt;/li>
+&lt;li>ingress controller pod to distributor&lt;/li>
+&lt;li>distributor to ingester&lt;/li>
+&lt;/ol>
+&lt;h3 id="collector-to-load-balancer-node-client-routing-policy">
+&lt;a href="#collector-to-load-balancer-node-client-routing-policy" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Collector to Load Balancer Node: client routing policy
+&lt;/h3>
+&lt;p>In my setup, the services are exposed through a load balancer and given a DNS name like &lt;code>loki.example.com&lt;/code>. The collectors are configured to send the telemetry data to that URL. Here is my fist mistake, I didnt&amp;rsquo; enable &amp;ldquo;Availability Zone affinity&amp;rdquo; for the client routing policy. When enabled, this will route traffic from the collector to the load balancer node in the same AZ avoiding being charged for cross AZ traffic.&lt;/p>
+&lt;p>The load balancer node will then forward the traffic to the ingress controller pod in the same AZ.&lt;/p>
+&lt;h3 id="ingress-controller-pod-to-distributor-kubernetes-topology-aware-routing">
+&lt;a href="#ingress-controller-pod-to-distributor-kubernetes-topology-aware-routing" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Ingress controller pod to distributor: Kubernetes Topology Aware Routing
+&lt;/h3>
+&lt;p>From the load balancer node, the traffic will be forwarded to the k8s pod through the k8s service. The default behavior of service in k8s is it will route the traffic using the round-robin algorithm. This means that from the ingress controller pod to the distributor pod the traffic will go cross AZ. If you have 3 distributor pods, this means 2 out of 3 connections will be routed to pods in different AZ.&lt;/p>
+&lt;p>To avoid the traffic from crossing AZ, we can use &lt;a href="https://kubernetes.io/docs/concepts/services-networking/topology-aware-routing/">kubernetes topology aware routing&lt;/a> feature. Downside of using this is that we need to have at least 3 pods in each AZ but compute is cheaper in my use case since I&amp;rsquo;m using spot instances through Karpenter and getting up to 70% discount on the node price.&lt;/p>
+&lt;h3 id="distributor-to-ingester-no-workaround">
+&lt;a href="#distributor-to-ingester-no-workaround" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Distributor to Ingester: no workaround
+&lt;/h3>
+&lt;p>This the only part I haven&amp;rsquo;t solved. In the LGTM stack, the distributors uses an &lt;a href="https://grafana.com/docs/loki/latest/get-started/hash-rings/#about-the-ingester-ring">internal discovery mechanism&lt;/a> to get the IP of the ingesters. This means that we cannot use kubernetes topology aware routing here.&lt;/p>
+&lt;p>To make things worse, depending on the &lt;a href="https://grafana.com/docs/loki/latest/get-started/components/#replication-factor">replication_factor&lt;/a> configuration, each distributor might be sending the logs to multiple ingesters, each one multiplying the cross AZ cost that we have to pay.&lt;/p>
+&lt;h2 id="special-use-case-getting-logs-from-external-source">
+&lt;a href="#special-use-case-getting-logs-from-external-source" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Special use case: getting logs from external source
+&lt;/h2>
+&lt;p>Other than the above use case, our company also have other use case where the logs comes from external sources instead of from our internal network. In this case, I actually managed to eliminate the cross AZ cost completely by deploying the LGTM stack in just one AZ. The load balancer is also configured to use only one subnet that is in the same AZ.&lt;/p>
+&lt;h2 id="conclusion">
+&lt;a href="#conclusion" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Conclusion
+&lt;/h2>
+&lt;p>All the above factor might explain why the amount I was charged for cross AZ traffic is 10x bigger than the amount that is received at the load balancer. I outlined some the possible points where the cross AZ charges are coming from and how to fix it. Hope it helps!&lt;/p></description></item><item><title>Using Steampipe + DuckDB for VPC Flow Logs Analysis</title><link>https://pokgak.xyz/articles/steampipe-duckdb-flow-logs/</link><pubDate>Fri, 26 Jan 2024 20:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/steampipe-duckdb-flow-logs/</guid><description>
 &lt;p>As a so called &lt;a href="https://x.com/tevanraj/status/1747920076203057273?s=20">Tech Janitor&lt;/a>, I&amp;rsquo;ve been tasked to clean up one of our AWS accounts at work and that account have a bunch of EC2 instances that no one knows what they all do. So, I&amp;rsquo;ve decided to use one of AWS features, VPC Flow Logs, to first identify which EC2 instances are still being used and which are not.&lt;/p>
 &lt;h2 id="setting-up-the-vpc-flow-logs-and-query-using-duckdb">
 &lt;a href="#setting-up-the-vpc-flow-logs-and-query-using-duckdb" class="anchor">
