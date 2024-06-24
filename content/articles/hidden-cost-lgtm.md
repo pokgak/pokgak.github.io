@@ -21,8 +21,6 @@ In my setup, the services are exposed through a load balancer and given a DNS na
 
 The load balancer node will then forward the traffic to the ingress controller pod in the same AZ.
 
-![](/images/az-load-balancer.svg)
-
 ### Ingress controller pod to distributor: Kubernetes Topology Aware Routing
 
 From the load balancer node, the traffic will be forwarded to the k8s pod through the k8s service. The default behavior of service in k8s is it will route the traffic using the round-robin algorithm. This means that from the ingress controller pod to the distributor pod the traffic will go cross AZ. If you have 3 distributor pods, this means 2 out of 3 connections will be routed to pods in different AZ.
