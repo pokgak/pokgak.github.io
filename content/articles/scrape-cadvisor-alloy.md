@@ -1,6 +1,6 @@
 ---
 title: "Scrape cAdvisor using Grafana Alloy"
-date: 2024-07-0T17:45:00+08:00
+date: 2024-07-10T17:45:00+08:00
 tags: [grafana, alloy, cadvisor, observability, metrics]
 ---
 
