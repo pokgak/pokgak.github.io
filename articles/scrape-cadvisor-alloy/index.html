@@ -1,0 +1,72 @@
+<!doctype html><html lang=en-us><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=theme-color content="dark"><title>Scrape cAdvisor using Grafana Alloy | Aiman Ismail</title>
+<meta property="og:site_name" content="Aiman Ismail"><meta property="og:title" content="Scrape cAdvisor using Grafana Alloy | Aiman Ismail"><meta itemprop=name content="Scrape cAdvisor using Grafana Alloy | Aiman Ismail"><meta name=twitter:title content="Scrape cAdvisor using Grafana Alloy | Aiman Ismail"><meta name=application-name content="Scrape cAdvisor using Grafana Alloy | Aiman Ismail"><meta name=twitter:card content="summary"><meta name=description content="I'm learning stuff."><meta name=twitter:description content="I'm learning stuff."><meta itemprop=description content="I'm learning stuff."><meta property="og:description" content="I'm learning stuff."><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=stylesheet href=/sass/main.min.ab99ff095f832511e24ffb2fba2b51ad473b2f7e9301d674eba2c6c3a6e8bd81.css><script src=https://beamanalytics.b-cdn.net/beam.min.js data-token=e393181a-2c64-49b0-8360-7566dfad6e5c async></script></head><script>(function(){const e="ThemeColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="ThemeColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.userColorScheme="dark":document.documentElement.dataset.userColorScheme="light"})()</script><body class=dark><nav class=navbar><div class=container><div class=flex><div><a class=brand href=/>Aiman Ismail</a></div><div class=flex><a href=/articles/>Articles</a>
+<button id=dark-mode-button><svg class="light" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" style="-ms-transform:rotate(360deg);-webkit-transform:rotate(360deg);transform:rotate(360deg)" viewBox="0 0 36 36"><path fill="#ffd983" d="M30.312.776C32 19 20 32 .776 30.312c8.199 7.717 21.091 7.588 29.107-.429C37.9 21.867 38.03 8.975 30.312.776z"/><path d="M30.705 15.915a1.163 1.163.0 101.643 1.641 1.163 1.163.0 00-1.643-1.641zm-16.022 14.38a1.74 1.74.0 000 2.465 1.742 1.742.0 100-2.465zm13.968-2.147a2.904 2.904.0 01-4.108.0 2.902 2.902.0 010-4.107 2.902 2.902.0 014.108.0 2.902 2.902.0 010 4.107z" fill="#ffcc4d"/><rect x="0" y="0" width="36" height="36" fill="rgba(0, 0, 0, 0)"/></svg><svg class="dark" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" style="-ms-transform:rotate(360deg);-webkit-transform:rotate(360deg);transform:rotate(360deg)" viewBox="0 0 36 36"><path fill="#ffd983" d="M16 2s0-2 2-2 2 2 2 2v2s0 2-2 2-2-2-2-2V2zm18 14s2 0 2 2-2 2-2 2h-2s-2 0-2-2 2-2 2-2h2zM4 16s2 0 2 2-2 2-2 2H2s-2 0-2-2 2-2 2-2h2zm5.121-8.707s1.414 1.414.0 2.828-2.828.0-2.828.0L4.878 8.708s-1.414-1.414.0-2.829c1.415-1.414 2.829.0 2.829.0l1.414 1.414zm21 21s1.414 1.414.0 2.828-2.828.0-2.828.0l-1.414-1.414s-1.414-1.414.0-2.828 2.828.0 2.828.0l1.414 1.414zm-.413-18.172s-1.414 1.414-2.828.0.0-2.828.0-2.828l1.414-1.414s1.414-1.414 2.828.0.0 2.828.0 2.828l-1.414 1.414zm-21 21s-1.414 1.414-2.828.0.0-2.828.0-2.828l1.414-1.414s1.414-1.414 2.828.0.0 2.828.0 2.828l-1.414 1.414zM16 32s0-2 2-2 2 2 2 2v2s0 2-2 2-2-2-2-2v-2z"/><circle fill="#ffd983" cx="18" cy="18" r="10"/><rect x="0" y="0" width="36" height="36" fill="rgba(0, 0, 0, 0)"/></svg></button></div></div></div></nav><main><div class=container><article><header class=article-header><div class=thumb><div><h1>Scrape cAdvisor using Grafana Alloy</h1><div class=post-meta><div>By Aiman Ismail | <time>January 01, 0001</time>
+| 1 minutes</div><div class=tags><a href=/tags/grafana/>Grafana</a>
+<a href=/tags/alloy/>Alloy</a>
+<a href=/tags/cadvisor/>Cadvisor</a>
+<a href=/tags/observability/>Observability</a>
+<a href=/tags/metrics/>Metrics</a></div></div></div></div></header></article><div class=article-post><p>I was having some issues figuring out how to scrape cAdvisor metrics using Grafana Alloy. After googling I came across this k8s-monitoring helm chart and inside there is a configuration for scraping the built-in cAdvisor on the k8s kubelet.</p><p>I ran Alloy as a single pod Deployment and it&rsquo;ll scrape all the nodes in the cluster. Here&rsquo;s the config that I used to get the metrics:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=k>prometheus</span><span class=p>.</span><span class=k>remote_write</span> <span class=s2>&#34;default&#34;</span> {
+</span></span><span class=line><span class=cl>  <span class=k>endpoint</span> {
+</span></span><span class=line><span class=cl><span class=n>    url</span> <span class=o>=</span> <span class=s2>&#34;https://mimir.example.com/api/v1/push&#34;</span>
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>discovery</span><span class=p>.</span><span class=k>kubernetes</span> <span class=s2>&#34;nodes&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  role</span> <span class=o>=</span> <span class=s2>&#34;node&#34;</span>
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>discovery</span><span class=p>.</span><span class=k>relabel</span> <span class=s2>&#34;cadvisor&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  targets</span> <span class=o>=</span> <span class=k>discovery</span><span class=p>.</span><span class=k>kubernetes</span><span class=p>.</span><span class=k>nodes</span><span class=p>.</span><span class=k>targets</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>rule</span> {
+</span></span><span class=line><span class=cl><span class=n>    replacement</span>   <span class=o>=</span> <span class=s2>&#34;/metrics/cadvisor&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>    target_label</span>  <span class=o>=</span> <span class=s2>&#34;__metrics_path__&#34;</span>
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>prometheus</span><span class=p>.</span><span class=k>scrape</span> <span class=s2>&#34;cadvisor&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  job_name</span>   <span class=o>=</span> <span class=s2>&#34;integrations/kubernetes/cadvisor&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>  targets</span>    <span class=o>=</span> <span class=k>discovery</span><span class=p>.</span><span class=k>relabel</span><span class=p>.</span><span class=k>cadvisor</span><span class=p>.</span><span class=k>output</span>
+</span></span><span class=line><span class=cl><span class=n>  scheme</span>     <span class=o>=</span> <span class=s2>&#34;https&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>  scrape_interval</span> <span class=o>=</span> <span class=s2>&#34;60s&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>  bearer_token_file</span> <span class=o>=</span> <span class=s2>&#34;/var/run/secrets/kubernetes.io/serviceaccount/token&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=k>tls_config</span> {
+</span></span><span class=line><span class=cl><span class=n>    insecure_skip_verify</span> <span class=o>=</span> <span class=kt>true</span>
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>  forward_to</span> <span class=o>=</span> <span class=p>[</span><span class=k>prometheus</span><span class=p>.</span><span class=k>remote_write</span><span class=p>.</span><span class=k>default</span><span class=p>.</span><span class=k>receiver</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=alloy-cadvisor-exporter><a href=#alloy-cadvisor-exporter class=anchor><svg class="icon" aria-hidden="true" focusable="false" height="16" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5.0-3-1.69-3-3.5S2.55 3 4 3h4c1.45.0 3 1.69 3 3.5.0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98.0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98.0-2-1.22-2-2.5.0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45.0 3-1.69 3-3.5S14.5 6 13 6z"/></svg>
+</a>Alloy cadvisor exporter</h3><p>Alloy provides the <code>prometheus.exporter.cadvisor</code> components that can be used to start a new cadvisor on the nodes. This is not required if the kubelet running on your nodes already runs cadvisor. This is the case for me on EKS running on Bottlerocket.</p></div></div><div class=container><nav class="flex container suggested"><a rel=next href=/articles/ title="Next post (newer)"><span>Next</span>
+Articles</a></nav></div><div class=container></div></main></main><footer class="footer flex"><section class=container><nav class=footer-links><a href=/index.xml>RSS</a></nav></section><script defer src=/ts/features.706a523ba43e6d0427c7fdf2b9d05dbd0920d3f12942b453690b495cb2522743.js data-enable-footnotes=true></script></footer></body></html>
