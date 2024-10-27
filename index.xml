@@ -1,4 +1,182 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 27 Oct 2024 14:37:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>We got DDoSed</title><link>https://pokgak.xyz/articles/we-got-ddosed/</link><pubDate>Sun, 27 Oct 2024 14:37:00 +0800</pubDate><guid>https://pokgak.xyz/articles/we-got-ddosed/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 27 Oct 2024 18:15:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Using DuckDB to analyze NGINX logs</title><link>https://pokgak.xyz/articles/duckdb-nginx-logs/</link><pubDate>Sun, 27 Oct 2024 18:15:00 +0800</pubDate><guid>https://pokgak.xyz/articles/duckdb-nginx-logs/</guid><description>
+&lt;p>As part of my recent &lt;a href="https://pokgak.xyz/articles/we-got-ddosed/">DDoS mitigation effort&lt;/a>, I had to go through millions of nginx logs to identify patterns that I can use to further improve our custom WAF rules on Cloudflare. This article shows what I did to be able to run some analysis on the logs using DuckDB.&lt;/p>
+&lt;h2 id="making-the-hard-things-easy">
+&lt;a href="#making-the-hard-things-easy" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Making the hard things easy
+&lt;/h2>
+&lt;h3 id="changing-the-log-format">
+&lt;a href="#changing-the-log-format" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Changing the log format
+&lt;/h3>
+&lt;blockquote>
+&lt;p>&amp;ldquo;To solve a problem that is difficult, you must first make it easy.&amp;rdquo;&lt;/p>
+&lt;/blockquote>
+&lt;p>The default nginx access logs format looks something like this:&lt;/p>
+&lt;pre tabindex="0">&lt;code>&amp;#39;$remote_addr - $remote_user [$time_local] &amp;#39;&amp;#39;&amp;#34;$request&amp;#34; $status $body_bytes_sent &amp;#39; &amp;#39;&amp;#34;$http_referer&amp;#34; &amp;#34;$http_user_agent&amp;#34;&amp;#39;
+&lt;/code>&lt;/pre>&lt;p>Parsing it is definitely possible using regex as shown by &lt;a href="https://www.alibabacloud.com/help/en/sls/user-guide/parse-nginx-logs">this article&lt;/a> but why bother when you have the option to change the format and make it easier to parse using DuckDB. To do so we will be configuring ingress-nginx controller in our cluster to log in JSON format. You can set the custom log format using the &lt;code>log-format-upstream&lt;/code> config and set &lt;code>log-format-escape-json&lt;/code> to make sure that the variables are escaped properly for use in as JSON variables.&lt;/p>
+&lt;p>This is the log format that I&amp;rsquo;m currently using:&lt;/p>
+&lt;pre tabindex="0">&lt;code>&amp;#39;{&amp;#34;timestamp&amp;#34;: &amp;#34;$time_iso8601&amp;#34;, &amp;#34;requestID&amp;#34;: &amp;#34;$req_id&amp;#34;, &amp;#34;proxyUpstreamName&amp;#34;: &amp;#34;$proxy_upstream_name&amp;#34;, &amp;#34;proxyAlternativeUpstreamName&amp;#34;: &amp;#34;$proxy_alternative_upstream_name&amp;#34;,&amp;#34;upstreamStatus&amp;#34;: &amp;#34;$upstream_status&amp;#34;, &amp;#34;upstreamAddr&amp;#34;: &amp;#34;$upstream_addr&amp;#34;,&amp;#34;method&amp;#34;: &amp;#34;$request_method&amp;#34;, &amp;#34;host&amp;#34;: &amp;#34;$host&amp;#34;, &amp;#34;uri&amp;#34;: &amp;#34;$uri&amp;#34;, &amp;#34;uriNormalized&amp;#34;: &amp;#34;$uri_normalized&amp;#34;, &amp;#34;uriWithParams&amp;#34;: &amp;#34;$request_uri&amp;#34;, &amp;#34;status&amp;#34;: $status,&amp;#34;requestSize&amp;#34;: &amp;#34;$request_length&amp;#34;, &amp;#34;responseSize&amp;#34;: &amp;#34;$upstream_response_length&amp;#34;, &amp;#34;userAgent&amp;#34;: &amp;#34;$http_user_agent&amp;#34;, &amp;#34;remoteIp&amp;#34;: &amp;#34;$remote_addr&amp;#34;, &amp;#34;referer&amp;#34;: &amp;#34;$http_referer&amp;#34;, &amp;#34;latency&amp;#34;: &amp;#34;$upstream_response_time s&amp;#34;, &amp;#34;protocol&amp;#34;:&amp;#34;$server_protocol&amp;#34;}&amp;#39;
+&lt;/code>&lt;/pre>&lt;h3 id="mapping-customer-ids-to-generic-placeholder">
+&lt;a href="#mapping-customer-ids-to-generic-placeholder" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Mapping customer IDs to generic placeholder
+&lt;/h3>
+&lt;p>One thing I don&amp;rsquo;t know how to do with DuckDB is normalizing URIs. Given a URI path containing user ID 12345678 like &lt;code>/users/1234567/info&lt;/code>. How do I group by path where I ignore the middle section and group it as if all the URIs are like &lt;code>/users/:userId/info&lt;/code>. I tried regex and patterns but couldn&amp;rsquo;t get it to work. If you know how to do it please DM me on Twitter, I&amp;rsquo;d really appreciate it.&lt;/p>
+&lt;p>I found a way to do it in nginx instead. It works but its definitely not scalable. I use the &lt;code>ngx_http_map_module&lt;/code> module to match URIs with certain paths and then convert it to a generic version of that path.&lt;/p>
+&lt;pre tabindex="0">&lt;code>map $uri $uri_normalized {
+&amp;#34;~^/user/(.*)$&amp;#34; &amp;#34;/user/:ID&amp;#34;;
+default $uri;
+}
+&lt;/code>&lt;/pre>&lt;p>This snippet will do the following: for each of the variable &lt;code>$uri&lt;/code>, map it to a new variable &lt;code>$uri_normalized&lt;/code>. When &lt;code>$uri&lt;/code> value matches the regex &lt;code>^/user/(.*)$&lt;/code>, the replace the value with new value &lt;code>/users/ID&lt;/code>. If no matching regex found, then use default to the value of &lt;code>$uri&lt;/code>.&lt;/p>
+&lt;p>With those configured, you can proceed to ship the logs to your logging backend of choice to retrieve later.&lt;/p>
+&lt;h2 id="fetching-the-logs-from-loki">
+&lt;a href="#fetching-the-logs-from-loki" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Fetching the logs from Loki
+&lt;/h2>
+&lt;p>I&amp;rsquo;m using Loki as my logging backend. Loki provides an API endpoint you can use to fetch the logs and to make things easier they also have an CLI tool called &lt;a href="https://grafana.com/docs/loki/latest/query/logcli/">logcli&lt;/a>.&lt;/p>
+&lt;p>To fetch all nginx logs from my production cluster, this is the command that I used:&lt;/p>
+&lt;pre tabindex="0">&lt;code>$ logcli query -oraw --from=&amp;#34;2024-10-24T00:00:00+08:00&amp;#34; --to=&amp;#34;2024-10-24T22:00:00+08:00&amp;#34; --part-path-prefix=&amp;#34;logs&amp;#34; --parallel-max-workers=100 --parallel-duration=15m &amp;#39;{namespace=&amp;#34;ingress-nginx&amp;#34;, cluster=&amp;#34;production&amp;#34;} | json | __error__=``&amp;#39;
+&lt;/code>&lt;/pre>&lt;ul>
+&lt;li>&lt;code>-oraw&lt;/code> is to set the output format of the logs. I&amp;rsquo;m using the raw format here so that I can get the same JSON input that I sent to Loki&lt;/li>
+&lt;li>&lt;code>--from&lt;/code> and &lt;code>--to&lt;/code> are self-explanatory but I did have some problem specifying the correct format that the tool will accept and the official docs was quite confusing&lt;/li>
+&lt;li>&lt;code>--part-path-prefix&lt;/code> use this prefix to name the files when downloading multiple files in parallel&lt;/li>
+&lt;li>&lt;code>--parallel-max-workers&lt;/code> sets the max parallel workers to be used. Note that the actual workers used depends also on the available tasks based on the parallel duration configured&lt;/li>
+&lt;li>&lt;code>--parallel-duration&lt;/code> is the duration size to use for each file. combined with the &lt;code>--from&lt;/code> and &lt;code>--to&lt;/code> option, this option determines how many files will be created e.g. for 1 hour duration and you&amp;rsquo;ve specified the &lt;code>--parallel-duration&lt;/code> there will be 4 files created, each containing logs from specific 15 minutes section.&lt;/li>
+&lt;/ul>
+&lt;h2 id="loading-the-logs-into-duckdb">
+&lt;a href="#loading-the-logs-into-duckdb" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Loading the logs into DuckDB
+&lt;/h2>
+&lt;p>I&amp;rsquo;m using the CLI version of duckdb but you can also do this using the embedded library in other languages of your choice.&lt;/p>
+&lt;p>To read the files we&amp;rsquo;ve pulled from Loki and create a table with it I used this command:&lt;/p>
+&lt;pre tabindex="0">&lt;code>create table logs as select * from read_json(&amp;#39;logs_*.part&amp;#39;, format=&amp;#39;auto&amp;#39;, columns={timestamp: &amp;#39;TIMESTAMP&amp;#39;, method: &amp;#39;VARCHAR&amp;#39;, host: &amp;#39;VARCHAR&amp;#39;, uri: &amp;#39;VARCHAR&amp;#39;, uriNormalized: &amp;#39;VARCHAR&amp;#39;, status:&amp;#39;INT&amp;#39;, remoteIp: &amp;#39;VARCHAR&amp;#39;, is_authed: &amp;#39;BOOLEAN&amp;#39;, userAgent: &amp;#39;VARCHAR&amp;#39;});
+&lt;/code>&lt;/pre>&lt;p>&lt;code>read_json&lt;/code> can automatically create all the columns based on the keys in the JSON files but I want it to treat certain columns as specific data types so that&amp;rsquo;s why I&amp;rsquo;m specifying the columns manually here.&lt;/p>
+&lt;p>After loading the columns into the table you can check the number of rows using this commands:&lt;/p>
+&lt;pre tabindex="0">&lt;code>select count() from logs;
+&lt;/code>&lt;/pre>&lt;p>In my case, for a day&amp;rsquo;s worth of logs from nginx, I have around 60 million rows. On idle, its using around 8GBs of RAM. If you have longer periods of logs to analyze, then definitely opt for a beefier machine or else DuckDB will crash.&lt;/p>
+&lt;h2 id="running-queries">
+&lt;a href="#running-queries" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Running queries
+&lt;/h2>
+&lt;p>Its the fun part. Here&amp;rsquo;s some queries that I find useful:&lt;/p>
+&lt;h3 id="highest-requests-per-minute-grouped-by-ip">
+&lt;a href="#highest-requests-per-minute-grouped-by-ip" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Highest requests per minute grouped by IP
+&lt;/h3>
+&lt;p>I use this information to set the proper value to use in our Cloudflare rate limiting rule. By looking at existing request rate I&amp;rsquo;m reducing the chance of rate limiting our actual customers.&lt;/p>
+&lt;pre tabindex="0">&lt;code>select
+(hour(timestamp) + 8) % 24 as hour,
+minute(timestamp) as minute,
+remoteIp,
+count() as total
+from logs
+where remoteIp not in (&amp;#39;X.X.X.X&amp;#39;, &amp;#39;Y.Y.Y.Y&amp;#39;, &amp;#39;Z.Z.Z.Z&amp;#39;) --production NAT gateway IPs
+and remoteIp not like &amp;#39;162.158.192.%&amp;#39; --cloudflare IPs
+group by all
+order by total desc
+limit 5;
+&lt;/code>&lt;/pre>&lt;h3 id="ip-address-with-the-highest-number-of-request-to-a-particular-host">
+&lt;a href="#ip-address-with-the-highest-number-of-request-to-a-particular-host" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+IP address with the highest number of request to a particular host
+&lt;/h3>
+&lt;pre tabindex="0">&lt;code>select remoteIp, count() as total from logs where host = &amp;#39;subdomain.example.com&amp;#39; group by all order by total desc limit 10;
+&lt;/code>&lt;/pre>&lt;h3 id="checking-the-paths-an-ip-have-been-sending-requests-to">
+&lt;a href="#checking-the-paths-an-ip-have-been-sending-requests-to" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Checking the paths an IP have been sending requests to
+&lt;/h3>
+&lt;p>I&amp;rsquo;m including the result from the query here since it shows that this particular IP most likely are using a scanner to find vulnerable endpoints on our service.&lt;/p>
+&lt;pre tabindex="0">&lt;code>select uri, count() as total from logs where remoteIp = &amp;#39;152.32.189.70&amp;#39; group by all order by total desc limit 20;
+┌─────────────────────────────────────────────────────────────────┬───────┐
+│ uri │ total │
+│ varchar │ int64 │
+├─────────────────────────────────────────────────────────────────┼───────┤
+│ / │ 10 │
+│ /favicon.ico │ 6 │
+│ /api/user/ismustmobile │ 6 │
+│ /h5/ │ 4 │
+│ /m/ │ 4 │
+│ /api │ 4 │
+│ /app/ │ 3 │
+│ /api/config │ 3 │
+│ /leftDao.php?callback=jQuery183016740860980352856_1604309800583 │ 2 │
+│ /public/static/home/js/moblie/login.js │ 2 │
+│ /static/home/css/feiqi-ee5401a8e6.css │ 2 │
+│ /client/static/icon/hangqingicon.png │ 2 │
+│ /admin/webadmin.php?mod=do&amp;amp;act=login │ 2 │
+│ /static/images/auth/background.png │ 2 │
+│ /index/index/home?business_id=1 │ 2 │
+│ /stage-api/common/configKey/all │ 2 │
+│ /Public/home/common/js/index.js │ 2 │
+│ /ws/index/getTheLotteryInitList │ 2 │
+│ /app/static/picture/star.png │ 2 │
+│ /resource/home/js/common.js │ 2 │
+├─────────────────────────────────────────────────────────────────┴───────┤
+│ 20 rows 2 columns │
+└─────────────────────────────────────────────────────────────────────────┘
+&lt;/code>&lt;/pre>&lt;h2 id="conclusion">
+&lt;a href="#conclusion" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Conclusion
+&lt;/h2>
+&lt;p>This has been an adhoc task and when I was told to do some analysis on the logs I immediately think of the tools I&amp;rsquo;m familiar with which is DuckDB to do the analysis. I&amp;rsquo;m aware there are better tools out there and we are currently evaluating using OpenSearch Security Analytics to automatically do this kind of detection in the future. Hopefully, I can talk about it soon. If any of you data analyst/data engineer out there got better ways to do the things I&amp;rsquo;m doing feel free to tweet me @pokgak73 on Twitter.&lt;/p></description></item><item><title>We got DDoSed</title><link>https://pokgak.xyz/articles/we-got-ddosed/</link><pubDate>Sun, 27 Oct 2024 14:37:00 +0800</pubDate><guid>https://pokgak.xyz/articles/we-got-ddosed/</guid><description>
 &lt;p>Recently at $work we&amp;rsquo;ve been hit by a series of DDoS attacks. In this post, I&amp;rsquo;m gonna describe the steps we&amp;rsquo;ve taken to protect our services from these attacks in the future and also what works and what don&amp;rsquo;t.&lt;/p>
 &lt;h2 id="detection">
 &lt;a href="#detection" class="anchor">
