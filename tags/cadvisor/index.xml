@@ -1,3 +1,81 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cadvisor on Aiman Ismail</title><link>https://pokgak.xyz/tags/cadvisor/</link><description>Recent content in Cadvisor on Aiman Ismail</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Wed, 10 Jul 2024 17:45:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/tags/cadvisor/index.xml" rel="self" type="application/rss+xml"/><item><title>Scrape cAdvisor using Grafana Alloy</title><link>https://pokgak.xyz/articles/scrape-cadvisor-alloy/</link><pubDate>Wed, 10 Jul 2024 17:45:00 +0800</pubDate><guid>https://pokgak.xyz/articles/scrape-cadvisor-alloy/</guid><description>I was having some issues figuring out how to scrape cAdvisor metrics using Grafana Alloy. After googling I came across this k8s-monitoring helm chart and inside there is a configuration for scraping the built-in cAdvisor on the k8s kubelet.
-I ran Alloy as a single pod Deployment and it&amp;rsquo;ll scrape all the nodes in the cluster. Here&amp;rsquo;s the config that I used to get the metrics:
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 prometheus.</description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cadvisor on Aiman Ismail</title><link>https://pokgak.xyz/tags/cadvisor/</link><description>Recent content in Cadvisor on Aiman Ismail</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Wed, 10 Jul 2024 17:45:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/tags/cadvisor/index.xml" rel="self" type="application/rss+xml"/><item><title>Scrape cAdvisor using Grafana Alloy</title><link>https://pokgak.xyz/articles/scrape-cadvisor-alloy/</link><pubDate>Wed, 10 Jul 2024 17:45:00 +0800</pubDate><guid>https://pokgak.xyz/articles/scrape-cadvisor-alloy/</guid><description>&lt;p>I was having some issues figuring out how to scrape cAdvisor metrics using Grafana Alloy. After googling I came across this k8s-monitoring helm chart and inside there is a configuration for scraping the built-in cAdvisor on the k8s kubelet.&lt;/p>
+&lt;p>I ran Alloy as a single pod Deployment and it&amp;rsquo;ll scrape all the nodes in the cluster. Here&amp;rsquo;s the config that I used to get the metrics:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-hcl" data-lang="hcl">&lt;span class="line">&lt;span class="cl">&lt;span class="k">prometheus&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">remote_write&lt;/span> &lt;span class="s2">&amp;#34;default&amp;#34;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">endpoint&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> url&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;https://mimir.example.com/api/v1/push&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> }
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">discovery&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">kubernetes&lt;/span> &lt;span class="s2">&amp;#34;nodes&amp;#34;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> role&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;node&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">discovery&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">relabel&lt;/span> &lt;span class="s2">&amp;#34;cadvisor&amp;#34;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> targets&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">discovery&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">kubernetes&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">nodes&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">targets&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">rule&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> replacement&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;/metrics/cadvisor&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> target_label&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;__metrics_path__&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> }
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="k">prometheus&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">scrape&lt;/span> &lt;span class="s2">&amp;#34;cadvisor&amp;#34;&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> job_name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;integrations/kubernetes/cadvisor&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> targets&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">discovery&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">relabel&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">cadvisor&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">output&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> scheme&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;https&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> scrape_interval&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;60s&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> bearer_token_file&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;/var/run/secrets/kubernetes.io/serviceaccount/token&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">tls_config&lt;/span> {
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> insecure_skip_verify&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kt">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> }
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n"> forward_to&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="k">prometheus&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">remote_write&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">default&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">receiver&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="alloy-cadvisor-exporter">
+ &lt;a href="#alloy-cadvisor-exporter" class="anchor">
+ &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+ &lt;path fill-rule="evenodd"
+ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+ &lt;/path>
+ &lt;/svg>
+ &lt;/a>
+ Alloy cadvisor exporter
+&lt;/h3>
+&lt;p>Alloy provides the &lt;code>prometheus.exporter.cadvisor&lt;/code> components that can be used to start a new cadvisor on the nodes. This is not required if the kubelet running on your nodes already runs cadvisor. This is the case for me on EKS running on Bottlerocket.&lt;/p></description></item></channel></rss>

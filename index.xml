@@ -1,4 +1,191 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Wed, 10 Jul 2024 17:45:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Scrape cAdvisor using Grafana Alloy</title><link>https://pokgak.xyz/articles/scrape-cadvisor-alloy/</link><pubDate>Wed, 10 Jul 2024 17:45:00 +0800</pubDate><guid>https://pokgak.xyz/articles/scrape-cadvisor-alloy/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 27 Oct 2024 14:37:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>We got DDoSed</title><link>https://pokgak.xyz/articles/we-got-ddosed/</link><pubDate>Sun, 27 Oct 2024 14:37:00 +0800</pubDate><guid>https://pokgak.xyz/articles/we-got-ddosed/</guid><description>
+&lt;p>Recently at $work we&amp;rsquo;ve been hit a series of DDoS attacks. In this post, I&amp;rsquo;m gonna describe the steps we&amp;rsquo;ve taken to protect our services from DDoS attacks in the future and also what works and what don&amp;rsquo;t.&lt;/p>
+&lt;h2 id="detection">
+&lt;a href="#detection" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Detection
+&lt;/h2>
+&lt;p>The first attack was around 10PM on a Sunday. I was at home at the time and was notified that our ingress-nginx pods were repeatedly crashing. I&amp;rsquo;ve seen this happen before and my initial thought was that our service was getting more customers this night so I added more nodes into our cluster and increased the replica count for the ingress-nginx pods. That did nothing. Our pods are still crashing and customers still cannot use our service.&lt;/p>
+&lt;p>Then, one of my colleagues showed me the metrics for new connections to our load balancer. We&amp;rsquo;re getting 10x our usual traffic in a minute. That&amp;rsquo;s a DDoS for sure.&lt;/p>
+&lt;p>&lt;img loading="lazy"
+src="https://pokgak.xyz/images/ddos-lb-active-flow.png"
+alt="New connections to load balancer"
+width=3224
+height="724" />&lt;/p>
+&lt;h2 id="rate-limiting-from-the-ingress-controller">
+&lt;a href="#rate-limiting-from-the-ingress-controller" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Rate limiting from the ingress-controller
+&lt;/h2>
+&lt;p>Ingress-nginx supports a whole set of &lt;a href="https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#rate-limiting">rate limiting features&lt;/a>. So we decided to start there but we first need to know which endpoint is being hit. For this, the logs from the ingress-nginx pods was really helpful. The incoming logs was coming in fast but we can see that most of the log lines contain the same hostname. So we put the &lt;code>nginx.ingress.kubernetes.io/limit-rps&lt;/code> annotation to the ingress that is used by that hostname. Then, we wait and monitor whether this annotation helps stabilize our crashing pods. It didn&amp;rsquo;t.&lt;/p>
+&lt;p>From the logs, I can see that ingress-nginx is rate-limiting the request but because it still has to process the request first and keep counting it, it cannot keep up with the amount of incoming traffic. Rate limiting on the ingress-nginx level is useless because our infra is not enough to even receive and block all the request. We have an option to add more replicas to our ingress-nginx pods but thats gonna be costly. So, we started looking for other solutions.&lt;/p>
+&lt;h2 id="cloudflare-to-the-rescue">
+&lt;a href="#cloudflare-to-the-rescue" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Cloudflare to the rescue
+&lt;/h2>
+&lt;p>I&amp;rsquo;ve always have known that people uses Cloudflare to protect against it I&amp;rsquo;ve never done it myself personally. After the initial response was proven not effective, I remember we&amp;rsquo;re using Cloudflare to point the domain to our load balancer but why does Cloudflare not blocking all this DDoS traffic?&lt;/p>
+&lt;p>Our first mistake was that we didn&amp;rsquo;t &lt;a href="https://developers.cloudflare.com/dns/manage-dns-records/reference/proxied-dns-records/">proxy the traffic through Cloudflare&lt;/a>.&lt;/p>
+&lt;p>After proxying the traffic through Cloudflare though, there is a delay to when all the traffic will be routed to Cloudflare Anycast IP due to the TTL settings which is 300 seconds by default. So, again, we wait&amp;hellip;and the request still coming in after a while. Meanwhile, I&amp;rsquo;ve enabled the &lt;a href="https://developers.cloudflare.com/fundamentals/reference/under-attack-mode/">Under Attack mode&lt;/a> but honestly I&amp;rsquo;m not sure if this actually helps. After a while the requests was still not going down. It might take a while before Cloudflare can kick in to automatically mitigate the attack. In the meantime, we need to do something.&lt;/p>
+&lt;h3 id="using-the-waf-rules">
+&lt;a href="#using-the-waf-rules" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Using the WAF Rules
+&lt;/h3>
+&lt;p>On the WAF page on Cloudflare, there&amp;rsquo;s three types of rules you can configure: Custom rules, Rate limiting rules and Managed rules.&lt;/p>
+&lt;h3 id="managed-rules">
+&lt;a href="#managed-rules" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Managed rules
+&lt;/h3>
+&lt;p>After enabling the Under Attack mode, we also enabled the &lt;a href="https://developers.cloudflare.com/waf/managed-rules/">Managed rules&lt;/a> but it didn&amp;rsquo;t help much in our case. Managed rules blocks commonly used attacks but it our case it doesn&amp;rsquo;t block any of the DDoS attacks because the attack is targeting our API endpoint specifically with requests path that wasn&amp;rsquo;t included in the managed ruleset. We leave it turned on regardless since it might protect against other attacks in the future.&lt;/p>
+&lt;h3 id="custom-rules-blocking-by-country">
+&lt;a href="#custom-rules-blocking-by-country" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Custom rules: blocking by country
+&lt;/h3>
+&lt;p>After all the above doesn&amp;rsquo;t seem to work, we need a way to differentiate DDoS traffic from valid traffic. I know that we only operate in several countries in Southeast Asia. This means that all the traffic thats coming from outside those countries are bots (read more below to see why this is not true). So, we added a Custom rule to only whitelist the traffic coming from the countries that we operate in and that works, sorta. The request hitting our LB reduced to around half but its still higher than usual and our ingress pods are still being overwhelmed.&lt;/p>
+&lt;p>Then, we noticed from the Security Analytics page in Cloudflare that the requests that are still hitting the LB passed the rule because its coming from one of the whitelisted countries. We can remove that country from our whitelist but that also means that we&amp;rsquo;ll be blocking valid traffic from our customers from those countries. So, we need to come up with new rule to block the DDoS traffic. What does a valid request have that the requests from the attacker doesn&amp;rsquo;t have?&lt;/p>
+&lt;h3 id="custom-rules-blocking-using-query-params-headers-and-user-agent">
+&lt;a href="#custom-rules-blocking-using-query-params-headers-and-user-agent" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Custom rules: blocking using query params, headers, and user agent
+&lt;/h3>
+&lt;p>We went through nginx logs and noticed that the requests from the attacker are always using the same query params so we created a new rule blocking rqeuests with that query params and it worked! The requests hitting our LB dropped back to normal levels and we declared the incident finished. This doensn&amp;rsquo;t last long tho. The next time we were hit with the attack, we noticed that the attacker now uses a different query param. Luckily, we had also added other rules in place.&lt;/p>
+&lt;p>After the first attack, we analysed our valid requests and came up with other rules based on the &lt;strong>Referer&lt;/strong> and the &lt;strong>X-Requested-With&lt;/strong> headers. We also check the User-Agent and block if its similar to the one that came from the attacker based on past attacks. So far this has been the most effective at blocking the attack. However, we know that this is not the final solution. If the attacker is determined enough, they can still look at valid requests and then spoof the values in their attack but so far we haven&amp;rsquo;t seen this happening yet.&lt;/p>
+&lt;h3 id="custom-rules-blocking-known-attacker-ips">
+&lt;a href="#custom-rules-blocking-known-attacker-ips" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Custom rules: blocking known attacker IPs
+&lt;/h3>
+&lt;p>After several rounds of attacks we noticed that the DDoS attacks were all coming from the same set of IPs, so we created a list of known attacker IPs on Cloudflare and block future requests coming from those IPs. Looking back, this rule was only effective for a little while. Once the attacker noticed that all their requests were blocked, they will change the IP so the process will just keep repeating over and over again.&lt;/p>
+&lt;h3 id="rate-limiting-rule">
+&lt;a href="#rate-limiting-rule" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Rate limiting rule
+&lt;/h3>
+&lt;p>After we put in the custom rules, we also turned on the rate limiting rules. Unless you are on the Enterprise plan (its expensive XXXX), the rate limiting rule is pretty restricted. You can only rate limit by IP but I think it is good enough. The rate limiting rules will act as the last line of defense after the requests passes all your other configured custom rules. Here is the &lt;a href="https://developers.cloudflare.com/waf/concepts/#rule-execution-order">rule execution order&lt;/a> for your reference.&lt;/p>
+&lt;p>On a free plan, you get 10 second counting period but if you pay for other plans you&amp;rsquo;ll get more options. To me, the bigger counting period helps prevents from blocking valid requests. There might be a burst of activity from your users that causes the IP to hit the rate limit within 10 seconds but if measured within a longer period its still within a normal range. So, paying more is definitely worth it here.&lt;/p>
+&lt;p>I definitely think that rate limiting rule is a must if you&amp;rsquo;re fighting against DDoS. So, make sure to configure this.&lt;/p>
+&lt;h2 id="bonus">
+&lt;a href="#bonus" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Bonus
+&lt;/h2>
+&lt;h3 id="blocking-our-own-ips">
+&lt;a href="#blocking-our-own-ips" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Blocking our own IPs
+&lt;/h3>
+&lt;p>This is one of those moments I&amp;rsquo;ll remember for the rest of my life. After the attacks passed, I spent some time exploring the events in Cloudflare Security Analytics to see if I can find any insights. From the requests that were not blocked by Cloudflare, I grouped the requests by IP and checked the requests. Requests from the top two IPs looks good, it has all the headers and referers we were expecting them to have but the requests coming from a datacenter in Singapore. What makes it more suspicious was that all the requests had user agents from mobile devices eventhough the requests were from a datacenter. So, I informed my team and proceed to block the requests. After a while complaints started coming in saying our customers requests were blocked. One of my colleagues suspects that those are our IPs.&lt;/p>
+&lt;p>We have NAT Gateways configured in our network which means that if the requests were actually from our own network it will have one of those IPs from the NAT Gateway&amp;hellip;and after comparing, they are indeed our NAT Gateway IPs. Apparently, one of the services proxies all the requests from the customers back to another service, complete with all the headers and user-agents that why it was showing mobile device user agents eventhough the IP was coming from a datacenter.&lt;/p>
+&lt;p>After this incident, we created a &lt;a href="https://developers.cloudflare.com/waf/tools/lists/">list on Cloudflare&lt;/a> containing all our knowned IPs and skip blocking and rate limiting to avoid confusion in the future.&lt;/p>
+&lt;p>&lt;img loading="lazy"
+src="https://pokgak.xyz/images/slack-suspicious-ips.png"
+alt="Slack message"
+width=2570
+height="456" />&lt;/p>
+&lt;h3 id="blocking-accessibility-bots-from-us">
+&lt;a href="#blocking-accessibility-bots-from-us" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Blocking accessibility bots (from US)
+&lt;/h3>
+&lt;p>We also put in place rate limiting rule for all the requests that was categorized as &lt;a href="https://radar.cloudflare.com/traffic/verified-bots">Verified Bots&lt;/a> by Cloudflare. After putting in all these rules, I try to regularly review the block requests to make sure they&amp;rsquo;re not false positives - valid requests that was blocked - to further optimize our rules. There was a bunch of requests coming from the US, which we already put in custom rule to block but after looking at their user agent it seems a bit unusual - it contains the string &lt;code>Google-Read-Aloud&lt;/code>. After some googling, I found out that Google uses that user agent for their &lt;a href="https://developers.google.com/search/docs/crawling-indexing/read-aloud-user-agent">text-to-speech feature&lt;/a> for accessibility purposes.&lt;/p>
+&lt;p>Having this user-agent does not necessarily mean that the requests are 100% valid because attackers can still &lt;a href="https://cheq.ai/blog/user-agent-spoofing/">spoof their user agent&lt;/a>. So, I&amp;rsquo;ll leave it up to you to decide if this is something that should be blocked but I think this is worth mentioning since in our fervor to prevent attackers from bringing down our systems we might also be hurting valid customers and affecting the accessibility of our service.&lt;/p>
+&lt;h3 id="silly-mistake-external-dns">
+&lt;a href="#silly-mistake-external-dns" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Silly mistake: external-dns
+&lt;/h3>
+&lt;p>Fast forward a few days, we got hit again with a DDoS attack but this time it was during lunch time, which was the peak hour for our customers. I thought, &amp;ldquo;Did the rule from last time not working anymore?&amp;rdquo;. We checked the Security Analytics page on Cloudflare and noticed that Cloudlfare wasn&amp;rsquo;t blocking any requests even though we already had the rule from last time.&lt;/p>
+&lt;p>I scratched my head for a bit wondering what we missed when my colleague pointed out that the DNS record for that domain wasn&amp;rsquo;t proxied. So, I turned it back on but after a while it was turned back off. Then, I remember that we&amp;rsquo;re using &lt;a href="https://github.com/kubernetes-sigs/external-dns">external-dns&lt;/a> to automate the creation of our records on Cloudflare and it was configured to not enable the proxy option. So, whenever we enabled the proxy option, it reverted back as its supposed to. We end up turning off external-dns to make sure the proxy option not getting reverted. Read more below to know how you can turn on the proxy option on a per-ingress basis.&lt;/p>
+&lt;h3 id="using-annotation-to-proxy-traffic-through-cloudflare-per-ingress">
+&lt;a href="#using-annotation-to-proxy-traffic-through-cloudflare-per-ingress" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Using annotation to proxy traffic through Cloudflare per Ingress
+&lt;/h3>
+&lt;p>To enable proxying requests through Cloudflare on a per-Ingress basis when using external-dns, you can add the annotation &lt;code>external-dns.alpha.kubernetes.io/cloudflare-proxied: &amp;quot;true&amp;quot;&lt;/code> to the Ingress. If you have multiple Ingress that all points to the same host, make sure to add the annotation to all of them. If not, external-dns will keep fighting itself, turning the proxy option onn and off forever.&lt;/p>
+&lt;h2 id="conclusion">
+&lt;a href="#conclusion" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Conclusion
+&lt;/h2>
+&lt;p>I&amp;rsquo;ve outlined several steps you can take if you&amp;rsquo;re facing DDoS attacks in the future. Despite the success in mitigating the attacks so far, we know that there is no forever solution to DDoS. We have to keep up with the attacker and play Whac-A-Mole until they are bored and stop the attacks. It has been an eye opening experience for me and next time I&amp;rsquo;m in an interview I can definitely say more than just put it behind Cloudflare the mitigation step to DDoS.&lt;/p></description></item><item><title>Scrape cAdvisor using Grafana Alloy</title><link>https://pokgak.xyz/articles/scrape-cadvisor-alloy/</link><pubDate>Wed, 10 Jul 2024 17:45:00 +0800</pubDate><guid>https://pokgak.xyz/articles/scrape-cadvisor-alloy/</guid><description>
 &lt;p>I was having some issues figuring out how to scrape cAdvisor metrics using Grafana Alloy. After googling I came across this k8s-monitoring helm chart and inside there is a configuration for scraping the built-in cAdvisor on the k8s kubelet.&lt;/p>
 &lt;p>I ran Alloy as a single pod Deployment and it&amp;rsquo;ll scrape all the nodes in the cluster. Here&amp;rsquo;s the config that I used to get the metrics:&lt;/p>
 &lt;div class="highlight">&lt;div class="chroma">

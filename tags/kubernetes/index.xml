@@ -1,2 +1,24 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Kubernetes on Aiman Ismail</title><link>https://pokgak.xyz/tags/kubernetes/</link><description>Recent content in Kubernetes on Aiman Ismail</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Tue, 12 Sep 2023 02:05:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/tags/kubernetes/index.xml" rel="self" type="application/rss+xml"/><item><title>Access internal kubernetes services from anywhere using Tailscale</title><link>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</link><pubDate>Tue, 12 Sep 2023 02:05:00 +0800</pubDate><guid>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</guid><description>I recently setup a local kubernetes in my home network to play with and one of the issues that I faced is that it is hard to access the services inside the cluster from my laptop. I don&amp;rsquo;t have a load-balancer in my setup so everytime I want to access a service from my laptop, I&amp;rsquo;ll have to run kubectl port-forward first before using the localhost address to access it.</description></item><item><title>Interview Series: Explain How Kubernetes DNS works</title><link>https://pokgak.xyz/articles/explain-k8s-dns/</link><pubDate>Wed, 24 May 2023 23:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/explain-k8s-dns/</guid><description>This will be the first in my interview questions series. I&amp;rsquo;ll compile interesting questions that I got from my experience interviewing for DevOps/SRE role in Malaysia.
-Calling a service by its cluster-internal DNS We&amp;rsquo;ll go from the highest to the lowest level in this journey. So let&amp;rsquo;s go through the scenario a bit: you have two services, foo and bar. those two services live in the same namespace app in your cluster.</description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Kubernetes on Aiman Ismail</title><link>https://pokgak.xyz/tags/kubernetes/</link><description>Recent content in Kubernetes on Aiman Ismail</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Tue, 12 Sep 2023 02:05:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/tags/kubernetes/index.xml" rel="self" type="application/rss+xml"/><item><title>Access internal kubernetes services from anywhere using Tailscale</title><link>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</link><pubDate>Tue, 12 Sep 2023 02:05:00 +0800</pubDate><guid>https://pokgak.xyz/articles/k8s-cluster-access-tailscale/</guid><description>&lt;p>&lt;img loading="lazy" 
+ src="https://pokgak.xyz/images/k8s-external-dns-tailscale.png" 
+ alt="Full flow" 
+ 
+ width=5207 
+ height="1886" />&lt;/p>
+&lt;p>I recently setup a local kubernetes in my home network to play with and one of the issues that I faced is that it is hard to access the services inside the cluster from my laptop. I don&amp;rsquo;t have a load-balancer in my setup so everytime I want to access a service from my laptop, I&amp;rsquo;ll have to run &lt;code>kubectl port-forward&lt;/code> first before using the localhost address to access it. It works but it&amp;rsquo;s annoying.&lt;/p></description></item><item><title>Interview Series: Explain How Kubernetes DNS works</title><link>https://pokgak.xyz/articles/explain-k8s-dns/</link><pubDate>Wed, 24 May 2023 23:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/explain-k8s-dns/</guid><description>&lt;p>This will be the first in my interview questions series. I&amp;rsquo;ll compile interesting questions that I got from my experience interviewing for DevOps/SRE role in Malaysia.&lt;/p>
+&lt;p>&lt;img loading="lazy" 
+ src="https://pokgak.xyz/images/k8s-dns.png" 
+ alt="" 
+ 
+ width=2623 
+ height="1244" />&lt;/p>
+&lt;h2 id="calling-a-service-by-its-cluster-internal-dns">
+ &lt;a href="#calling-a-service-by-its-cluster-internal-dns" class="anchor">
+ &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+ &lt;path fill-rule="evenodd"
+ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+ &lt;/path>
+ &lt;/svg>
+ &lt;/a>
+ Calling a service by its cluster-internal DNS
+&lt;/h2>
+&lt;p>We&amp;rsquo;ll go from the highest to the lowest level in this journey. So let&amp;rsquo;s go through the scenario a bit: you have two services, foo and bar. those two services live in the same namespace &lt;code>app&lt;/code> in your cluster. Now, inside service foo code, it makes a HTTP request to service bar. Probably something like so:&lt;/p></description></item></channel></rss>
