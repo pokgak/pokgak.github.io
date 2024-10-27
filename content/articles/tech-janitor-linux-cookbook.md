@@ -1,6 +1,6 @@
 ---
 title: "Tech Janitor: Linux Cookbook"
-date: 2024-01-27T27:14:00+08:00
+date: 2024-01-27T03:14:00+08:00
 tags: [linux, tools, devops, vm]
 draft: true
 ---
