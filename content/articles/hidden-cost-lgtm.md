@@ -6,6 +6,12 @@ tags: [grafana, loki, mimir, tempo, observability, aws]
 
 At my latest $job, I was tasked of setting up the LGTM stack (Loki, Grafana, Tempo, Mimir) for observability. Fast forward a few months, I noticed there's a hidden aspect to running the stack that I was not expecting before and that is the network cost, specifically the network transfer cost for cross AZ traffic. At one point we were paying more than $100 per day just for the cross AZ network traffic.
 
+Update: since this article was written, I found out that the official Loki helm chart have a section addressing the cross-az issue in the values file. It does not recommend running Loki across multiple AZs on the cloud.
+
+> Note: This can be used to run Loki over multiple cloud provider availability zones however this is not currently
+> recommended as Loki is not optimized for this and cross zone network traffic costs can become extremely high
+> extremely quickly. Even with zone awareness enabled, it is recommended to run Loki in a single availability zone.
+
 ## Cross AZ Traffic Amplification
 
 While investigating where does the traffic coming from I compared the load balancer "Processed Bytes" metrics with the Cost Explorer usage for cross AZ traffic and noticed that there's a 10x increase in the reported values by the load balancer to the actual charged traffic. It baffled me a bit and made me step back and take a deeper look at the possible points where I'm getting charged.
