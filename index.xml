@@ -446,7 +446,7 @@ Alloy cadvisor exporter
 &lt;/h3>
 &lt;p>Alloy provides the &lt;code>prometheus.exporter.cadvisor&lt;/code> components that can be used to start a new cadvisor on the nodes. This is not required if the kubelet running on your nodes already runs cadvisor. This is the case for me on EKS running on Bottlerocket.&lt;/p></description></item><item><title>The hidden cost of running your own observability stack</title><link>https://pokgak.xyz/articles/hidden-cost-lgtm/</link><pubDate>Mon, 24 Jun 2024 13:00:00 +0800</pubDate><guid>https://pokgak.xyz/articles/hidden-cost-lgtm/</guid><description>
 &lt;p>At my latest $job, I was tasked of setting up the LGTM stack (Loki, Grafana, Tempo, Mimir) for observability. Fast forward a few months, I noticed there&amp;rsquo;s a hidden aspect to running the stack that I was not expecting before and that is the network cost, specifically the network transfer cost for cross AZ traffic. At one point we were paying more than $100 per day just for the cross AZ network traffic.&lt;/p>
-&lt;p>Update: since this article was written, I found out that the official Loki helm chart have a section addressing the cross-az issue in the values file. It does not recommend running Loki across multiple AZs on the cloud.&lt;/p>
+&lt;p>Update: since this article was written, I&amp;rsquo;ve found out that the official Loki helm chart have a section addressing the cross-az issue in the values file. It does not recommend running Loki across multiple AZs on the cloud.&lt;/p>
 &lt;blockquote>
 &lt;p>Note: This can be used to run Loki over multiple cloud provider availability zones however this is not currently
 recommended as Loki is not optimized for this and cross zone network traffic costs can become extremely high
