@@ -213,9 +213,10 @@ Just let me suffer.
 
 TLDR here's what I had to do to get multi-platform build working when using multiple Dockerfiles:
 
+1. Add the `platforms` section to your service in `docker-compose.yaml`
 1. Setup a new Docker builder using the `docker-container` driver
-2. Add the `base` image as extra contexts using Bake `x-bake` syntax
-3. Build the image using `docker buildx bake`
+1. Add the `base` image as extra contexts using Bake `x-bake` syntax
+1. Build the image using `docker buildx bake`
 
 This use case is quite niche tbh and like I've said it is avoidable by using multi-stage builds but it is what it is. There's other use cases for Bake as described in this [guide](https://docs.docker.com/guides/bake/) that is more practical. It's worth a read IMO. Hope you've learnt something new as I have.
 
