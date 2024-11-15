@@ -50,7 +50,8 @@ services:
 When building the service we run the following command:
 
 ```
-$ docker compose -f ./cicd/docker/docker-compose.yaml build base & docker compose -f ./cicd/docker/docker-compose.yaml build serviceA
+$ docker compose -f ./cicd/docker/docker-compose.yaml build base
+$ docker compose -f ./cicd/docker/docker-compose.yaml build serviceA
 ```
 
 This will first build the `base` image and then use that image to build `serviceA`. It works without issue.
