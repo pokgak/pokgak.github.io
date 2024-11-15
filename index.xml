@@ -329,6 +329,7 @@ Recap
 &lt;/h2>
 &lt;p>TLDR here&amp;rsquo;s what I had to do to get multi-platform build working when using multiple Dockerfiles:&lt;/p>
 &lt;ol>
+&lt;li>Add the &lt;code>platforms&lt;/code> section to your service in &lt;code>docker-compose.yaml&lt;/code>&lt;/li>
 &lt;li>Setup a new Docker builder using the &lt;code>docker-container&lt;/code> driver&lt;/li>
 &lt;li>Add the &lt;code>base&lt;/code> image as extra contexts using Bake &lt;code>x-bake&lt;/code> syntax&lt;/li>
 &lt;li>Build the image using &lt;code>docker buildx bake&lt;/code>&lt;/li>
