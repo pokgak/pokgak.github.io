@@ -302,7 +302,7 @@ Recap
 &lt;li>Add the &lt;code>base&lt;/code> image as extra contexts using Bake &lt;code>x-bake&lt;/code> syntax&lt;/li>
 &lt;li>Build the image using &lt;code>docker buildx bake&lt;/code>&lt;/li>
 &lt;/ol>
-&lt;p>This use case is quite niche tbh and like I&amp;rsquo;ve said it is avoidable by using multi-stage builds but it is what it is. Hope you&amp;rsquo;ve learnt something new as I have.&lt;/p></description></item><item><title>Using DuckDB to analyze NGINX logs</title><link>https://pokgak.xyz/articles/duckdb-nginx-logs/</link><pubDate>Sun, 27 Oct 2024 18:15:00 +0800</pubDate><guid>https://pokgak.xyz/articles/duckdb-nginx-logs/</guid><description>
+&lt;p>This use case is quite niche tbh and like I&amp;rsquo;ve said it is avoidable by using multi-stage builds but it is what it is. There&amp;rsquo;s other use cases for Bake as described in this &lt;a href="https://docs.docker.com/guides/bake/">guide&lt;/a> that is more practical. It&amp;rsquo;s worth a read IMO. Hope you&amp;rsquo;ve learnt something new as I have.&lt;/p></description></item><item><title>Using DuckDB to analyze NGINX logs</title><link>https://pokgak.xyz/articles/duckdb-nginx-logs/</link><pubDate>Sun, 27 Oct 2024 18:15:00 +0800</pubDate><guid>https://pokgak.xyz/articles/duckdb-nginx-logs/</guid><description>
 &lt;p>As part of my recent &lt;a href="https://pokgak.xyz/articles/we-got-ddosed/">DDoS mitigation effort&lt;/a>, I had to go through millions of nginx logs to identify patterns that I can use to further improve our custom WAF rules on Cloudflare. This article shows what I did to be able to run some analysis on the logs using DuckDB.&lt;/p>
 &lt;h2 id="making-the-hard-things-easy">
 &lt;a href="#making-the-hard-things-easy" class="anchor">
