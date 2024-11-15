@@ -232,7 +232,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Putting it all together
 &lt;/h2>
-&lt;p>The &lt;a href="https://docs.docker.com/build/bake/reference/">Bake specification&lt;/a> allows you to write the file in 3 languages: HCL (Terraform, anyone?), JSON, and YAML (through docker-compose.yaml syntax). To be less disruptive I chose YAML. To use Bake specification with YAML, the CLI can parse existing docker-compose.yaml files but for Bake-specific syntax you have to put it under the property &lt;code>x-bake&lt;/code>. We&amp;rsquo;ll also add the &lt;code>platform&lt;/code> properties under the &lt;code>x-bake&lt;/code> syntax. This is how the final &lt;code>docker-compose.yaml&lt;/code> looks like in my case:&lt;/p>
+&lt;p>The &lt;a href="https://docs.docker.com/build/bake/reference/">Bake specification&lt;/a> allows you to write the file in 3 languages: HCL (Terraform, anyone?), JSON, and YAML (through docker-compose.yaml syntax). To be less disruptive I chose YAML. To use Bake specification with YAML, the CLI can parse existing docker-compose.yaml files but for Bake-specific syntax you have to put it under the property &lt;code>x-bake&lt;/code>. We&amp;rsquo;ll also add the &lt;code>platform&lt;/code> properties under the &lt;code>x-bake&lt;/code> property. This is how the final &lt;code>docker-compose.yaml&lt;/code> looks like in my case:&lt;/p>
 &lt;div class="highlight">&lt;div class="chroma">
 &lt;table class="lntable">&lt;tr>&lt;td class="lntd">
 &lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
