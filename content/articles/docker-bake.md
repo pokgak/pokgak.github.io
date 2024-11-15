@@ -184,9 +184,11 @@ DONE
 
 Finally, we managed to build a multiplatform image using docker buildx bake!
 
-## well ackshually, you can just use docker multi-stage build
+## well ackshually
 
 ![](images/well-ackchyually.png)
+
+> you can just use docker multi-stage build
 
 I know. You're right. I chose not do that to avoid making big changes to the code. Just let me suffer.
 
