@@ -80,7 +80,8 @@ Background
 &lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;p>When building the service we run the following command:&lt;/p>
-&lt;pre tabindex="0">&lt;code>$ docker compose -f ./cicd/docker/docker-compose.yaml build base &amp;amp; docker compose -f ./cicd/docker/docker-compose.yaml build serviceA
+&lt;pre tabindex="0">&lt;code>$ docker compose -f ./cicd/docker/docker-compose.yaml build base
+$ docker compose -f ./cicd/docker/docker-compose.yaml build serviceA
 &lt;/code>&lt;/pre>&lt;p>This will first build the &lt;code>base&lt;/code> image and then use that image to build &lt;code>serviceA&lt;/code>. It works without issue.&lt;/p>
 &lt;h2 id="adding-multi-platform-support">
 &lt;a href="#adding-multi-platform-support" class="anchor">
