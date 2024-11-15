@@ -8,9 +8,9 @@ Have you seen someone use `docker buildx bake` before? Me neither... until I nee
 
 ## Background
 
-I am on a journey to run our services on Graviton on AWS and Gravitons CPU is using arm64 architecture. To make this migration smooth I decided there will be a transionary period where there might be both architecture running on separate environments. This means I need to make sure that we're building both the `linux/amd64` and `linux/arm64` variant of the images.
+I am on a journey to run our services on Graviton on AWS and its using an arm64-based CPU. To make this migration smooth I decided there will be a transitionary period where there might be both architectures running on separate environments. This means I need to make sure that we're building both the `linux/amd64` and `linux/arm64` variant of the images.
 
-We're using one monorepo per team for our services (don't ask me how we got there). For each monorepo there will be codebase for multiple services side by side and the Dockerfile are also managed together in one folder. To avoid code duplication, we have one `base.Dockerfile` that will generate a local `base` image which will be referred to when building other services.
+We're using one monorepo per team for our services (don't ask me how we got there). For each monorepo there will be codebases for multiple services side by side and the Dockerfile are also managed together in one folder. To avoid code duplication, we have one `base.Dockerfile` that will generate a local `base` image which will be referred to when building other services.
 
 For reference, this is how the files look like:
 
@@ -18,6 +18,7 @@ For reference, this is how the files look like:
 # ./cicd/docker/base.Dockerfile
 FROM node:21-alpine as base
 ...
+# installs all the common dependencies
 RUN pnpm install --production
 ...
 ```
@@ -26,7 +27,9 @@ RUN pnpm install --production
 # ./cicd/docker/serviceA.Dockerfile
 FROM node:21-alpine
 WORKDIR /app
-COPY --from=backend-builder /usr/src/app /app
+
+# copies the dependencies from base image into current folder
+COPY --from=base /usr/src/app /app
 ...
 ```
 
@@ -47,8 +50,7 @@ services:
 When building the service we run the following command:
 
 ```
-$ docker compose -f ./cicd/docker/docker-compose.yaml build base
-$ docker compose -f ./cicd/docker/docker-compose.yaml build serviceA
+$ docker compose -f ./cicd/docker/docker-compose.yaml build base & docker compose -f ./cicd/docker/docker-compose.yaml build serviceA
 ```
 
 This will first build the `base` image and then use that image to build `serviceA`. It works without issue.
@@ -107,7 +109,7 @@ The first command creates the builder using the `docker-container` driver and se
 Now, I should be able to run my docker-compose command right...?
 
 ```
-# `--builder multiplatform` to tell docker-compose to use the docker-container builder we just created
+# use `--builder multiplatform` to tell docker-compose to use the docker-container builder we just created
 $ docker compose -f ./cicd/docker/docker-compose.yaml build --builder multiplatform serviceA
 ...
 failed to solve: base: failed to resolve source metadata for docker.io/library/base:latest: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
@@ -117,7 +119,7 @@ Now the builder cannot find the `base` image that we've built used before. Why? 
 
 > Unlike when using the default docker driver, images built using other drivers aren't automatically loaded into the local image store. If you don't specify an output, the build result is exported to the build cache only.
 
-I did use the `--load` and the `--driver-opt default-load=true` to automatically load the image into the local image store but it didn't work. So what's next?
+I did use the `--load` and the `--driver-opt default-load=true` to automatically load the image into the local image store but long story short, it didn't work. So what's next?
 
 ## Enter docker buildx bake
 
@@ -134,6 +136,8 @@ These are the things you can specify under the `target.contexts` property:
 
 The first four are cool but the last one stood out to me: `Bake target: target:bake`.
 
+Bake 101 crash course: remember in `docker-compose.yaml` we have `services`?
+
 ```yaml
 # ./cicd/docker/docker-compose.yaml
 services:
@@ -148,11 +152,11 @@ services:
       dockerfile: ./cicd/docker/serviceB.Dockerfile
 ```
 
-Bake 101 crash course: remember in `docker-compose.yaml` we have services? In Bake format, those services are called targets. Let's recall my original docker-compose.yaml file again, I have a `base` service used to build the shared image used in the Dockerfiles of `serviceA` and `serviceB`. In other words, the `base` service is also a **target**. This means, I can pass it on as extra contexts to my build!
+In Bake format, those services are called targets. Let's recall my original `docker-compose.yaml` file again, I have a `base` service used to build the shared image used in the Dockerfiles of `serviceA` and `serviceB`. In other words, the `base` service is also a **target**. This means, I can pass it on as extra contexts to my build!
 
 ## Putting it all together
 
-The Bake specification allows you to write the file in 3 languages: HCL (Terraform, anyone?), JSON, and YAML (through docker-compose.yaml syntax). To be less disruptive I chose YAML. To use Bake specification with YAML, the CLI can parse existing docker-compose.yaml files but for Bake-specific syntax you have to put it under the property `x-bake`. This is how it looks like in my case:
+The [Bake specification](https://docs.docker.com/build/bake/reference/) allows you to write the file in 3 languages: HCL (Terraform, anyone?), JSON, and YAML (through docker-compose.yaml syntax). To be less disruptive I chose YAML. To use Bake specification with YAML, the CLI can parse existing docker-compose.yaml files but for Bake-specific syntax you have to put it under the property `x-bake`. We'll also add the `platform` properties under the `x-bake` syntax. This is how the final `docker-compose.yaml` looks like in my case:
 
 ```yaml
 # ./cicd/docker/docker-compose.yaml
@@ -160,18 +164,28 @@ services:
   base:
     build:
       dockerfile: ./cicd/docker/base.Dockerfile
+      x-bake:
+        platforms:
+        - linux/amd64
+        - linux/arm64
   serviceA:
     build:
       dockerfile: ./cicd/docker/serviceA.Dockerfile
       x-bake:
         contexts:
             base: target:base
+        platforms:
+        - linux/amd64
+        - linux/arm64
   serviceB:
     build:
       dockerfile: ./cicd/docker/serviceB.Dockerfile
       x-bake:
         contexts:
             base: target:base
+        platforms:
+        - linux/amd64
+        - linux/arm64
 ```
 
 To run the build we need to use our friend `docker buildx bake`:
