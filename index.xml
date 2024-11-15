@@ -315,7 +315,8 @@ height="700" />&lt;/p>
 &lt;blockquote>
 &lt;p>you can just use docker multi-stage build&lt;/p>
 &lt;/blockquote>
-&lt;p>I know. You&amp;rsquo;re right. I chose not do that to avoid making big changes to the code. Just let me suffer.&lt;/p>
+&lt;p>I know. You&amp;rsquo;re right. I chose not do that to avoid making big changes to the code.&lt;/p>
+&lt;p>Just let me suffer.&lt;/p>
 &lt;h2 id="recap">
 &lt;a href="#recap" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
