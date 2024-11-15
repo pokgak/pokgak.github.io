@@ -129,11 +129,11 @@ At this point, I've almost exhausted all my options and just browsing through th
 At first the docker buildx bake command just looks like a different syntax for specifying the docker compose file to me but when my eyes caught on to one of the properties: [`target.contexts`](https://docs.docker.com/build/bake/reference/#targetcontexts). It allows you to pass in more contexts in addition to the folder content context that we're used to with normal docker build that can be used in the Dockerfile.
 
 These are the things you can specify under the `target.contexts` property:
-- Container image: docker-image://alpine@sha256:0123456789
-- Git URL: https://github.com/user/proj.git
-- HTTP URL: https://example.com/files
-- Local directory: ../path/to/src
-- Bake target: target:base
+- Container image: `docker-image://alpine@sha256:0123456789`
+- Git URL: `https://github.com/user/proj.git`
+- HTTP URL: `https://example.com/files`
+- Local directory: `../path/to/src`
+- Bake target: `target:base`
 
 The first four are cool but the last one stood out to me: `Bake target: target:bake`.
 
