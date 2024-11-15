@@ -157,7 +157,7 @@ In Bake format, those services are called targets. Let's recall my original `doc
 
 ## Putting it all together
 
-The [Bake specification](https://docs.docker.com/build/bake/reference/) allows you to write the file in 3 languages: HCL (Terraform, anyone?), JSON, and YAML (through docker-compose.yaml syntax). To be less disruptive I chose YAML. To use Bake specification with YAML, the CLI can parse existing docker-compose.yaml files but for Bake-specific syntax you have to put it under the property `x-bake`. We'll also add the `platform` properties under the `x-bake` syntax. This is how the final `docker-compose.yaml` looks like in my case:
+The [Bake specification](https://docs.docker.com/build/bake/reference/) allows you to write the file in 3 languages: HCL (Terraform, anyone?), JSON, and YAML (through docker-compose.yaml syntax). To be less disruptive I chose YAML. To use Bake specification with YAML, the CLI can parse existing docker-compose.yaml files but for Bake-specific syntax you have to put it under the property `x-bake`. We'll also add the `platform` properties under the `x-bake` property. This is how the final `docker-compose.yaml` looks like in my case:
 
 ```yaml
 # ./cicd/docker/docker-compose.yaml
