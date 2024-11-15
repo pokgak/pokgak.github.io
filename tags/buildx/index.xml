@@ -9,4 +9,4 @@
  &lt;/a>
  Background
 &lt;/h2>
-&lt;p>I am on a journey to run our services on Graviton on AWS and Gravitons CPU is using arm64 architecture. To make this migration smooth I decided there will be a transionary period where there might be both architecture running on separate environments. This means I need to make sure that we&amp;rsquo;re building both the &lt;code>linux/amd64&lt;/code> and &lt;code>linux/arm64&lt;/code> variant of the images.&lt;/p></description></item></channel></rss>
+&lt;p>I am on a journey to run our services on Graviton on AWS and its using an arm64-based CPU. To make this migration smooth I decided there will be a transitionary period where there might be both architectures running on separate environments. This means I need to make sure that we&amp;rsquo;re building both the &lt;code>linux/amd64&lt;/code> and &lt;code>linux/arm64&lt;/code> variant of the images.&lt;/p></description></item></channel></rss>
