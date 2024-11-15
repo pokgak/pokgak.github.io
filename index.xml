@@ -1,4 +1,308 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 27 Oct 2024 18:15:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Using DuckDB to analyze NGINX logs</title><link>https://pokgak.xyz/articles/duckdb-nginx-logs/</link><pubDate>Sun, 27 Oct 2024 18:15:00 +0800</pubDate><guid>https://pokgak.xyz/articles/duckdb-nginx-logs/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 16 Nov 2024 00:52:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Docker's lesser known command: buildx bake</title><link>https://pokgak.xyz/articles/docker-bake/</link><pubDate>Sat, 16 Nov 2024 00:52:00 +0800</pubDate><guid>https://pokgak.xyz/articles/docker-bake/</guid><description>
+&lt;p>Have you seen someone use &lt;code>docker buildx bake&lt;/code> before? Me neither&amp;hellip; until I need to build a multiplatform image for our services. In this blog post I&amp;rsquo;ll walk through the reason why I ended up being forced to use &lt;code>docker buildx bake&lt;/code>.&lt;/p>
+&lt;h2 id="background">
+&lt;a href="#background" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Background
+&lt;/h2>
+&lt;p>I am on a journey to run our services on Graviton on AWS and Gravitons CPU is using arm64 architecture. To make this migration smooth I decided there will be a transionary period where there might be both architecture running on separate environments. This means I need to make sure that we&amp;rsquo;re building both the &lt;code>linux/amd64&lt;/code> and &lt;code>linux/arm64&lt;/code> variant of the images.&lt;/p>
+&lt;p>We&amp;rsquo;re using one monorepo per team for our services (don&amp;rsquo;t ask me how we got there). For each monorepo there will be codebase for multiple services side by side and the Dockerfile are also managed together in one folder. To avoid code duplication, we have one &lt;code>base.Dockerfile&lt;/code> that will generate a local &lt;code>base&lt;/code> image which will be referred to when building other services.&lt;/p>
+&lt;p>For reference, this is how the files look like:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-Dockerfile" data-lang="Dockerfile">&lt;span class="line">&lt;span class="cl">&lt;span class="c"># ./cicd/docker/base.Dockerfile&lt;/span>&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="err">&lt;/span>&lt;span class="k">FROM&lt;/span>&lt;span class="s"> node:21-alpine as base&lt;/span>&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="err">&lt;/span>...&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="err">&lt;/span>&lt;span class="k">RUN&lt;/span> pnpm install --production&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="err">&lt;/span>...&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-Dockerfile" data-lang="Dockerfile">&lt;span class="line">&lt;span class="cl">&lt;span class="c"># ./cicd/docker/serviceA.Dockerfile&lt;/span>&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="err">&lt;/span>&lt;span class="k">FROM&lt;/span>&lt;span class="s"> node:21-alpine&lt;/span>&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="err">&lt;/span>&lt;span class="k">WORKDIR&lt;/span>&lt;span class="s"> /app&lt;/span>&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="err">&lt;/span>&lt;span class="k">COPY&lt;/span> --from&lt;span class="o">=&lt;/span>backend-builder /usr/src/app /app&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="err">&lt;/span>...&lt;span class="err">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="c"># ./cicd/docker/docker-compose.yaml&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">services&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">base&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/base.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">serviceA&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/serviceA.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">serviceB&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/serviceB.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>When building the service we run the following command:&lt;/p>
+&lt;pre tabindex="0">&lt;code>$ docker compose -f ./cicd/docker/docker-compose.yaml build base
+$ docker compose -f ./cicd/docker/docker-compose.yaml build serviceA
+&lt;/code>&lt;/pre>&lt;p>This will first build the &lt;code>base&lt;/code> image and then use that image to build &lt;code>serviceA&lt;/code>. It works without issue.&lt;/p>
+&lt;h2 id="adding-multi-platform-support">
+&lt;a href="#adding-multi-platform-support" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Adding Multi-platform support
+&lt;/h2>
+&lt;p>The Docker Compose specification supports specifying the we want to build for using the &lt;code>platforms&lt;/code> key. So, adding that to our &lt;code>docker-compose.yaml&lt;/code>, it&amp;rsquo;ll now look like this with multi-platform support:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="c"># ./cicd/docker/docker-compose.yaml&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">services&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">base&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/base.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">platforms&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">linux/amd64&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">linux/arm64&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">serviceA&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/serviceA.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">platforms&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">linux/amd64&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">linux/arm64&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">serviceB&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/serviceB.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">platforms&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">linux/amd64&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">linux/arm64&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Now let&amp;rsquo;s run the same &lt;code>docker-compose build&lt;/code> command like before and we get&amp;hellip;&lt;/p>
+&lt;pre tabindex="0">&lt;code>[+] Building 0.0s (0/0)
+Multi-platform build is not supported for the docker driver.
+Switch to a different driver, or turn on the containerd image store, and try again.
+Learn more at https://docs.docker.com/go/build-multi-platform/
+&lt;/code>&lt;/pre>&lt;p>Damn it.&lt;/p>
+&lt;h2 id="using-the-docker-container-build-driver">
+&lt;a href="#using-the-docker-container-build-driver" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Using the docker-container build driver
+&lt;/h2>
+&lt;p>After some reading, I learnt that the default build driver when you use docker is the &lt;code>docker&lt;/code> driver which doesn&amp;rsquo;t have support for multi-platform images. You can read more on Docker build drivers on this &lt;a href="https://docs.docker.com/build/builders/drivers/">page&lt;/a>.&lt;/p>
+&lt;p>I need to use the &lt;code>docker-container&lt;/code> driver which has support for building multi-platform images. To do that I need to create a new builder using the following command:&lt;/p>
+&lt;pre tabindex="0">&lt;code>$ docker buildx create --driver docker-container --name multiplatform --use
+$ docker buildx install
+&lt;/code>&lt;/pre>&lt;p>The first command creates the builder using the &lt;code>docker-container&lt;/code> driver and sets it as the default while the second command creates a shell alias so that I can just use &lt;code>docker build&lt;/code> instead of having to specify &lt;code>docker buildx build&lt;/code> on the CLI.&lt;/p>
+&lt;p>Now, I should be able to run my docker-compose command right&amp;hellip;?&lt;/p>
+&lt;pre tabindex="0">&lt;code># `--builder multiplatform` to tell docker-compose to use the docker-container builder we just created
+$ docker compose -f ./cicd/docker/docker-compose.yaml build --builder multiplatform serviceA
+...
+failed to solve: base: failed to resolve source metadata for docker.io/library/base:latest: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
+&lt;/code>&lt;/pre>&lt;p>Now the builder cannot find the &lt;code>base&lt;/code> image that we&amp;rsquo;ve built used before. Why? This section from the Docker build drivers page answered it:&lt;/p>
+&lt;blockquote>
+&lt;p>Unlike when using the default docker driver, images built using other drivers aren&amp;rsquo;t automatically loaded into the local image store. If you don&amp;rsquo;t specify an output, the build result is exported to the build cache only.&lt;/p>
+&lt;/blockquote>
+&lt;p>I did use the &lt;code>--load&lt;/code> and the &lt;code>--driver-opt default-load=true&lt;/code> to automatically load the image into the local image store but it didn&amp;rsquo;t work. So what&amp;rsquo;s next?&lt;/p>
+&lt;h2 id="enter-docker-buildx-bake">
+&lt;a href="#enter-docker-buildx-bake" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Enter docker buildx bake
+&lt;/h2>
+&lt;p>At this point, I&amp;rsquo;ve almost exhausted all my options and just browsing through the Docker documentation in hope of something and I found it!&lt;/p>
+&lt;p>At first the docker buildx bake command just looks like a different syntax for specifying the docker compose file to me but when my eyes caught on to one of the properties: &lt;a href="https://docs.docker.com/build/bake/reference/#targetcontexts">&lt;code>target.contexts&lt;/code>&lt;/a>. It allows you to pass in more contexts in addition to the folder content context that we&amp;rsquo;re used to with normal docker build that can be used in the Dockerfile.&lt;/p>
+&lt;p>These are the things you can specify under the &lt;code>target.contexts&lt;/code> property:&lt;/p>
+&lt;ul>
+&lt;li>Container image: docker-image://alpine@sha256:0123456789&lt;/li>
+&lt;li>Git URL: &lt;a href="https://github.com/user/proj.git">https://github.com/user/proj.git&lt;/a>&lt;/li>
+&lt;li>HTTP URL: &lt;a href="https://example.com/files">https://example.com/files&lt;/a>&lt;/li>
+&lt;li>Local directory: ../path/to/src&lt;/li>
+&lt;li>Bake target: target:base&lt;/li>
+&lt;/ul>
+&lt;p>The first four are cool but the last one stood out to me: &lt;code>Bake target: target:bake&lt;/code>.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="c"># ./cicd/docker/docker-compose.yaml&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">services&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">base&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/base.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">serviceA&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/serviceA.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">serviceB&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/serviceB.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>Bake 101 crash course: remember in &lt;code>docker-compose.yaml&lt;/code> we have services? In Bake format, those services are called targets. Let&amp;rsquo;s recall my original docker-compose.yaml file again, I have a &lt;code>base&lt;/code> service used to build the shared image used in the Dockerfiles of &lt;code>serviceA&lt;/code> and &lt;code>serviceB&lt;/code>. In other words, the &lt;code>base&lt;/code> service is also a &lt;strong>target&lt;/strong>. This means, I can pass it on as extra contexts to my build!&lt;/p>
+&lt;h2 id="putting-it-all-together">
+&lt;a href="#putting-it-all-together" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Putting it all together
+&lt;/h2>
+&lt;p>The Bake specification allows you to write the file in 3 languages: HCL (Terraform, anyone?), JSON, and YAML (through docker-compose.yaml syntax). To be less disruptive I chose YAML. To use Bake specification with YAML, the CLI can parse existing docker-compose.yaml files but for Bake-specific syntax you have to put it under the property &lt;code>x-bake&lt;/code>. This is how it looks like in my case:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="c"># ./cicd/docker/docker-compose.yaml&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">services&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">base&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/base.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">serviceA&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/serviceA.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">x-bake&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">contexts&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">base&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">target:base&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">serviceB&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">dockerfile&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">./cicd/docker/serviceB.Dockerfile&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">x-bake&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">contexts&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">base&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">target:base&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>To run the build we need to use our friend &lt;code>docker buildx bake&lt;/code>:&lt;/p>
+&lt;pre tabindex="0">&lt;code>$ docker buildx bake --file ./cicd/docker/docker-compose.yaml serviceA
+DONE
+&lt;/code>&lt;/pre>&lt;p>Finally, we managed to build a multiplatform image using docker buildx bake!&lt;/p>
+&lt;h2 id="well-ackshually-you-can-just-use-docker-multi-stage-build">
+&lt;a href="#well-ackshually-you-can-just-use-docker-multi-stage-build" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+well ackshually, you can just use docker multi-stage build
+&lt;/h2>
+&lt;p>&lt;img loading="lazy"
+src="https://pokgak.xyz/images/well-ackchyually.png"
+alt=""
+width=700
+height="700" />&lt;/p>
+&lt;p>I know. You&amp;rsquo;re right. I chose not do that to avoid making big changes to the code. Just let me suffer.&lt;/p>
+&lt;h2 id="recap">
+&lt;a href="#recap" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Recap
+&lt;/h2>
+&lt;p>TLDR here&amp;rsquo;s what I had to do to get multi-platform build working when using multiple Dockerfiles:&lt;/p>
+&lt;ol>
+&lt;li>Setup a new Docker builder using the &lt;code>docker-container&lt;/code> driver&lt;/li>
+&lt;li>Add the &lt;code>base&lt;/code> image as extra contexts using Bake &lt;code>x-bake&lt;/code> syntax&lt;/li>
+&lt;li>Build the image using &lt;code>docker buildx bake&lt;/code>&lt;/li>
+&lt;/ol>
+&lt;p>This use case is quite niche tbh and like I&amp;rsquo;ve said it is avoidable by using multi-stage builds but it is what it is. Hope you&amp;rsquo;ve learnt something new as I have.&lt;/p></description></item><item><title>Using DuckDB to analyze NGINX logs</title><link>https://pokgak.xyz/articles/duckdb-nginx-logs/</link><pubDate>Sun, 27 Oct 2024 18:15:00 +0800</pubDate><guid>https://pokgak.xyz/articles/duckdb-nginx-logs/</guid><description>
 &lt;p>As part of my recent &lt;a href="https://pokgak.xyz/articles/we-got-ddosed/">DDoS mitigation effort&lt;/a>, I had to go through millions of nginx logs to identify patterns that I can use to further improve our custom WAF rules on Cloudflare. This article shows what I did to be able to run some analysis on the logs using DuckDB.&lt;/p>
 &lt;h2 id="making-the-hard-things-easy">
 &lt;a href="#making-the-hard-things-easy" class="anchor">
