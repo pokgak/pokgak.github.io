@@ -205,7 +205,9 @@ Finally, we managed to build a multi-platform image using docker buildx bake!
 
 > you can just use docker multi-stage build
 
-I know. You're right. I chose not do that to avoid making big changes to the code. Just let me suffer.
+I know. You're right. I chose not do that to avoid making big changes to the code.
+
+Just let me suffer.
 
 ## Recap
 
