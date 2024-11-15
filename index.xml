@@ -185,11 +185,11 @@ Enter docker buildx bake
 &lt;p>At first the docker buildx bake command just looks like a different syntax for specifying the docker compose file to me but when my eyes caught on to one of the properties: &lt;a href="https://docs.docker.com/build/bake/reference/#targetcontexts">&lt;code>target.contexts&lt;/code>&lt;/a>. It allows you to pass in more contexts in addition to the folder content context that we&amp;rsquo;re used to with normal docker build that can be used in the Dockerfile.&lt;/p>
 &lt;p>These are the things you can specify under the &lt;code>target.contexts&lt;/code> property:&lt;/p>
 &lt;ul>
-&lt;li>Container image: docker-image://alpine@sha256:0123456789&lt;/li>
-&lt;li>Git URL: &lt;a href="https://github.com/user/proj.git">https://github.com/user/proj.git&lt;/a>&lt;/li>
-&lt;li>HTTP URL: &lt;a href="https://example.com/files">https://example.com/files&lt;/a>&lt;/li>
-&lt;li>Local directory: ../path/to/src&lt;/li>
-&lt;li>Bake target: target:base&lt;/li>
+&lt;li>Container image: &lt;code>docker-image://alpine@sha256:0123456789&lt;/code>&lt;/li>
+&lt;li>Git URL: &lt;code>https://github.com/user/proj.git&lt;/code>&lt;/li>
+&lt;li>HTTP URL: &lt;code>https://example.com/files&lt;/code>&lt;/li>
+&lt;li>Local directory: &lt;code>../path/to/src&lt;/code>&lt;/li>
+&lt;li>Bake target: &lt;code>target:base&lt;/code>&lt;/li>
 &lt;/ul>
 &lt;p>The first four are cool but the last one stood out to me: &lt;code>Bake target: target:bake&lt;/code>.&lt;/p>
 &lt;p>Bake 101 crash course: remember in &lt;code>docker-compose.yaml&lt;/code> we have &lt;code>services&lt;/code>?&lt;/p>
