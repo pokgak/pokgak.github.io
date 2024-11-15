@@ -4,7 +4,7 @@ date: 2024-11-16T00:52:00+08:00
 tags: [docker, container, multiplatform, bake, buildx]
 ---
 
-Have you seen someone use `docker buildx bake` before? Me neither... until I need to build a multiplatform image for our services. In this blog post I'll walk through the reason why I ended up being forced to use `docker buildx bake`.
+Have you seen someone use `docker buildx bake` before? Me neither... until I need to build a multi-platform image for our services. In this blog post I'll walk through the reason why I ended up being forced to use `docker buildx bake`.
 
 ## Background
 
@@ -182,7 +182,7 @@ $ docker buildx bake --file ./cicd/docker/docker-compose.yaml serviceA
 DONE
 ```
 
-Finally, we managed to build a multiplatform image using docker buildx bake!
+Finally, we managed to build a multi-platform image using docker buildx bake!
 
 ## well ackshually
 
