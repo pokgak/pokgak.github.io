@@ -1,5 +1,5 @@
 ---
-title: "Docker's lesser known command: buildx bake"
+title: "Docker's lesser known command: docker buildx bake"
 date: 2024-11-16T00:52:00+08:00
 tags: [docker, container, multiplatform, bake, buildx]
 ---
