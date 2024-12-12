@@ -1,5 +1,5 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 12 Dec 2024 17:07:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Exploring AWS ALB for EKS</title><link>https://pokgak.xyz/articles/exploring-alb-ingress-controller/</link><pubDate>Thu, 12 Dec 2024 17:07:00 +0800</pubDate><guid>https://pokgak.xyz/articles/exploring-alb-ingress-controller/</guid><description>
-&lt;p>Recently, &lt;a href="https://pokgak.xyz/articles/we-got-ddosed/">my company got DDoS&amp;rsquo;ed&lt;/a> and during the attack I noticed that the first thing that went down is the ingress-nginx pods. With this information, I was thinking if I could skip ingress-nginx and rely on AWS load balancers directly for routing the traffic to our services. AWS load balancer comes has two types: the L4 Network Load Balancer (NLB) and the L7 Application Load Balancer. The NLB doesn&amp;rsquo;t support the same feature as ingress-nginx for routing HTTP requests as it operates on the L4 layer only so we&amp;rsquo;ll be looking at the ALB in this article.&lt;/p>
+&lt;p>Recently, &lt;a href="https://pokgak.xyz/articles/we-got-ddosed/">my company got DDoS&amp;rsquo;ed&lt;/a> and during the attack I noticed that the first thing that went down is the ingress-nginx pods. With this information, I was thinking if I could eliminate ingress-nginx and rely on AWS load balancers directly for routing the traffic to our services. AWS load balancer comes in two flavors: the L4 Network Load Balancer (NLB) and the L7 Application Load Balancer. The NLB doesn&amp;rsquo;t support the same feature as ingress-nginx for routing HTTP requests as it operates on the L4 layer only so we&amp;rsquo;ll be looking at the ALB in this article.&lt;/p>
 &lt;h2 id="current-setup">
 &lt;a href="#current-setup" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -16,7 +16,7 @@ alt="AWS NLB with ingress-nginx"
 width=1812
 height="1012" />&lt;/p>
 &lt;p>Our current setup uses a AWS NLB per country to accepts the connection from the internet. The NLB then forwards the requests to a target group consisting all the ingress-nginx controller pods. The ingress-nginx pods will then route the traffic from NLB to the backend services based on the configured Ingress configurations.&lt;/p>
-&lt;p>Assuming AWS NLB is reliable and can scale infinitely for arguments sake, our bottleneck is then the ingress-nginx pods. We can setup the ingress-nginx pods to autoscale based on the traffic but I&amp;rsquo;ve seen issues with connections getting disrupted when the autoscaling happens. What if we can eliminate this bottleneck altogether and just route directly from AWS LB to our backend services?&lt;/p>
+&lt;p>For arguments sake, let&amp;rsquo;s assume that AWS NLB is reliable and can scale infinitely. Our bottleneck then is the ingress-nginx pods. We can setup the ingress-nginx pods to autoscale based on the traffic but I&amp;rsquo;ve seen issues with connections getting disrupted when the autoscaling happens. What if we can eliminate this bottleneck altogether and just route directly from AWS LB to our backend services?&lt;/p>
 &lt;h2 id="proposed-setup">
 &lt;a href="#proposed-setup" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -43,7 +43,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 ALB Quotas and Limitations
 &lt;/h2>
-&lt;p>Since we now relies on AWS ALB directly to route requests to our backend services, we must pay attention to the &lt;a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-limits.html">limitations&lt;/a> set by AWS. For ALB there is a soft-limit of 100 rules per ALB. Assuming we need one listener rule per backend service, the maximum number of backend services that can be served by one ALB is 100. There are workarounds you can do to overcome this grouping separate backend services together by team or other attributes and each will get one ALB.&lt;/p>
+&lt;p>Since we now rely on AWS ALB directly to route requests to our backend services, we must pay attention to the &lt;a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-limits.html">limitations&lt;/a> set by AWS. For ALB there is a soft-limit of 100 rules per ALB. Assuming we need one listener rule per backend service, the maximum number of backend services that can be served by one ALB is 100. There are workarounds you can do to overcome this grouping separate backend services together by team or other attributes and each will get one ALB.&lt;/p>
 &lt;h2 id="pricing-alb-vs-nlb">
 &lt;a href="#pricing-alb-vs-nlb" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -54,7 +54,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Pricing: ALB vs NLB
 &lt;/h2>
-&lt;p>This is the part that I&amp;rsquo;m most interested in: how much more will it cost us if we migrate to use ALB?&lt;/p>
+&lt;p>This is the part that I&amp;rsquo;m most interested in: how much more will it cost us if we migrate to ALB?&lt;/p>
 &lt;p>Based on the &lt;a href="https://aws.amazon.com/elasticloadbalancing/pricing/">AWS ELB pricing page&lt;/a>, the per-hour cost of the LB instance itself is the same for ALB and NLB. What differs is the (N)LCU-hour cost. ALB LCU-hour is around 30% more expensive than NLB. It might seem like that&amp;rsquo;s the only difference but if you read further on the ELB pricing page you will notice that an LCU-hour for ALB is not the same as NLB.&lt;/p>
 &lt;h3 id="rule-evaluations">
 &lt;a href="#rule-evaluations" class="anchor">
@@ -66,7 +66,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Rule Evaluations
 &lt;/h3>
-&lt;p>For ALB, the LCU-hour has an extra dimensions measured which is the rule evaluations. You get 10 free rules per ALB. The formula given for calculating this dimension is &lt;code>Rule evaluations = Request rate * (Number of rules processed - 10 free rules)&lt;/code>. Since ALB adds new rule for each Ingress and having separate path for defined in the Ingress spec will also create new rule, your LCU-hour cost might increase the more Ingress and paths you have in your cluster.&lt;/p>
+&lt;p>For ALB, the LCU-hour has an extra dimension measured which is the rule evaluations. You get 10 free rules per ALB. The formula given for calculating this dimension is &lt;code>Rule evaluations = Request rate * (Number of rules processed - 10 free rules)&lt;/code>. Since ALB adds new rule for each Ingress and having separate path for defined in the Ingress spec will also create new rule, your LCU-hour cost might increase the more Ingress and paths you have in your cluster.&lt;/p>
 &lt;h3 id="new-connections">
 &lt;a href="#new-connections" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -78,8 +78,8 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 New Connections
 &lt;/h3>
 &lt;p>Another difference is the included new connections count per second. For NLB there are different values depending on whether you&amp;rsquo;re using TCP, UDP, or TLS but for our comparison with ALB, lets look at the TLS pricing.&lt;/p>
-&lt;p>NLB with TLS includes 50 new TLS connections per second while ALB only includes half of that amount. We already calculated that ALB LCU-hour is already 30% more expensive than NLB but assuming you have the same amount of new connections ALB will incur more LCU-hour than NLB.&lt;/p>
-&lt;p>To get a better comparison let&amp;rsquo;s calculate the cost per connection for each LCU-hour. For NLB this is $0.006/50 connections = $0.00012 and for ALB it&amp;rsquo;s $0.008/25 connections = $0.00032. So, comparing cost per connection &lt;strong>ALB is 2.7x more expensive than NLB&lt;/strong>.&lt;/p>
+&lt;p>NLB with TLS includes 50 new TLS connections per second while ALB only includes half of that amount. We already calculated that ALB LCU-hour is already 30% more expensive than NLB but assuming you have the same amount of new connections, ALB will incur more LCU-hour than NLB.&lt;/p>
+&lt;p>To get a better comparison let&amp;rsquo;s calculate the cost per connection for each LCU-hour. For NLB this is $0.006/50 connections = $0.00012 and for ALB it&amp;rsquo;s $0.008/25 connections = $0.00032. So, comparing cost per connection, $0.00032/$0.00012, &lt;strong>ALB is 2.7x more expensive than NLB&lt;/strong>.&lt;/p>
 &lt;h3 id="lcu-hour-pricing">
 &lt;a href="#lcu-hour-pricing" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
