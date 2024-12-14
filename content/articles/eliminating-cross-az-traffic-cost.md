@@ -4,7 +4,7 @@ date: 2024-12-14T17:23:06+08:00
 tags: [aws, eks, network, nlb, k8s, cost, finops]
 ---
 
-Imagine going through your AWS bills and noticing that **APS1-DataTransfer-Regional-Bytes** is 1/3 of your monthly AWS cost. After reading a bit more on [how AWS charges for network traffic](https://docs.aws.amazon.com/cur/latest/userguide/cur-data-transfers-charges.html) you know that this is referring to the cost incurred when your traffic crosses an availability zone (AZ). This article will go walk you through what you can do to eliminate this cross-AZ traffic cost.
+Imagine going through your AWS bills and noticing that **APS1-DataTransfer-Regional-Bytes** is 1/3 of your monthly AWS cost. After reading a bit more on [how AWS charges for network traffic](https://docs.aws.amazon.com/cur/latest/userguide/cur-data-transfers-charges.html) you know that this is referring to the cost incurred when your traffic crosses an availability zone (AZ). This article will go through what you can do to eliminate this cross-AZ traffic cost.
 
 **Disclaimer**: this is not necessarily the best practice. I try my best to highlight the caveat and tradeoff you're making in this article but please make your own judgement before making the changes.
 
@@ -14,7 +14,7 @@ Imagine going through your AWS bills and noticing that **APS1-DataTransfer-Regio
 
 In this article I will use the above diagram as our example network flow. Our example scenario will use the AWS Network Load Balancer (NLB) as the load balancer (LB), then routes the traffic to the ingress-nginx pods running inside our cluster. Finally, ingress-controller pods will route the traffic to the backend services serving the API.
 
-The top and bottom part of the diagram will show how the traffic flow will be between the AZ. Once we implemented the steps I will be describing below, you should be able to elimate the cross-AZ traffic in our network.
+The top and bottom part of the diagram will show how the traffic flow will be between AZs. Once we implemented the steps I will be describing below, you should be able to elimate the cross-AZ traffic in our network.
 
 ## Incoming traffic to Load Balancer Nodes
 
@@ -29,9 +29,9 @@ There is nothing we can do if the source of the traffic is from the internet. Th
 If the source traffic originates from within your AWS network, there is the possibility that the LB nodes IP resolved is not within the same AZ as your source traffic. To avoid this, on the LB there is an option to set the client routing policy to resolve to LB nodes IP that is within the same AZ.
 
 There is 3 options to choose from:
-    * AZ affinity: queries may resolve to other zones if there are no healthy load balancer IP addresses in their own zone
-    * Partial AZ affinity: 85% of client DNS queries will favor load balancer IP addresses in their own Availability Zone, remaining resolves to any zone
-    * Any Availability Zone (default)
+* AZ affinity: queries may resolve to other zones if there are no healthy load balancer IP addresses in their own zone
+* Partial AZ affinity: 85% of client DNS queries will favor load balancer IP addresses in their own Availability Zone, remaining resolves to any zone
+* Any Availability Zone (default)
 
 In my opinion, it is safe to always set the LB to use the AZ affinity policy because the DNS queries will automatically resolve to other healthy LB IP in other zones when the one in the same zone is down.
 
