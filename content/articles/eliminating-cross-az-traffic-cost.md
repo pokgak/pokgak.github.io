@@ -55,7 +55,9 @@ NOTE: please be extra careful with this section as this influences the routing o
 
 That alone is not enough though due to how ingress-nginx works. In the Ingress configuration, you specified the Service that ingress-nginx should route the traffic to but I was suprised to know that, by default, ingress-nginx does not actually uses the Service ClusterIP. It will actually search for the Endpoint of the services and get the IP of the pods behind the service. Then, it will distribute the traffic to the pod IPs using the round robin algorithm.
 
-To leverage the newly introuduced traffic distribution feature I mentioned above, we need to make ingress-nginx routes the traffic using the ClusterIP of the Service. To do this globally for the ingress controller we can set `service-upstream: true` in the ingress-nginx configmap. This alone is not enough though because by default ingress-nginx tries to keep a long connection between the ingress-nginx pods and the backend services pods to reduce resource usage using keepalives. To configure ingress-nginx not to use this, you can add another config `upstream-keepalive-requests: "0"` to the ingress-nginx configmap but beware that this might increase the resource of your ingress-nginx pods as it now needs to maintains a new connection for each requests coming in.
+To leverage the newly introuduced traffic distribution feature I mentioned above, we need to make ingress-nginx routes the traffic using the ClusterIP of the Service. To do this globally for the ingress controller we can set `service-upstream: true` in the ingress-nginx configmap. This alone is not enough though because by default ingress-nginx tries to keep a long connection between the ingress-nginx pods and the backend services pods to reduce resource usage using keepalives.
+
+To configure ingress-nginx not to use this, you can add another config `upstream-keepalive-requests: "0"` to the ingress-nginx configmap but beware that this might increase the resource of your ingress-nginx pods as it now needs to maintains a new connection for each requests coming in.
 
 ## Conclusion
 
