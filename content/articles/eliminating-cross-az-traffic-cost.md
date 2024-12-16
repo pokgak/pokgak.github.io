@@ -14,7 +14,7 @@ Imagine going through your AWS bills and noticing that **APS1-DataTransfer-Regio
 
 In this article I will use the above diagram as our example network flow. Our example scenario will use the AWS Network Load Balancer (NLB) as the load balancer (LB), then routes the traffic to the ingress-nginx pods running inside our cluster. Finally, ingress-controller pods will route the traffic to the backend services serving the API.
 
-The top and bottom part of the diagram will show how the traffic flow will be between AZs. Once we implemented the steps I will be describing below, you should be able to elimate the cross-AZ traffic in our network.
+The top and bottom part of the diagram will show how the traffic flow will be between AZs. Once we implemented the steps I will be describing below, you should be able to eliminate the cross-AZ traffic in our network.
 
 ## Incoming traffic to Load Balancer Nodes
 
@@ -45,7 +45,7 @@ There is a tradeoff between reliability and cost here. If cross-zone load balanc
 
 ### Kubernetes 1.31 Service traffic distribution
 
-After the ingress-nginx pods, the traffic will be routed to the backend services pods. Kubernetes version 1.31 introuced a new [traffic distribution mechanism](https://kubernetes.io/docs/concepts/services-networking/service/#traffic-distribution) for Service resources which will influence how traffic is routed to your pods. You can now set the Service `.spec.trafficDistribution` to `PreferClose` to route the traffic to endpoints that are "topologically proximate". The details of what that means depends on the implementation but for kube-proxy this means sending the traffic to endpoints that are within the same zone when available. This means we can achive our goal here to avoid the cross-AZ traffic cost. To understand more please refer to the [Kubernetes documentation](https://kubernetes.io/docs/reference/networking/virtual-ips/#traffic-distribution) and [KEP-4444](https://github.com/kubernetes/enhancements/tree/master/keps/sig-network/4444-service-traffic-distribution#preferclose).
+After the ingress-nginx pods, the traffic will be routed to the backend services pods. Kubernetes version 1.31 introduced a new [traffic distribution mechanism](https://kubernetes.io/docs/concepts/services-networking/service/#traffic-distribution) for Service resources which will influence how traffic is routed to your pods. You can now set the Service `.spec.trafficDistribution` to `PreferClose` to route the traffic to endpoints that are "topologically proximate". The details of what that means depends on the implementation but for kube-proxy this means sending the traffic to endpoints that are within the same zone when available. This means we can achieve our goal here to avoid the cross-AZ traffic cost. To understand more please refer to the [Kubernetes documentation](https://kubernetes.io/docs/reference/networking/virtual-ips/#traffic-distribution) and [KEP-4444](https://github.com/kubernetes/enhancements/tree/master/keps/sig-network/4444-service-traffic-distribution#preferclose).
 
 **CAVEAT**: as mentioned in the [Risks and Mitigation](https://github.com/kubernetes/enhancements/tree/master/keps/sig-network/4444-service-traffic-distribution#risks-and-mitigations) section of KEP-4444, enabling this feature might cause the pods in one AZ getting overloaded with traffic if the originating traffic is skewed towards one AZ.
 
@@ -53,7 +53,7 @@ After the ingress-nginx pods, the traffic will be routed to the backend services
 
 NOTE: please be extra careful with this section as this influences the routing of traffic to pods within your cluster. Do test this out on a non-production environment and make sure your workloads are still running fine before introducing it in production.
 
-That alone is not enough though due to how ingress-nginx works. In the Ingress configuration, you specified the Service that ingress-nginx should route the traffic to but I was suprised to know that, by default, ingress-nginx does not actually uses the Service ClusterIP. It will actually search for the Endpoint of the services and get the IP of the pods behind the service. Then, it will distribute the traffic to the pod IPs using the round robin algorithm.
+That alone is not enough though due to how ingress-nginx works. In the Ingress configuration, you specified the Service that ingress-nginx should route the traffic to but I was surprised to know that, by default, ingress-nginx does not actually uses the Service ClusterIP. It will actually search for the Endpoint of the services and get the IP of the pods behind the service. Then, it will distribute the traffic to the pod IPs using the round robin algorithm.
 
 To leverage the newly introuduced traffic distribution feature I mentioned above, we need to make ingress-nginx routes the traffic using the ClusterIP of the Service. To do this globally for the ingress controller we can set `service-upstream: true` in the ingress-nginx configmap. This alone is not enough though because by default ingress-nginx tries to keep a long connection between the ingress-nginx pods and the backend services pods to reduce resource usage using keepalives.
 
