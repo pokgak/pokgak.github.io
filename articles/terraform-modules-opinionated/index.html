@@ -60,55 +60,55 @@
 </span><span class=lnt>53
 </span><span class=lnt>54
 </span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-terraform data-lang=terraform><span class=line><span class=cl><span class=kr>variable</span> <span class=s2>&#34;log_delivery_s3&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>  <span class=na>type</span> = <span class=nx>object</span><span class=p>({</span>
-</span></span><span class=line><span class=cl>    <span class=na>bucket_arn</span> = <span class=nx>string</span>
-</span></span><span class=line><span class=cl>    <span class=na>prefix</span>     = <span class=nx>optional</span><span class=p>(</span><span class=nx>string</span><span class=p>,</span> <span class=s2>&#34;mskconnect-logs&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nx>type</span> <span class=o>=</span> <span class=nx>object</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>    <span class=nx>bucket_arn</span> <span class=o>=</span> <span class=nx>string</span>
+</span></span><span class=line><span class=cl>    <span class=nx>prefix</span>     <span class=o>=</span> <span class=nx>optional</span><span class=p>(</span><span class=nx>string</span><span class=p>,</span> <span class=s2>&#34;mskconnect-logs&#34;</span><span class=p>)</span>
 </span></span><span class=line><span class=cl>  <span class=p>})</span>
 </span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>  <span class=na>default</span> = <span class=nx>null</span>
+</span></span><span class=line><span class=cl>  <span class=nx>default</span> <span class=o>=</span> <span class=nx>null</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl><span class=kr>
-</span></span></span><span class=line><span class=cl><span class=kr>variable</span> <span class=s2>&#34;log_delivery_cloudwatch_logs&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>  <span class=na>type</span> = <span class=nx>object</span><span class=p>({</span>
-</span></span><span class=line><span class=cl>    <span class=na>log_group</span> = <span class=nx>string</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>variable</span> <span class=s2>&#34;log_delivery_cloudwatch_logs&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>type</span> <span class=o>=</span> <span class=nx>object</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>    <span class=nx>log_group</span> <span class=o>=</span> <span class=nx>string</span>
 </span></span><span class=line><span class=cl>  <span class=p>})</span>
 </span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>  <span class=na>default</span> = <span class=nx>null</span>
+</span></span><span class=line><span class=cl>  <span class=nx>default</span> <span class=o>=</span> <span class=nx>null</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl><span class=kr>
-</span></span></span><span class=line><span class=cl><span class=kr>variable</span> <span class=s2>&#34;log_delivery_firehose&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>  <span class=na>type</span> = <span class=nx>object</span><span class=p>({</span>
-</span></span><span class=line><span class=cl>    <span class=na>delivery_stream</span> = <span class=nx>string</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>variable</span> <span class=s2>&#34;log_delivery_firehose&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>type</span> <span class=o>=</span> <span class=nx>object</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>    <span class=nx>delivery_stream</span> <span class=o>=</span> <span class=nx>string</span>
 </span></span><span class=line><span class=cl>  <span class=p>})</span>
 </span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>  <span class=na>default</span> = <span class=nx>null</span>
+</span></span><span class=line><span class=cl>  <span class=nx>default</span> <span class=o>=</span> <span class=nx>null</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl><span class=kr>
-</span></span></span><span class=line><span class=cl><span class=kr>resource</span> <span class=s2>&#34;aws_mskconnect_connector&#34;</span> <span class=s2>&#34;example&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>  <span class=na>name</span> = <span class=s2>&#34;example&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>resource</span> <span class=s2>&#34;aws_mskconnect_connector&#34;</span> <span class=s2>&#34;example&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>name</span> <span class=o>=</span> <span class=s2>&#34;example&#34;</span>
 </span></span><span class=line><span class=cl>
 </span></span><span class=line><span class=cl>  <span class=nx>log_delivery</span> <span class=p>{</span>
 </span></span><span class=line><span class=cl>    <span class=nx>worker_log_delivery</span> <span class=p>{</span>
 </span></span><span class=line><span class=cl>      <span class=nx>dynamic</span> <span class=s2>&#34;s3&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=na>for_each</span> = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span> <span class=o>!=</span> <span class=nx>null</span> <span class=o>?</span> <span class=p>[</span><span class=m>1</span><span class=p>]</span> <span class=o>:</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=nx>for_each</span> <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span> <span class=o>!=</span> <span class=nx>null</span> <span class=o>?</span> <span class=p>[</span><span class=m>1</span><span class=p>]</span> <span class=o>:</span> <span class=p>[]</span>
 </span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>        <span class=na>enabled</span>    = <span class=kc>true</span>
-</span></span><span class=line><span class=cl>        <span class=na>bucket_arn</span> = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span><span class=p>.</span><span class=nx>bucket_arn</span>
-</span></span><span class=line><span class=cl>        <span class=na>prefix</span>     = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span><span class=p>.</span><span class=nx>prefix</span>
+</span></span><span class=line><span class=cl>        <span class=nx>enabled</span>    <span class=o>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>        <span class=nx>bucket_arn</span> <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span><span class=p>.</span><span class=nx>bucket_arn</span>
+</span></span><span class=line><span class=cl>        <span class=nx>prefix</span>     <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span><span class=p>.</span><span class=nx>prefix</span>
 </span></span><span class=line><span class=cl>      <span class=p>}</span>
 </span></span><span class=line><span class=cl>
 </span></span><span class=line><span class=cl>      <span class=nx>dynamic</span> <span class=s2>&#34;cloudwatch_logs&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=na>for_each</span> = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_cloudwatch_logs</span> <span class=o>!=</span> <span class=nx>null</span> <span class=o>?</span> <span class=p>[</span><span class=m>1</span><span class=p>]</span> <span class=o>:</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=nx>for_each</span> <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_cloudwatch_logs</span> <span class=o>!=</span> <span class=nx>null</span> <span class=o>?</span> <span class=p>[</span><span class=m>1</span><span class=p>]</span> <span class=o>:</span> <span class=p>[]</span>
 </span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>        <span class=na>enabled</span>   = <span class=kc>true</span>
-</span></span><span class=line><span class=cl>        <span class=na>log_group</span> = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_cloudwatch_logs</span><span class=p>.</span><span class=nx>log_group</span>
+</span></span><span class=line><span class=cl>        <span class=nx>enabled</span>   <span class=o>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>        <span class=nx>log_group</span> <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_cloudwatch_logs</span><span class=p>.</span><span class=nx>log_group</span>
 </span></span><span class=line><span class=cl>      <span class=p>}</span>
 </span></span><span class=line><span class=cl>
 </span></span><span class=line><span class=cl>      <span class=nx>dynamic</span> <span class=s2>&#34;firehose&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=na>for_each</span> = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_firehose</span> <span class=o>!=</span> <span class=nx>null</span> <span class=o>?</span> <span class=p>[</span><span class=m>1</span><span class=p>]</span> <span class=o>:</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>        <span class=nx>for_each</span> <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_firehose</span> <span class=o>!=</span> <span class=nx>null</span> <span class=o>?</span> <span class=p>[</span><span class=m>1</span><span class=p>]</span> <span class=o>:</span> <span class=p>[]</span>
 </span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>        <span class=na>enabled</span>         = <span class=kc>true</span>
-</span></span><span class=line><span class=cl>        <span class=na>delivery_stream</span> = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_firehose</span><span class=p>.</span><span class=nx>delivery_stream</span>
+</span></span><span class=line><span class=cl>        <span class=nx>enabled</span>         <span class=o>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>        <span class=nx>delivery_stream</span> <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_firehose</span><span class=p>.</span><span class=nx>delivery_stream</span>
 </span></span><span class=line><span class=cl>      <span class=p>}</span>
 </span></span><span class=line><span class=cl>    <span class=p>}</span>
 </span></span><span class=line><span class=cl>  <span class=p>}</span>
@@ -136,23 +136,23 @@
 </span><span class=lnt>21
 </span><span class=lnt>22
 </span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-terraform data-lang=terraform><span class=line><span class=cl><span class=kr>variable</span> <span class=s2>&#34;log_delivery_s3&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>  <span class=na>type</span> = <span class=nx>object</span><span class=p>({</span>
-</span></span><span class=line><span class=cl>    <span class=na>bucket_arn</span> = <span class=nx>string</span>
-</span></span><span class=line><span class=cl>    <span class=na>prefix</span>     = <span class=nx>optional</span><span class=p>(</span><span class=nx>string</span><span class=p>,</span> <span class=s2>&#34;mskconnect-logs&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=nx>type</span> <span class=o>=</span> <span class=nx>object</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>    <span class=nx>bucket_arn</span> <span class=o>=</span> <span class=nx>string</span>
+</span></span><span class=line><span class=cl>    <span class=nx>prefix</span>     <span class=o>=</span> <span class=nx>optional</span><span class=p>(</span><span class=nx>string</span><span class=p>,</span> <span class=s2>&#34;mskconnect-logs&#34;</span><span class=p>)</span>
 </span></span><span class=line><span class=cl>  <span class=p>})</span>
 </span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>  <span class=na>default</span> = <span class=nx>null</span>
+</span></span><span class=line><span class=cl>  <span class=nx>default</span> <span class=o>=</span> <span class=nx>null</span>
 </span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl><span class=kr>
-</span></span></span><span class=line><span class=cl><span class=kr>resource</span> <span class=s2>&#34;aws_mskconnect_connector&#34;</span> <span class=s2>&#34;example&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>  <span class=na>name</span> = <span class=s2>&#34;example&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>resource</span> <span class=s2>&#34;aws_mskconnect_connector&#34;</span> <span class=s2>&#34;example&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>name</span> <span class=o>=</span> <span class=s2>&#34;example&#34;</span>
 </span></span><span class=line><span class=cl>
 </span></span><span class=line><span class=cl>  <span class=nx>log_delivery</span> <span class=p>{</span>
 </span></span><span class=line><span class=cl>    <span class=nx>worker_log_delivery</span> <span class=p>{</span>
 </span></span><span class=line><span class=cl>      <span class=nx>s3</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=na>enabled</span>    = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span> <span class=o>!=</span> <span class=nx>null</span>
-</span></span><span class=line><span class=cl>        <span class=na>bucket_arn</span> = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span><span class=p>.</span><span class=nx>bucket_arn</span>
-</span></span><span class=line><span class=cl>        <span class=na>prefix</span>     = <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span><span class=p>.</span><span class=nx>prefix</span>
+</span></span><span class=line><span class=cl>        <span class=nx>enabled</span>    <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span> <span class=o>!=</span> <span class=nx>null</span>
+</span></span><span class=line><span class=cl>        <span class=nx>bucket_arn</span> <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span><span class=p>.</span><span class=nx>bucket_arn</span>
+</span></span><span class=line><span class=cl>        <span class=nx>prefix</span>     <span class=o>=</span> <span class=nb>var</span><span class=p>.</span><span class=nx>log_delivery_s3</span><span class=p>.</span><span class=nx>prefix</span>
 </span></span><span class=line><span class=cl>      <span class=p>}</span>
 </span></span><span class=line><span class=cl>    <span class=p>}</span>
 </span></span><span class=line><span class=cl>  <span class=p>}</span>

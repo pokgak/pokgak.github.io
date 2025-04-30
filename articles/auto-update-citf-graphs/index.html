@@ -75,7 +75,7 @@
 </span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>${{ runner.os }}-pip-${{ hashFiles(&#39;requirements.txt&#39;) }}</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>restore-keys</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
 </span></span></span><span class=line><span class=cl><span class=sd>            ${{ runner.os }}-pip-
-</span></span></span><span class=line><span class=cl><span class=sd>            ${{ runner.os }}-</span><span class=w>            
+</span></span></span><span class=line><span class=cl><span class=sd>            ${{ runner.os }}-</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Install dependencies</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>pip3 install -r requirements.txt</span><span class=w>
@@ -139,7 +139,7 @@
 </span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>${{ runner.os }}-pip-${{ hashFiles(&#39;requirements.txt&#39;) }}</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restore-keys</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
 </span></span></span><span class=line><span class=cl><span class=sd>      ${{ runner.os }}-pip-
-</span></span></span><span class=line><span class=cl><span class=sd>      ${{ runner.os }}-            </span><span class=w>      
+</span></span></span><span class=line><span class=cl><span class=sd>      ${{ runner.os }}-            </span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Install dependencies</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>pip3 install -r requirements.txt</span><span class=w>

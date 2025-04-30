@@ -1,4 +1,255 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 14 Dec 2024 17:23:06 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Eliminating cross-AZ traffic cost on AWS</title><link>https://pokgak.xyz/articles/eliminating-cross-az-traffic-cost/</link><pubDate>Sat, 14 Dec 2024 17:23:06 +0800</pubDate><guid>https://pokgak.xyz/articles/eliminating-cross-az-traffic-cost/</guid><description>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Aiman Ismail</title><link>https://pokgak.xyz/</link><description>Recent content on Aiman Ismail</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Tue, 29 Apr 2025 14:14:00 +0800</lastBuildDate><atom:link href="https://pokgak.xyz/index.xml" rel="self" type="application/rss+xml"/><item><title>Scale down your instances, cut down your AWS bills</title><link>https://pokgak.xyz/articles/scale-down-your-instances/</link><pubDate>Tue, 29 Apr 2025 14:14:00 +0800</pubDate><guid>https://pokgak.xyz/articles/scale-down-your-instances/</guid><description>
+&lt;p>I joined a webinar from Platformatic on the best practices of running nodejs services in production and one of the suggestion is to give each of the pod 1 full CPU core. All went well, our latency metrics seems to have improved, case closed. Little did I know that at the end of the month I would get hit by 3x increase in our monthly AWS bills. So I started optimizing.&lt;/p>
+&lt;h2 id="know-your-workload-patterns">
+&lt;a href="#know-your-workload-patterns" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Know your workload patterns
+&lt;/h2>
+&lt;p>Our company mainly serves restaurants so the traffic to our services has a predictable pattern; it starts ramping up at around breakfast time and peaks at around lunch and dinner. We have a few customers that operates until midnight but they&amp;rsquo;re the minority so during those ours incoming traffic to our services it at the minimum. This pattern is something I noticed early when I first joined as possible optimization area but never got to it until now.&lt;/p>
+&lt;p>Our workloads run on AWS EKS and mainly using managed node groups provisioned statically with no cluster-autoscaler configured to add or remove nodes. There is also not HorizontalPodAutoscaler (HPA) setup for our Pods. This decision is done mainly to simplify operations. Just add more replicas and more nodes when the pods are getting overwhelmed by requests. It works at a smaller scale since the AWS bills is still manageable but we went through a growth phase recently and our infra costs also jumped. We figured that we have to tackle this now instead of pushing it back for later.&lt;/p>
+&lt;h2 id="know-your-tools">
+&lt;a href="#know-your-tools" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Know your tools
+&lt;/h2>
+&lt;p>When talking about autoscaling in kubernetes-land, there&amp;rsquo;s the HorizontalPodAutoscaler (HPA). HPA allows you to scale your pods based on cpu, memory, or in the more recent versions, any custom metrics. The custom metrics autoscaling works but the UX leaves much to be desired. That&amp;rsquo;s why I chose to use KEDA instead.&lt;/p>
+&lt;p>KEDA builts on top of HPA, providing a simplified interface. You also have more options to scale on metrics from almost anywhere using the available &lt;a href="https://keda.sh/docs/2.17/scalers/">Scalers&lt;/a>. For my use case, I&amp;rsquo;ll be using the &lt;a href="https://keda.sh/docs/2.17/scalers/cron/">Cron&lt;/a> and &lt;a href="https://keda.sh/docs/2.17/scalers/prometheus/">Prometheus&lt;/a> scalers.&lt;/p>
+&lt;p>Additional note for why to use KEDA is that it supports scaling down pods to 0 and scaling back up. This is called &lt;a href="https://keda.sh/docs/2.17/concepts/scaling-deployments/#activating-and-scaling-thresholds">Activation&lt;/a> inside KEDA where the pod replicas goes from 0 to 1 and vice versa. This doesn&amp;rsquo;t apply to our use case since we still have to keep some pods running during midnight but if your workload allows it this will definitely gives you more savings.&lt;/p>
+&lt;h3 id="setting-up-the-cron-scaler">
+&lt;a href="#setting-up-the-cron-scaler" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Setting up the cron scaler
+&lt;/h3>
+&lt;p>As mentioned above, we have a regular and predictable traffic pattern for our workloads, starts at 7AM and peaks during lunch and dinner time. So, the cron scaler fits perfectly for this use case. We set a schedule to scale up our services during those hours and for the rest of the hours, scale it back down to the minimum possible. KEDA uses a custom resource called &lt;a href="https://keda.sh/docs/2.17/reference/scaledobject-spec/">ScaledObject&lt;/a> to specify the definition for the autoscaling.&lt;/p>
+&lt;p>In my setup, I&amp;rsquo;ll configure it to scale based on the following rule:&lt;/p>
+&lt;ul>
+&lt;li>7AM - 11AM: 10 replicas&lt;/li>
+&lt;li>11AM - 2PM: 20 replicas&lt;/li>
+&lt;li>2PM - 6PM: 10 replicas&lt;/li>
+&lt;li>6PM - 10PM: 20 replicas&lt;/li>
+&lt;li>outside of those hours, scale down to minimum replica count which is 1&lt;/li>
+&lt;/ul>
+&lt;p>This is how the manifest looks like:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">apiVersion&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">keda.sh/v1alpha1&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">kind&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ScaledObject&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">metadata&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">backend-service&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">spec&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">maxReplicaCount&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">30&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">minReplicaCount&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">scaleTargetRef&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">apiVersion&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">apps/v1&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">kind&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Deployment&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">backend-service&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">triggers&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">metadata&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">desiredReplicas&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;10&amp;#39;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">start&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">7&lt;/span>&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">end&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">11&lt;/span>&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">timezone&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Asia/Singapore&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">type&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">cron&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">metadata&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">desiredReplicas&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;20&amp;#39;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">start&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">11&lt;/span>&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">end&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">14&lt;/span>&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">timezone&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Asia/Singapore&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">type&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">cron&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">metadata&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">desiredReplicas&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;10&amp;#39;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">start&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">14&lt;/span>&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">end&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">18&lt;/span>&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">timezone&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Asia/Singapore&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">type&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">cron&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">metadata&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">desiredReplicas&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;20&amp;#39;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">start&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">18&lt;/span>&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">end&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">0&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">22&lt;/span>&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w"> &lt;/span>*&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">timezone&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Asia/Singapore&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">type&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">cron&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="combining-cron-and-prometheus-scalers">
+&lt;a href="#combining-cron-and-prometheus-scalers" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Combining cron and prometheus scalers
+&lt;/h3>
+&lt;p>Cron and prometheus scalers on its own is not enough. If I&amp;rsquo;m using cron alone, what if suddenly one day the traffic suddenly higher than usual? This where prometheus scalers comes in. It looks at the actual metrics and scale accordingly.&lt;/p>
+&lt;p>Then you might think, why not just use prometheus scalers on its own then? It depends. If your traffic always grows slowly and gradually then ya it might work. New pods starting up can catchup to the traffic coming in but during rush hours the traffic can increase really fast and to avoid waiting for our pods to scale up which might take some time, we just decided to pre-scale up our pods during the expected rush hours. With this setup, the prometheus scaler can supplements the pods if the configured cron autoscaling is not enough.&lt;/p>
+&lt;h3 id="setting-up-the-prometheus-scalers">
+&lt;a href="#setting-up-the-prometheus-scalers" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Setting up the prometheus scalers
+&lt;/h3>
+&lt;p>For the prometheus scalers, we decided to scale our pods based on the response latency served from the service. This is based on the &lt;a href="https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/">RED method&lt;/a>. The &amp;ldquo;D&amp;rdquo; inside &amp;ldquo;RED&amp;rdquo; stands for Duration - or latency. This is a great metric to measure the performance of our service since it directly correlates to the experience faced by the user when using that service. High latency means your customer needs to wait longer, which is bad.&lt;/p>
+&lt;p>This latency metrics however does not come out of the box. In our setup, we generate this metrics from the traces emitted by our service which is instrumented using &lt;a href="https://opentelemetry.io/">OpenTelemetry (otel)&lt;/a>. All the traces are sent to Tempo, our backend for storing traces, and Tempo will generate the metric &lt;code>traces_spanmetrics_latency&lt;/code> from it. Generating the metrics on Tempo is out of the scope for this article but you can refer to the &lt;a href="https://grafana.com/docs/tempo/latest/metrics-generator/span_metrics/">Tempo docs&lt;/a>.&lt;/p>
+&lt;h2 id="issues-arising-from-autoscaling">
+&lt;a href="#issues-arising-from-autoscaling" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Issues arising from autoscaling
+&lt;/h2>
+&lt;p>If you think once the autoscaling is rolled out then all is good.. then you&amp;rsquo;re dead wrong - so was I. The first day we rolled out the autoscaling, we monitor the service closely for any increase in errors and error it did. First, it was just not enough capacity. The original capacity we put in for autoscaling is not enough. Easy fix just add more capacity. Then, we were scaling up too late and scaling down too early. Also easy fix, just move the scaling up period higher and scaling down period later.&lt;/p>
+&lt;h3 id="connections-being-terminated-prematurely">
+&lt;a href="#connections-being-terminated-prematurely" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Connections being terminated prematurely
+&lt;/h3>
+&lt;p>The not so obvious one tho is that, every time the we scales down by half we see a lot of errors from the service coming from the service. Those errors mostly related to the connection being terminated prematurely. There are two ways to reduce this but I&amp;rsquo;ll explain the one way we took for now which is configuring the HPA behavior.&lt;/p>
+&lt;p>The first one is that HPA by default scales down too fast for us. This cause the service to scale down fast, then notice that the resource is not enough and it scales back up - rinse and repeat. In autoscaling we call this behavior as &amp;ldquo;flapping&amp;rdquo; and we don&amp;rsquo;t want that. We want our service to be stable. This is the modification I&amp;rsquo;ve done to our above ScaledObject - adding &lt;code>stabilizationWindowSeconds&lt;/code> and set it to remove pods one by one.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">apiVersion&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">keda.sh/v1alpha1&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">kind&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ScaledObject&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">metadata&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">backend-service&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">spec&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">advanced&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">horizontalPodAutoscalerConfig&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">behavior&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">scaleDown&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">stabilizationWindowSeconds&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">600&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># wait 10 minutes before scaling down&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">policies&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">type&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">Pods&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">value&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">2&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">periodSeconds&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="m">180&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c"># remove two pods every 3 minutes&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h4 id="hpa-config-stabilizationwindowseconds">
+&lt;a href="#hpa-config-stabilizationwindowseconds" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+HPA config: stabilizationWindowSeconds
+&lt;/h4>
+&lt;p>KEDA allows you to configure the underlying HPA object directly from the ScaledObject. First, we&amp;rsquo;ll configure the HPA &lt;a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#stabilization-window">stabilization window&lt;/a> so that it will look at the last 10 minutes of recommendations by the HPA and only apply the highest value. This means if within the last 10 minutes your HPA recommended to scale down from 10 to 8, then a few minutes later to 5. Then it will scale down to 8 only and not 5 directly. It&amp;rsquo;ll have to wait until the recommedation to scale down to 8 is outside of the window then only it&amp;rsquo;ll scale down to 5.&lt;/p>
+&lt;h4 id="hpa-config-pod-scale-down-policy">
+&lt;a href="#hpa-config-pod-scale-down-policy" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+HPA config: pod scale down policy
+&lt;/h4>
+&lt;p>HPA allows configuring the &lt;a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#scaling-policies">scaling policies&lt;/a> separately for scaling up and down. By default, HPA will scale down by up to 100% of the available replicas every 15s. This means, if you have 20 replicas, HPA will immediately terminates half the pods from 20 to 10 when scaling down. If the HPA recommendation says it should go down further to 1, then after 15s it will scale down further to 5.&lt;/p>
+&lt;p>In this above snippet, we changed it to be less aggressive by allowing only 2 pods to scale down every 3 minutes. We&amp;rsquo;ve seen massive reductions in the number of connections being terminated. I started with only 1 pod per minute but find it too fast then increase it to the current amount.&lt;/p>
+&lt;h2 id="scaling-down-your-nodes-using-karpenter">
+&lt;a href="#scaling-down-your-nodes-using-karpenter" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Scaling down your nodes using Karpenter
+&lt;/h2>
+&lt;p>After the pods has been scaled down, your kubernetes nodes would be running underutilized. You can use any cluster autoscaler of your choice for scaling down underutilized nodes but in my case I used Karpenter since I&amp;rsquo;m already running on EKS and Karpenter was built for it originally. For this part there is less suprise tho I do plan to write more on running Karpenter in production, hopefully it will come out soon. Ping me on my socials if it is not out yet after 3 months you&amp;rsquo;re reading this (random deadline for myself lol).&lt;/p>
+&lt;h2 id="summary">
+&lt;a href="#summary" class="anchor">
+&lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
+&lt;path fill-rule="evenodd"
+d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z">
+&lt;/path>
+&lt;/svg>
+&lt;/a>
+Summary
+&lt;/h2>
+&lt;p>After all this autoscaling exercise we actually reduced our AWS spending for EC2 instances used by EKS clusters by approximately 50%. This is a huge amount for us and my boss was defnitely happy (promotion soon?). Hope this helps anyone going on this journey :)&lt;/p>
+&lt;p>On how to tackle the disconnect issues, you can also configure graceful shutdown for your pods. I&amp;rsquo;ll link to this detailed article from learnk8s on how to do &lt;a href="https://learnk8s.io/graceful-shutdown">graceful shutdown in kubernetes&lt;/a>.&lt;/p></description></item><item><title>Eliminating cross-AZ traffic cost on AWS</title><link>https://pokgak.xyz/articles/eliminating-cross-az-traffic-cost/</link><pubDate>Sat, 14 Dec 2024 17:23:06 +0800</pubDate><guid>https://pokgak.xyz/articles/eliminating-cross-az-traffic-cost/</guid><description>
 &lt;p>Imagine going through your AWS bills and noticing that &lt;strong>APS1-DataTransfer-Regional-Bytes&lt;/strong> is 1/3 of your monthly AWS cost. After reading a bit more on &lt;a href="https://docs.aws.amazon.com/cur/latest/userguide/cur-data-transfers-charges.html">how AWS charges for network traffic&lt;/a> you know that this is referring to the cost incurred when your traffic crosses an availability zone (AZ). This article will go through what you can do to eliminate this cross-AZ traffic cost.&lt;/p>
 &lt;p>&lt;strong>Disclaimer&lt;/strong>: this is not necessarily the best practice. I try my best to highlight the caveat and tradeoff you&amp;rsquo;re making in this article but please make your own judgement before making the changes.&lt;/p>
 &lt;h2 id="the-traffic-flow">
@@ -17,7 +268,7 @@ alt=""
 width=2688
 height="1765" />&lt;/p>
 &lt;p>In this article I will use the above diagram as our example network flow. Our example scenario will use the AWS Network Load Balancer (NLB) as the load balancer (LB), then routes the traffic to the ingress-nginx pods running inside our cluster. Finally, ingress-controller pods will route the traffic to the backend services serving the API.&lt;/p>
-&lt;p>The top and bottom part of the diagram will show how the traffic flow will be between AZs. Once we implemented the steps I will be describing below, you should be able to elimate the cross-AZ traffic in our network.&lt;/p>
+&lt;p>The top and bottom part of the diagram will show how the traffic flow will be between AZs. Once we implemented the steps I will be describing below, you should be able to eliminate the cross-AZ traffic in our network.&lt;/p>
 &lt;h2 id="incoming-traffic-to-load-balancer-nodes">
 &lt;a href="#incoming-traffic-to-load-balancer-nodes" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -90,7 +341,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 &lt;/a>
 Kubernetes 1.31 Service traffic distribution
 &lt;/h3>
-&lt;p>After the ingress-nginx pods, the traffic will be routed to the backend services pods. Kubernetes version 1.31 introuced a new &lt;a href="https://kubernetes.io/docs/concepts/services-networking/service/#traffic-distribution">traffic distribution mechanism&lt;/a> for Service resources which will influence how traffic is routed to your pods. You can now set the Service &lt;code>.spec.trafficDistribution&lt;/code> to &lt;code>PreferClose&lt;/code> to route the traffic to endpoints that are &amp;ldquo;topologically proximate&amp;rdquo;. The details of what that means depends on the implementation but for kube-proxy this means sending the traffic to endpoints that are within the same zone when available. This means we can achive our goal here to avoid the cross-AZ traffic cost. To understand more please refer to the &lt;a href="https://kubernetes.io/docs/reference/networking/virtual-ips/#traffic-distribution">Kubernetes documentation&lt;/a> and &lt;a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-network/4444-service-traffic-distribution#preferclose">KEP-4444&lt;/a>.&lt;/p>
+&lt;p>After the ingress-nginx pods, the traffic will be routed to the backend services pods. Kubernetes version 1.31 introduced a new &lt;a href="https://kubernetes.io/docs/concepts/services-networking/service/#traffic-distribution">traffic distribution mechanism&lt;/a> for Service resources which will influence how traffic is routed to your pods. You can now set the Service &lt;code>.spec.trafficDistribution&lt;/code> to &lt;code>PreferClose&lt;/code> to route the traffic to endpoints that are &amp;ldquo;topologically proximate&amp;rdquo;. The details of what that means depends on the implementation but for kube-proxy this means sending the traffic to endpoints that are within the same zone when available. This means we can achieve our goal here to avoid the cross-AZ traffic cost. To understand more please refer to the &lt;a href="https://kubernetes.io/docs/reference/networking/virtual-ips/#traffic-distribution">Kubernetes documentation&lt;/a> and &lt;a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-network/4444-service-traffic-distribution#preferclose">KEP-4444&lt;/a>.&lt;/p>
 &lt;p>&lt;strong>CAVEAT&lt;/strong>: as mentioned in the &lt;a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-network/4444-service-traffic-distribution#risks-and-mitigations">Risks and Mitigation&lt;/a> section of KEP-4444, enabling this feature might cause the pods in one AZ getting overloaded with traffic if the originating traffic is skewed towards one AZ.&lt;/p>
 &lt;h3 id="ingress-nginx-default-routing-behaviour">
 &lt;a href="#ingress-nginx-default-routing-behaviour" class="anchor">
@@ -103,7 +354,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 ingress-nginx default routing behaviour
 &lt;/h3>
 &lt;p>NOTE: please be extra careful with this section as this influences the routing of traffic to pods within your cluster. Do test this out on a non-production environment and make sure your workloads are still running fine before introducing it in production.&lt;/p>
-&lt;p>That alone is not enough though due to how ingress-nginx works. In the Ingress configuration, you specified the Service that ingress-nginx should route the traffic to but I was suprised to know that, by default, ingress-nginx does not actually uses the Service ClusterIP. It will actually search for the Endpoint of the services and get the IP of the pods behind the service. Then, it will distribute the traffic to the pod IPs using the round robin algorithm.&lt;/p>
+&lt;p>That alone is not enough though due to how ingress-nginx works. In the Ingress configuration, you specified the Service that ingress-nginx should route the traffic to but I was surprised to know that, by default, ingress-nginx does not actually uses the Service ClusterIP. It will actually search for the Endpoint of the services and get the IP of the pods behind the service. Then, it will distribute the traffic to the pod IPs using the round robin algorithm.&lt;/p>
 &lt;p>To leverage the newly introuduced traffic distribution feature I mentioned above, we need to make ingress-nginx routes the traffic using the ClusterIP of the Service. To do this globally for the ingress controller we can set &lt;code>service-upstream: true&lt;/code> in the ingress-nginx configmap. This alone is not enough though because by default ingress-nginx tries to keep a long connection between the ingress-nginx pods and the backend services pods to reduce resource usage using keepalives.&lt;/p>
 &lt;p>To configure ingress-nginx not to use this, you can add another config &lt;code>upstream-keepalive-requests: &amp;quot;0&amp;quot;&lt;/code> to the ingress-nginx configmap but beware that this might increase the resource of your ingress-nginx pods as it now needs to maintains a new connection for each requests coming in.&lt;/p>
 &lt;h2 id="conclusion">
@@ -209,8 +460,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 LCU-hour pricing
 &lt;/h3>
 &lt;blockquote>
-&lt;p>You are charged only on the dimension with the highest usage.&lt;/p>
-&lt;/blockquote>
+&lt;p>You are charged only on the dimension with the highest usage.&lt;/p>&lt;/blockquote>
 &lt;p>LCU-hour is charged based on the highest dimension from all the dimensions measured so this means it depends on which is higher for both the rule evaluations and new connections dimension above. Let&amp;rsquo;s say you don&amp;rsquo;t have that many services so your listening rules also not that many causing you to not exceed the rule evaluations per second for ALB, you will still be charged 2.7x more compared to when you&amp;rsquo;re using NLB.&lt;/p>
 &lt;h2 id="conclusion">
 &lt;a href="#conclusion" class="anchor">
@@ -392,8 +642,7 @@ $ docker compose -f ./cicd/docker/docker-compose.yaml build --builder multiplatf
 failed to solve: base: failed to resolve source metadata for docker.io/library/base:latest: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
 &lt;/code>&lt;/pre>&lt;p>Now the builder cannot find the &lt;code>base&lt;/code> image that we&amp;rsquo;ve built used before. Why? This section from the Docker build drivers page answered it:&lt;/p>
 &lt;blockquote>
-&lt;p>Unlike when using the default docker driver, images built using other drivers aren&amp;rsquo;t automatically loaded into the local image store. If you don&amp;rsquo;t specify an output, the build result is exported to the build cache only.&lt;/p>
-&lt;/blockquote>
+&lt;p>Unlike when using the default docker driver, images built using other drivers aren&amp;rsquo;t automatically loaded into the local image store. If you don&amp;rsquo;t specify an output, the build result is exported to the build cache only.&lt;/p>&lt;/blockquote>
 &lt;p>I did use the &lt;code>--load&lt;/code> and the &lt;code>--driver-opt default-load=true&lt;/code> to automatically load the image into the local image store but long story short, it didn&amp;rsquo;t work. So what&amp;rsquo;s next?&lt;/p>
 &lt;h2 id="enter-docker-buildx-bake">
 &lt;a href="#enter-docker-buildx-bake" class="anchor">
@@ -537,8 +786,7 @@ alt=""
 width=700
 height="700" />&lt;/p>
 &lt;blockquote>
-&lt;p>you can just use docker multi-stage build&lt;/p>
-&lt;/blockquote>
+&lt;p>you can just use docker multi-stage build&lt;/p>&lt;/blockquote>
 &lt;p>I know. You&amp;rsquo;re right. I chose not do that to avoid making big changes to the code.&lt;/p>
 &lt;p>Just let me suffer.&lt;/p>
 &lt;h2 id="recap">
@@ -581,8 +829,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 Changing the log format
 &lt;/h3>
 &lt;blockquote>
-&lt;p>&amp;ldquo;To solve a problem that is difficult, you must first make it easy.&amp;rdquo;&lt;/p>
-&lt;/blockquote>
+&lt;p>&amp;ldquo;To solve a problem that is difficult, you must first make it easy.&amp;rdquo;&lt;/p>&lt;/blockquote>
 &lt;p>The default nginx access logs format looks something like this:&lt;/p>
 &lt;pre tabindex="0">&lt;code>&amp;#39;$remote_addr - $remote_user [$time_local] &amp;#39;&amp;#39;&amp;#34;$request&amp;#34; $status $body_bytes_sent &amp;#39; &amp;#39;&amp;#34;$http_referer&amp;#34; &amp;#34;$http_user_agent&amp;#34;&amp;#39;
 &lt;/code>&lt;/pre>&lt;p>Parsing it is definitely possible using regex as shown by &lt;a href="https://www.alibabacloud.com/help/en/sls/user-guide/parse-nginx-logs">this article&lt;/a> but why bother when you have the option to change the format and make it easier to parse using DuckDB. To do so we will be configuring ingress-nginx controller in our cluster to log in JSON format. You can set the custom log format using the &lt;code>log-format-upstream&lt;/code> config and set &lt;code>log-format-escape-json&lt;/code> to make sure that the variables are escaped properly for use in as JSON variables.&lt;/p>
@@ -1010,8 +1257,7 @@ Alloy cadvisor exporter
 &lt;blockquote>
 &lt;p>Note: This can be used to run Loki over multiple cloud provider availability zones however this is not currently
 recommended as Loki is not optimized for this and cross zone network traffic costs can become extremely high
-extremely quickly. Even with zone awareness enabled, it is recommended to run Loki in a single availability zone.&lt;/p>
-&lt;/blockquote>
+extremely quickly. Even with zone awareness enabled, it is recommended to run Loki in a single availability zone.&lt;/p>&lt;/blockquote>
 &lt;h2 id="cross-az-traffic-amplification">
 &lt;a href="#cross-az-traffic-amplification" class="anchor">
 &lt;svg class="icon" aria-hidden="true" focusable="false" height="16" version="1.1" viewBox="0 0 16 16" width="16">
@@ -1218,8 +1464,7 @@ Conclusion
 &lt;p>It is kinda mindblowing that I can do all this using SQL. Both Steampipe and DuckDB are great products and the flexibility of those tools allows me to
 pick and choose the best tool for the job. I first came across Steampipe in one of the podcasts that I listen to but haven&amp;rsquo;t really used it much. Now, after having the opportunity to use it to solve one of my problems, I&amp;rsquo;ll definitely pay more attention to it to make my tech janitor life easier in the future ;)&lt;/p></description></item><item><title>Terraform modules: be opinionated</title><link>https://pokgak.xyz/articles/terraform-modules-opinionated/</link><pubDate>Fri, 08 Dec 2023 17:21:59 +0800</pubDate><guid>https://pokgak.xyz/articles/terraform-modules-opinionated/</guid><description>
 &lt;blockquote>
-&lt;p>Modules are containers for multiple resources that are used together.&lt;/p>
-&lt;/blockquote>
+&lt;p>Modules are containers for multiple resources that are used together.&lt;/p>&lt;/blockquote>
 &lt;p>Terraform modules is a way to bundle a bunch of Terraform resources into one group. Although not explicitly mentioned in the definition, it is also a way to provide an &lt;strong>abstraction&lt;/strong> to the resources inside the module and only expose inputs and outputs that are relevant to the users of the module.&lt;/p>
 &lt;h2 id="terraform-module-as-an-abstraction-layer">
 &lt;a href="#terraform-module-as-an-abstraction-layer" class="anchor">
@@ -1303,55 +1548,55 @@ Module Abstraction in Action
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
 &lt;pre tabindex="0" class="chroma">&lt;code class="language-terraform" data-lang="terraform">&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nx">string&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nx">optional&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;mskconnect-logs&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">bucket_arn&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">prefix&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">optional&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;mskconnect-logs&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">default&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">null&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_cloudwatch_logs&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">log_group&lt;/span> = &lt;span class="nx">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_cloudwatch_logs&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">log_group&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">string&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">default&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">null&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_firehose&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">delivery_stream&lt;/span> = &lt;span class="nx">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_firehose&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">delivery_stream&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">string&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">default&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">null&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">resource&lt;/span> &lt;span class="s2">&amp;#34;aws_mskconnect_connector&amp;#34;&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">name&lt;/span> = &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">resource&lt;/span> &lt;span class="s2">&amp;#34;aws_mskconnect_connector&amp;#34;&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">worker_log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">for_each&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">bucket_arn&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">prefix&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">enabled&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">bucket_arn&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">bucket_arn&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">prefix&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">prefix&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;cloudwatch_logs&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_cloudwatch_logs&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">for_each&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_cloudwatch_logs&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">log_group&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_cloudwatch_logs&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_group&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">enabled&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">log_group&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_cloudwatch_logs&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_group&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">dynamic&lt;/span> &lt;span class="s2">&amp;#34;firehose&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">for_each&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_firehose&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">for_each&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_firehose&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span> &lt;span class="o">?&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="m">1&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="p">[]&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="kc">true&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">delivery_stream&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_firehose&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">delivery_stream&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">enabled&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">true&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">delivery_stream&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_firehose&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">delivery_stream&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
@@ -1386,23 +1631,23 @@ Module Abstraction in Action
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
 &lt;pre tabindex="0" class="chroma">&lt;code class="language-terraform" data-lang="terraform">&lt;span class="line">&lt;span class="cl">&lt;span class="kr">variable&lt;/span> &lt;span class="s2">&amp;#34;log_delivery_s3&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">type&lt;/span> = &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nx">string&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nx">optional&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;mskconnect-logs&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">object&lt;/span>&lt;span class="p">({&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">bucket_arn&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">string&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">prefix&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">optional&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;mskconnect-logs&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">})&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">default&lt;/span> = &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">default&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nx">null&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">resource&lt;/span> &lt;span class="s2">&amp;#34;aws_mskconnect_connector&amp;#34;&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">name&lt;/span> = &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kr">resource&lt;/span> &lt;span class="s2">&amp;#34;aws_mskconnect_connector&amp;#34;&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;example&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">worker_log_delivery&lt;/span> &lt;span class="p">{&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">s3&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">enabled&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">bucket_arn&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">bucket_arn&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="na">prefix&lt;/span> = &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">prefix&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">enabled&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="nx">null&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">bucket_arn&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">bucket_arn&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="nx">prefix&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">var&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">log_delivery_s3&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">prefix&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
 &lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
@@ -1768,8 +2013,7 @@ d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.
 OTLP Protocol
 &lt;/h3>
 &lt;blockquote>
-&lt;p>The OpenTelemetry Protocol (OTLP) specification describes the encoding, transport, and delivery mechanism of telemetry data between telemetry sources, intermediate nodes such as collectors and telemetry backends.&lt;/p>
-&lt;/blockquote>
+&lt;p>The OpenTelemetry Protocol (OTLP) specification describes the encoding, transport, and delivery mechanism of telemetry data between telemetry sources, intermediate nodes such as collectors and telemetry backends.&lt;/p>&lt;/blockquote>
 &lt;p>&lt;a href="https://opentelemetry.io/docs/reference/specification/protocol/otlp/">https://opentelemetry.io/docs/reference/specification/protocol/otlp/&lt;/a>&lt;/p>
 &lt;h3 id="otel-cli">
 &lt;a href="#otel-cli" class="anchor">
@@ -2396,8 +2640,7 @@ Initialization
 &lt;p>The recommended way to do it is to use the &lt;code>-r&lt;/code> flag from the &lt;code>node&lt;/code> command:&lt;/p>
 &lt;blockquote>
 &lt;p>-r, &amp;ndash;require module
-Preload the specified module at startup. Follows &lt;code>require()&lt;/code>&amp;rsquo;s module resolution rules. module may be either a path to a file, or a Node.js module name.&lt;/p>
-&lt;/blockquote>
+Preload the specified module at startup. Follows &lt;code>require()&lt;/code>&amp;rsquo;s module resolution rules. module may be either a path to a file, or a Node.js module name.&lt;/p>&lt;/blockquote>
 &lt;p>So in your &lt;code>package.json&lt;/code> you&amp;rsquo;ll have to add that to your &lt;code>start&lt;/code> command:&lt;/p>
 &lt;div class="highlight">&lt;div class="chroma">
 &lt;table class="lntable">&lt;tr>&lt;td class="lntd">
