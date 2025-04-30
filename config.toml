@@ -4,7 +4,7 @@ baseurl = "https://pokgak.xyz"
 languageCode = "en-us"
 title = "Aiman Ismail"
 theme = "hugo-tania"
-paginate = 6
+pagination.pagerSize = 5
 
 #disqusShortname = "https-hugo-tania-netlify-app"
 
@@ -41,10 +41,10 @@ paginate = 6
     twitter = "https://twitter.com/pokgak73"
     twitch = ""
     whatsapp = ""
-  
+
   # Comments settigns
   [params.comments]
-    enabled = false 
+    enabled = false
     provider = "disqus"
 
 [menu]
