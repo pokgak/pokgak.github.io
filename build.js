@@ -20,7 +20,8 @@ marked.use({ renderer });
 
 const SITE_TITLE = 'Aiman Ismail';
 const SITE_URL = 'https://pokgak.xyz';
-const CONTENT_DIR = path.join(__dirname, 'content/articles');
+const ARTICLES_DIR = path.join(__dirname, 'content/articles');
+const NOTES_DIR = path.join(__dirname, 'content/notes');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const STATIC_DIR = path.join(__dirname, 'static');
 
@@ -62,15 +63,15 @@ function escapeXml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// --- Load articles ---
+// --- Load content ---
 
-function loadArticles() {
-  const files = fs.readdirSync(CONTENT_DIR).filter(f => f.endsWith('.md'));
-  const articles = files.map(file => {
-    const raw = fs.readFileSync(path.join(CONTENT_DIR, file), 'utf-8');
+function loadContent(dir) {
+  if (!fs.existsSync(dir)) return [];
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
+  const items = files.map(file => {
+    const raw = fs.readFileSync(path.join(dir, file), 'utf-8');
     const { data, content } = matter(raw);
     const slug = slugFromFilename(file);
-    // Fix image paths: images/foo.png -> /images/foo.png
     const fixedContent = content.replace(/\]\(images\//g, '](/images/');
     const html = marked(fixedContent);
     return {
@@ -82,8 +83,8 @@ function loadArticles() {
       content: fixedContent,
     };
   });
-  articles.sort((a, b) => b.date - a.date);
-  return articles;
+  items.sort((a, b) => b.date - a.date);
+  return items;
 }
 
 // --- Templates ---
@@ -123,6 +124,7 @@ function baseLayout(title, content, { isHome = false } = {}) {
     <a href="/" class="text-lg font-semibold hover:opacity-75 transition-opacity">${escapeXml(SITE_TITLE)}</a>
     <nav class="flex items-center gap-6">
       <a href="/articles/" class="hover:opacity-75 transition-opacity">Articles</a>
+      <a href="/notes/" class="hover:opacity-75 transition-opacity">Notes</a>
       <button @click="dark = !dark" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle dark mode">
         <svg x-show="!dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
         <svg x-show="dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -172,6 +174,10 @@ function homePage(articles) {
       </ul>
       <a href="/articles/" class="text-sm hover:opacity-75 transition-opacity">View all &rarr;</a>
     </section>
+
+    <section class="mt-16 flex justify-center">
+      <img src="/images/sprite.svg" alt="Pixel art avatar" class="w-20 h-20" style="image-rendering: pixelated;" />
+    </section>
   `, { isHome: true });
 }
 
@@ -208,6 +214,48 @@ function articlePage(article) {
   `);
 }
 
+function noteListItem(note) {
+  return `<li class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
+      <time class="text-sm text-gray-500 dark:text-gray-400 shrink-0" datetime="${note.date.toISOString()}">${formatDateShort(note.date)}</time>
+      <a href="/notes/${note.slug}/" class="hover:opacity-75 transition-opacity">${escapeXml(note.title)}</a>
+    </li>`;
+}
+
+function notesListPage(notes) {
+  return baseLayout('Notes', `
+    <h1 class="text-2xl font-semibold mb-2">Notes</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Quick thoughts and rough ideas — less polished than articles, possibly AI-assisted.</p>
+    <ul class="space-y-3">
+      ${notes.map(noteListItem).join('\n      ')}
+    </ul>
+  `);
+}
+
+function notePage(note) {
+  const tags = note.tags.length
+    ? `<div class="flex flex-wrap gap-2 mb-8">${note.tags.map(t => `<span class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">${escapeXml(t)}</span>`).join('')}</div>`
+    : '';
+
+  return baseLayout(note.title, `
+    <article>
+      <header class="mb-8">
+        <h1 class="text-2xl font-semibold mb-2">${escapeXml(note.title)}</h1>
+        <time class="text-sm text-gray-500 dark:text-gray-400" datetime="${note.date.toISOString()}">${formatDate(note.date)}</time>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 italic">This is a note — quick thoughts, possibly AI-assisted. Not a fully fleshed article.</p>
+      </header>
+      ${tags}
+      <div class="prose prose-gray dark:prose-invert max-w-none
+        prose-headings:font-semibold
+        prose-pre:bg-gray-50 prose-pre:dark:bg-gray-800
+        prose-code:before:content-none prose-code:after:content-none
+        prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
+        prose-img:rounded-lg">
+        ${note.html}
+      </div>
+    </article>
+  `);
+}
+
 function rssFeed(articles) {
   const items = articles.slice(0, 20).map(a => `    <item>
       <title>${escapeXml(a.title)}</title>
@@ -233,8 +281,9 @@ function rssFeed(articles) {
 
 function build() {
   console.log('Building site...');
-  const articles = loadArticles();
-  console.log(`Found ${articles.length} articles`);
+  const articles = loadContent(ARTICLES_DIR);
+  const notes = loadContent(NOTES_DIR);
+  console.log(`Found ${articles.length} articles, ${notes.length} notes`);
 
   // Clean and create public dir
   fs.rmSync(PUBLIC_DIR, { recursive: true, force: true });
@@ -252,6 +301,17 @@ function build() {
     const dir = path.join(PUBLIC_DIR, 'articles', article.slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), articlePage(article));
+  }
+
+  // Notes list
+  ensureDir(path.join(PUBLIC_DIR, 'notes'));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'notes/index.html'), notesListPage(notes));
+
+  // Individual notes
+  for (const note of notes) {
+    const dir = path.join(PUBLIC_DIR, 'notes', note.slug);
+    ensureDir(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), notePage(note));
   }
 
   // RSS feed

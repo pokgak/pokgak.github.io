@@ -1,4 +1,4 @@
-.PHONY: build preview clean new-article install
+.PHONY: build preview clean new-article new-note install
 
 install:
 	npm install
@@ -23,3 +23,15 @@ new-article:
 	@echo '---' >> content/articles/$(SLUG).md
 	@echo '' >> content/articles/$(SLUG).md
 	@echo "Created content/articles/$(SLUG).md"
+
+# Usage: make new-note SLUG=my-quick-note
+new-note:
+	@test -n "$(SLUG)" || (echo "Usage: make new-note SLUG=my-quick-note" && exit 1)
+	@mkdir -p content/notes
+	@echo '---' > content/notes/$(SLUG).md
+	@echo 'title: "$(SLUG)"' >> content/notes/$(SLUG).md
+	@echo 'date: $(shell date +%Y-%m-%dT%H:%M:%S%z)' >> content/notes/$(SLUG).md
+	@echo 'tags: []' >> content/notes/$(SLUG).md
+	@echo '---' >> content/notes/$(SLUG).md
+	@echo '' >> content/notes/$(SLUG).md
+	@echo "Created content/notes/$(SLUG).md"
