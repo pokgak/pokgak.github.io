@@ -118,7 +118,7 @@ function baseLayout(title, content, { isHome = false } = {}) {
     .prose a { @apply underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2 hover:decoration-gray-800 dark:hover:decoration-gray-200 transition-colors; }
   </style>
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen flex flex-col">
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen flex flex-col text-base lg:text-lg">
   <header class="max-w-2xl mx-auto w-full px-6 py-8 flex items-center justify-between">
     <a href="/" class="text-lg font-semibold hover:opacity-75 transition-opacity">${escapeXml(SITE_TITLE)}</a>
     <nav class="flex items-center gap-6">
