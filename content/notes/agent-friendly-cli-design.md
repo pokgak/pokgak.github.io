@@ -128,4 +128,4 @@ For lgtm-cli specifically, adding an `agent schema` command and structured error
 
 The pattern generalizes: any CLI that might be called by an AI agent (which is increasingly all of them) benefits from treating its interface as an API surface rather than a human-readable display.
 
-We tested these ideas by applying AXI principles to lgtm-cli and running controlled experiments — see [AXI Principles Experiment: lgtm-cli Before & After](/notes/axi-principles-lgtm-cli-experiments/) for the full results. TL;DR: contextual hints reduced CLI calls by 15-25% and errors by 80%, but content truncation (which we didn't implement) would have the highest impact.
+We tested these ideas by applying AXI principles to lgtm-cli and running controlled experiments — see [AXI Principles Experiment: lgtm-cli Before & After](/experiments/axi-principles-lgtm-cli-experiments/) for the full results. TL;DR: contextual hints reduced CLI calls by 15-25% and errors by 80%, but content truncation (which we didn't implement) would have the highest impact.
