@@ -193,17 +193,21 @@ Apple Silicon uses **unified memory** — CPU and GPU share the same RAM. The ke
 | M1 | 68 GB/s |
 | M1 Pro/Max | 200-400 GB/s |
 | M2 Ultra | 800 GB/s |
+| **M3 Ultra** | **819 GB/s** |
 | M4 Pro | 273 GB/s |
+| M5 Pro | 307 GB/s |
 
 During decode (one token at a time), the GPU must load ALL model weights from memory for each token. A 4-bit 7B model = ~3.5 GB of weights loaded per token.
 
-At 200 GB/s bandwidth: 3.5 GB / 200 GB/s = 0.0175s per token → ~57 tokens/sec theoretical max.
+On an M3 Ultra (819 GB/s): 3.5 GB / 819 GB/s = 0.0043s per token → ~234 tokens/sec theoretical max.
+On an M5 Pro (307 GB/s): 3.5 GB / 307 GB/s = 0.0114s per token → ~88 tokens/sec theoretical max.
 
 This is why:
 - Smaller models are faster (less to load)
 - Quantization helps (smaller weights = less to load)
 - Prefill is faster per-token than decode (batched tokens amortize the weight loading)
-- Our benchmark showed Qwen 0.8B at ~245 tok/s vs 9B at ~80 tok/s — roughly proportional to model size
+- Higher bandwidth chips are proportionally faster at decode
+- Our benchmark on M3 Ultra showed Qwen 0.8B at ~245 tok/s vs 9B at ~80 tok/s — roughly proportional to model size
 
 ## 10. Putting It All Together: What mlx-lm Does
 
