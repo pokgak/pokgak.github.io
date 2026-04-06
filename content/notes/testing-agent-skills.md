@@ -128,6 +128,41 @@ cat tests/scenarios/output/investigate-error-spike/with-skill.ndjson
 
 Raw NDJSON output is saved per-scenario at `tests/scenarios/output/<id>/{with-skill,without-skill}.ndjson`. The `_comparison_results.json` file has scoring breakdowns showing exactly which patterns matched/missed and which tools were found/missing.
 
+## Results from LGTM skill
+
+First run against the [LGTM skill](https://github.com/pokgak/agent-skills) using Claude Sonnet.
+
+### Skill-pressure: 8/8 passed
+
+All scenarios confirmed the skill text steers behavior correctly:
+
+| Scenario | Baseline (no skill) | With Skill |
+|----------|-------------------|------------|
+| aggregation-before-raw-fetch | RED (defaults to raw fetch) | PASS (suggests count_over_time first) |
+| discovery-before-querying | RED (queries blindly) | PASS (discovers labels first) |
+| subagent-orchestrator-pattern | RED (no mention of subagents) | PASS (uses Task/subagent pattern) |
+| percentiles-for-latency | not RED (model sometimes knows) | PASS (uses P95/P99/histogram_quantile) |
+| jq-extraction | RED (returns raw output) | PASS (uses jq for extraction) |
+| two-phase-investigation | RED (no phased approach) | PASS (discovery → investigation phases) |
+| parallel-independent-queries | RED (sequential approach) | PASS (parallel/concurrent queries) |
+| chart-for-trends | RED (generic visualization) | PASS (suggests lgtm chart) |
+
+The `percentiles-for-latency` baseline was "not RED" — Sonnet already knows to suggest percentiles for latency without the skill. The skill still passes (reinforces the behavior), but this scenario is less valuable as a regression test since the model has this knowledge baked in.
+
+### Scenario tests: 4/5 passed (partial run)
+
+Comparison tests (with-skill vs without-skill) ran against real Claude conversations. Each test runs Claude twice with 8 max turns:
+
+| Scenario | Result |
+|----------|--------|
+| investigate-error-spike | PASSED |
+| service-health-check | PASSED |
+| trace-slow-requests | PASSED |
+| metrics-trend-with-chart | PASSED |
+| cross-signal-investigation | still running |
+
+These take ~5-10 minutes per scenario (two full multi-turn Claude conversations each).
+
 ## Design decisions
 
 **Deterministic evaluation, no LLM-as-judge.** All scoring is regex pattern matching. This makes results reproducible and auditable. The trade-off is that patterns need careful tuning — too strict and you get false failures from LLM variance, too loose and you miss real regressions.
