@@ -1,4 +1,4 @@
-.PHONY: build preview clean new-article new-note install
+.PHONY: build preview clean new-article new-note new-experiment install
 
 install:
 	npm install
@@ -35,3 +35,15 @@ new-note:
 	@echo '---' >> content/notes/$(SLUG).md
 	@echo '' >> content/notes/$(SLUG).md
 	@echo "Created content/notes/$(SLUG).md"
+
+# Usage: make new-experiment SLUG=my-experiment
+new-experiment:
+	@test -n "$(SLUG)" || (echo "Usage: make new-experiment SLUG=my-experiment" && exit 1)
+	@mkdir -p content/experiments
+	@echo '---' > content/experiments/$(SLUG).md
+	@echo 'title: "$(SLUG)"' >> content/experiments/$(SLUG).md
+	@echo 'date: $(shell date +%Y-%m-%dT%H:%M:%S%z)' >> content/experiments/$(SLUG).md
+	@echo 'tags: []' >> content/experiments/$(SLUG).md
+	@echo '---' >> content/experiments/$(SLUG).md
+	@echo '' >> content/experiments/$(SLUG).md
+	@echo "Created content/experiments/$(SLUG).md"

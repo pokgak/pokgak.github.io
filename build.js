@@ -22,6 +22,7 @@ const SITE_TITLE = 'Aiman Ismail';
 const SITE_URL = 'https://pokgak.xyz';
 const ARTICLES_DIR = path.join(__dirname, 'content/articles');
 const NOTES_DIR = path.join(__dirname, 'content/notes');
+const EXPERIMENTS_DIR = path.join(__dirname, 'content/experiments');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const STATIC_DIR = path.join(__dirname, 'static');
 
@@ -125,6 +126,7 @@ function baseLayout(title, content, { isHome = false } = {}) {
     <nav class="flex items-center gap-6">
       <a href="/articles/" class="hover:opacity-75 transition-opacity">Articles</a>
       <a href="/notes/" class="hover:opacity-75 transition-opacity">Notes</a>
+      <a href="/experiments/" class="hover:opacity-75 transition-opacity">Experiments</a>
       <button @click="dark = !dark" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle dark mode">
         <svg x-show="!dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
         <svg x-show="dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -256,6 +258,48 @@ function notePage(note) {
   `);
 }
 
+function experimentListItem(experiment) {
+  return `<li class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
+      <time class="text-sm text-gray-500 dark:text-gray-400 shrink-0" datetime="${experiment.date.toISOString()}">${formatDateShort(experiment.date)}</time>
+      <a href="/experiments/${experiment.slug}/" class="hover:opacity-75 transition-opacity">${escapeXml(experiment.title)}</a>
+    </li>`;
+}
+
+function experimentsListPage(experiments) {
+  return baseLayout('Experiments', `
+    <h1 class="text-2xl font-semibold mb-2">Experiments</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Data and results from experiments — raw findings and observations.</p>
+    <ul class="space-y-3">
+      ${experiments.map(experimentListItem).join('\n      ')}
+    </ul>
+  `);
+}
+
+function experimentPage(experiment) {
+  const tags = experiment.tags.length
+    ? `<div class="flex flex-wrap gap-2 mb-8">${experiment.tags.map(t => `<span class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">${escapeXml(t)}</span>`).join('')}</div>`
+    : '';
+
+  return baseLayout(experiment.title, `
+    <article>
+      <header class="mb-8">
+        <h1 class="text-2xl font-semibold mb-2">${escapeXml(experiment.title)}</h1>
+        <time class="text-sm text-gray-500 dark:text-gray-400" datetime="${experiment.date.toISOString()}">${formatDate(experiment.date)}</time>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 italic">This is an experiment — raw data and observations, not a polished write-up.</p>
+      </header>
+      ${tags}
+      <div class="prose prose-gray dark:prose-invert max-w-none
+        prose-headings:font-semibold
+        prose-pre:bg-gray-50 prose-pre:dark:bg-gray-800
+        prose-code:before:content-none prose-code:after:content-none
+        prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
+        prose-img:rounded-lg">
+        ${experiment.html}
+      </div>
+    </article>
+  `);
+}
+
 function rssFeed(articles) {
   const items = articles.slice(0, 20).map(a => `    <item>
       <title>${escapeXml(a.title)}</title>
@@ -283,7 +327,8 @@ function build() {
   console.log('Building site...');
   const articles = loadContent(ARTICLES_DIR);
   const notes = loadContent(NOTES_DIR);
-  console.log(`Found ${articles.length} articles, ${notes.length} notes`);
+  const experiments = loadContent(EXPERIMENTS_DIR);
+  console.log(`Found ${articles.length} articles, ${notes.length} notes, ${experiments.length} experiments`);
 
   // Clean and create public dir
   fs.rmSync(PUBLIC_DIR, { recursive: true, force: true });
@@ -312,6 +357,17 @@ function build() {
     const dir = path.join(PUBLIC_DIR, 'notes', note.slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), notePage(note));
+  }
+
+  // Experiments list
+  ensureDir(path.join(PUBLIC_DIR, 'experiments'));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'experiments/index.html'), experimentsListPage(experiments));
+
+  // Individual experiments
+  for (const experiment of experiments) {
+    const dir = path.join(PUBLIC_DIR, 'experiments', experiment.slug);
+    ensureDir(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), experimentPage(experiment));
   }
 
   // RSS feed
