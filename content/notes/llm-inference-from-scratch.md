@@ -40,29 +40,23 @@ Step by step:
 
 Each layer has two main parts: **Attention** and **MLP** (feed-forward network).
 
-### Attention: "What should I focus on?"
+### Attention: "Gather information from context"
 
-Given a sequence of tokens, attention lets each token look at all previous tokens and decide how much to "pay attention" to each one.
+After step 2, each token is a vector of numbers — but it's isolated. The word "cat" doesn't know that "sat" comes after it. Attention is the step where tokens talk to each other.
 
-Concretely:
-1. Each token gets transformed into three vectors: **Query (Q)**, **Key (K)**, **Value (V)**
-2. Q and K are multiplied together to get attention scores (which tokens are relevant to which)
-3. Scores are used to create a weighted mix of V vectors
-4. Result: each token now contains information from the tokens it attended to
+Take the sentence: **"The cat sat on the ___"**
 
-The math: `Attention(Q, K, V) = softmax(Q × K^T / √d) × V`
+The model needs to predict the blank. Each token gets to ask every token before it: "are you relevant to me?" The answers become scores, and each token becomes a weighted blend of the tokens it found most relevant.
 
-This is all matrix multiplications — the single most performance-critical operation.
+For "___", it might heavily attend to "cat" and "sat" — they tell it what the sentence is about. It barely attends to "the" or "on" — less informative. After attention, the blank token's vector now encodes context from the whole sequence, not just itself.
 
-### MLP: "Process what I focused on"
+**How the matching works (Q/K/V):** Each token gets transformed into three vectors — Query ("what am I looking for?"), Key ("what do I contain?"), and Value ("what information do I carry?"). Query and Key are compared to produce relevance scores, then those scores weight the Values. The math is all matrix multiplications, making it the most performance-critical operation. But you can treat Q/K/V as an implementation detail until you need to dig into the code.
 
-After attention, each token's vector goes through a feed-forward network:
+### MLP: "Process what I gathered"
 
-```
-input → Linear(expand) → activation → Linear(shrink) → output
-```
+After tokens have gathered context via attention, each token independently goes through a small neural network that transforms its vector. Think of attention as "gather information" and MLP as "process information."
 
-This expands the vector (e.g., 768 → 3072), applies a non-linearity, then shrinks it back. It's where the model stores and applies "knowledge."
+The MLP expands the vector (e.g., 768 → 3072 numbers), applies a non-linear function, then shrinks it back. This is where the model stores and applies factual knowledge.
 
 ### Residual Connections
 
@@ -73,7 +67,7 @@ output = input + attention(input)
 output = output + mlp(output)
 ```
 
-This "residual connection" is critical — without it, deep models can't train. It means information can skip layers if needed.
+This means information can skip steps if needed — a token can pass through a layer mostly unchanged if that layer isn't useful for it. Without residual connections, stacking 32+ layers deep wouldn't work.
 
 ## 4. Prefill vs Decode: Two Phases of Generation
 
