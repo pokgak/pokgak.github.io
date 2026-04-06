@@ -19,7 +19,7 @@ We applied four AXI principles to lgtm-cli's `--envelope` mode ([PR #5](https://
 
 Three investigation tasks, each run twice: once with raw JSON output (baseline) and once with envelope+hints. Each experiment ran in an isolated Sonnet agent with identical prompts except for the `--envelope` flag. A tracking wrapper logged every CLI call (command, output bytes, duration).
 
-**Instance:** `primeintellect` on Grafana Cloud (Loki, Prometheus, Tempo)
+**Instance:** a production Grafana Cloud stack with Loki, Prometheus, and Tempo
 
 ### Tasks
 
@@ -39,7 +39,7 @@ Three investigation tasks, each run twice: once with raw JSON output (baseline) 
 | Duration (ms) | 39,172 | 20,872 | **-47%** |
 | Agent tool uses | 22 | 17 | **-23%** |
 
-The envelope agent followed hints like `"get values → lgtm loki label-values <label>"` instead of spending calls on `--help` and trial-and-error. Both found the same top services (`inference-dynamo-frontend-main`, `coredns`/`pi-sandbox-gateway`).
+The envelope agent followed hints like `"get values → lgtm loki label-values <label>"` instead of spending calls on `--help` and trial-and-error. Both agents identified the same top error-producing services.
 
 ### Task 2: Cross-Signal Correlation
 
