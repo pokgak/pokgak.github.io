@@ -161,15 +161,23 @@ Comparison tests (with-skill vs without-skill) ran against real Claude conversat
 | metrics-trend-with-chart | PASSED |
 | cross-signal-investigation | PASSED |
 
-### Lesson: skill-only absolute scoring doesn't work well
+### Lesson: test the right tool names
 
-We initially had a second test class (`test_scenario_with_skill_only`) that ran Claude with the skill and checked `score >= 0.6`. All 5 failed.
+We initially had all 5 skill-only tests failing. Root cause: our YAML expected `required_tools: [Task]` but Claude actually used `Agent` for subagent calls, and sometimes ran `lgtm` commands via `Bash` directly. Both are valid — Claude just chose a different (but equivalent) tool.
 
-The problem: each test runs a fresh Claude conversation, and Claude doesn't always activate the `Skill` tool — sometimes it just calls `Bash` directly to run `lgtm` commands. That's valid behavior, but our scoring expected `Task` as a required tool (30% weight). Without `Task`, the max possible score is 0.70, and with partial pattern matches it drops below 0.60.
+After removing `Task` from `required_tools` and relying on `required_patterns` (which match `lgtm loki`, `lgtm tempo`, etc. in tool arguments), all 5 skill-only tests pass:
 
-The comparison test avoids this by measuring the *delta* between with-skill and without-skill runs. Both runs might score low in absolute terms, but the skill consistently doesn't make things worse (delta >= -0.1). This is the more meaningful question: "does the skill help?" rather than "does Claude do a good job in absolute terms?"
+| Scenario | Score |
+|----------|-------|
+| investigate-error-spike | 0.90 |
+| trace-slow-requests | 0.90 |
+| metrics-trend-with-chart | 0.88 |
+| service-health-check | 0.78 |
+| cross-signal-investigation | 0.65 |
 
-We removed the skill-only test class — comparison is the signal that matters.
+**Takeaway:** required_patterns (what the agent *says* in tool arguments) are more robust than required_tools (which specific tool it picks). Claude has multiple equivalent ways to accomplish the same thing — `Task`, `Agent`, or direct `Bash` calls can all run `lgtm` commands. Testing the content of what gets executed matters more than testing the tool wrapper it's executed in.
+
+The skill-only test is still valuable: it measures whether Claude picks up and uses the skill at all. If Claude consistently ignores the skill (doesn't call `Skill(skill="lgtm")`), that signals the skill's trigger description or instructions need improvement.
 
 ## Design decisions
 
