@@ -180,3 +180,68 @@ For the 0.8B model, weight loading (0.73ms) finishes almost instantly, leaving 3
 **Crossover point:** Models need roughly **3-4 GB of weights** (at 819 GB/s bandwidth) for the decode step to become memory-bandwidth-bound rather than compute-bound. Below that, you're leaving bandwidth on the table.
 
 **Implication for hardware choice:** On lower-bandwidth hardware (e.g., M5 Pro at 307 GB/s), the crossover point would be lower (~1-1.5 GB), meaning even small models would be more bandwidth-efficient. The M3 Ultra's massive bandwidth is actually "wasted" on small models.
+
+## Experiment 9: Compute Breakdown via Ablation
+
+**Goal:** What specifically makes up the ~3.5-5ms compute overhead? Previous isolated measurements were inflated by eval sync. This time we ablate (remove) one component at a time from the real model and measure the difference.
+
+| Ablation | Decode time | Δ from baseline | % of decode |
+|----------|-----------|-----------------|-------------|
+| Baseline (full) | 8.94 ms | — | 100% |
+| Remove RoPE | 8.75 ms | -0.19 ms | 2.1% |
+| Remove RMSNorm | 8.01 ms | -0.93 ms | 10.4% |
+| Remove MLP compute | 3.34 ms | -5.60 ms | 62.6% |
+| Remove SDPA + KV cache | 1.92 ms | -7.02 ms | 78.5% |
+
+The sum exceeds 100% because removing a component changes how MLX fuses remaining ops. But the ranking is clear:
+
+1. **SDPA + KV cache** and **MLP compute** dominate — they're the big matrix multiplications
+2. **RMSNorm** is ~10% — surprisingly significant for a "simple" operation
+3. **RoPE** is negligible at 2%
+
+Without MLP compute, the model runs in 3.34ms — that's essentially just attention projections + SDPA + norms + weight loading. Without SDPA+cache (but keeping Q/K/V/O projections), it drops to 1.92ms — close to the pure weight loading time.
+
+## Experiment 10: Batch Decode & Roofline Model
+
+**Goal:** Decode processes one token at a time. What happens with batching, and where does the M3 Ultra transition from memory-bound to compute-bound?
+
+### Prefill throughput scaling
+
+| Tokens | Time | Tok/s | ms/tok |
+|--------|------|-------|--------|
+| 1 | 8.17 ms | 122 | 8.171 |
+| 4 | 11.97 ms | 334 | 2.993 |
+| 32 | 33.84 ms | 946 | 1.057 |
+| 128 | 86.21 ms | 1,485 | 0.673 |
+| 1024 | 623.32 ms | 1,643 | 0.609 |
+
+Processing 1024 tokens takes only 76x longer than processing 1 token — a **13x throughput improvement** (122 → 1,643 tok/s). The amortization of weight loading across tokens is massive.
+
+### Batch decode (simulating speculative decoding verification)
+
+| Batch size | Time | Tok/s | vs single |
+|-----------|------|-------|-----------|
+| 1 | 8.84 ms | 113 | 1.0x |
+| 4 | 13.02 ms | 307 | 2.7x |
+| 16 | 38.08 ms | 420 | 3.7x |
+| 32 | 36.72 ms | 871 | 7.7x |
+| 128 | 87.46 ms | 1,464 | 12.9x |
+
+### Roofline analysis
+
+The roofline model defines the **ridge point** — the arithmetic intensity where a workload transitions from memory-bound to compute-bound:
+
+```
+Ridge point = Peak FLOPS / Peak Bandwidth = 30 TFLOPS / 819 GB/s ≈ 36.6 FLOPs/byte
+```
+
+For single-token decode, the arithmetic intensity is:
+```
+AI = 2 × 7B params FLOPs / 4.1 GB weights = 3.43 FLOPs/byte
+```
+
+That's 10x below the ridge point — deeply memory-bound, as expected.
+
+**At ~11 tokens per batch, we hit the ridge point.** Beyond that, compute saturates the GPU and adding more tokens doesn't amortize weight loading further — it just adds compute time linearly.
+
+This is exactly why speculative decoding works: verifying 8 draft tokens barely costs more than generating 1 (3.1x time for 8x tokens), because the weight loading is amortized and we haven't hit the compute ceiling yet.
