@@ -142,3 +142,41 @@ The ~35% overhead (at short context) breaks down to:
 At longer contexts (4096+), efficiency climbs to 81% because the KV cache reads overlap better with weight loading, effectively amortizing the compute overhead.
 
 **Bottom line:** mlx-lm on the M3 Ultra is well-optimized. The remaining gap is mostly physics (memory subsystem overhead) plus unavoidable compute that can't fully overlap with data movement.
+
+## Experiment 7: Model Size Scaling
+
+**Goal:** Does the efficiency pattern hold across model sizes, or is it specific to 7B?
+
+**Hypothesis:** Smaller models should be *less* bandwidth-efficient because compute overhead is a larger fraction of total time when weight loading is faster.
+
+| Model | Weights | Tok/s | BW-limited max | Efficiency | Effective BW |
+|-------|---------|-------|----------------|------------|-------------|
+| Qwen 0.8B | 0.60 GB | 238 | 1,370 | **17%** | 142 GB/s |
+| Qwen 4B | 2.37 GB | 123 | 346 | **36%** | 291 GB/s |
+| Mistral 7B | 4.08 GB | 114 | 198 | **58%** | 472 GB/s |
+| Qwen 9B | 6.04 GB | 83 | 136 | **61%** | 503 GB/s |
+
+**Hypothesis strongly confirmed.** The 0.8B model achieves only 17% bandwidth efficiency — weights load in 0.73ms but the decode step takes 4.21ms, meaning 83% of the time is spent on compute.
+
+Prefill throughput also shows clear scaling: 0.8B does 7,412-10,274 tok/s vs 9B at 1,091-1,279 tok/s.
+
+## Experiment 8: Actual Weight Sizes & Compute/Memory Crossover
+
+**Goal:** Previous experiments used peak memory as a proxy for weight size (wrong — includes KV cache and activations). Get real numbers and find the crossover point.
+
+Actual weight sizes measured from model parameters:
+
+| Model | Actual Weights | Weight Load Time | Compute Overhead | Total |
+|-------|---------------|-----------------|-----------------|-------|
+| Qwen 0.8B | 0.598 GB | 0.73 ms | 3.48 ms | 4.21 ms |
+| Qwen 4B | 2.367 GB | 2.89 ms | 5.24 ms | 8.13 ms |
+| Mistral 7B | 4.077 GB | 4.98 ms | 3.81 ms | 8.79 ms |
+| Qwen 9B | 6.043 GB | 7.38 ms | 4.64 ms | 12.02 ms |
+
+**Key finding: compute overhead is roughly constant at 3.5-5.2ms regardless of model size.** This is the time spent on SDPA, RoPE, norms, activations, and other non-bandwidth-bound operations that can't fully overlap with weight loading.
+
+For the 0.8B model, weight loading (0.73ms) finishes almost instantly, leaving 3.48ms of pure compute — the GPU sits idle waiting for compute to finish. For the 9B model, weight loading takes 7.38ms, giving compute 7+ ms to run concurrently — most of it hides behind the memory transfers.
+
+**Crossover point:** Models need roughly **3-4 GB of weights** (at 819 GB/s bandwidth) for the decode step to become memory-bandwidth-bound rather than compute-bound. Below that, you're leaving bandwidth on the table.
+
+**Implication for hardware choice:** On lower-bandwidth hardware (e.g., M5 Pro at 307 GB/s), the crossover point would be lower (~1-1.5 GB), meaning even small models would be more bandwidth-efficient. The M3 Ultra's massive bandwidth is actually "wasted" on small models.
