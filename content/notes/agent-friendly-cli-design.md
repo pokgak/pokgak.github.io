@@ -63,8 +63,69 @@ When an agent is detected:
 
 This is better than requiring `--json` or `--agent` flags because agents don't always control the initial invocation. Environment-based detection works even when the agent is calling a script that calls the CLI internally.
 
+## AXI: 10 Principles for Agent-Ergonomic CLIs
+
+[AXI](https://axi.md/) takes these ideas further with a research-backed framework. Their benchmark (490 browser automation runs, 425 GitHub runs) shows that principled CLI design beats protocol choice — AXI-style CLIs hit 100% success rates at lower cost than both raw CLIs and MCP.
+
+### Token Efficiency
+
+The biggest insight: agents burn context window on verbose output. AXI addresses this with:
+
+- **Token-optimized output format** — skip JSON braces/quotes/commas for ~40% token savings. LLMs parse it fine.
+- **Minimal defaults** — return 3-4 fields per list item, not 10+. Let agents opt-in to more with `--fields`.
+- **Content truncation with hints** — `"(truncated, 2847 chars total — use --full)"` instead of dumping everything. The agent decides if it needs the rest.
+
+### Pre-Computed Aggregates
+
+Eliminate round trips by including derived fields. Instead of making the agent count results or check CI status across multiple calls:
+
+```
+totalCount: 42
+ci: 27 passed, 0 failed, 10 skipped
+```
+
+One call instead of three.
+
+### Combined Operations
+
+Collapse multi-step sequences into single commands. In browser automation, `click --query` returns the updated page snapshot automatically — no separate "click" then "screenshot" calls. `fill @uid --submit` fills a form, submits, waits for load, and returns the new state in one shot.
+
+This reduced browser tasks from ~13 turns (code-writing approach) to 4.5 turns.
+
+### Definitive Empty States
+
+Never return empty output. Agents can't tell "no results" from "silent failure":
+
+```
+# Bad: (no output)
+
+# Good:
+issues[0]: No open issues matching "login bug"
+```
+
+### Contextual Disclosure (Next-Step Hints)
+
+Append `help[]` lines after output suggesting what to do next:
+
+```
+help: view issue details → gh-axi issues view <number>
+help: filter by label   → gh-axi issues --label bug
+```
+
+This is like actionable error messages but for success paths — the agent always knows what's possible next without reading docs.
+
+### Ambient Context
+
+Auto-install into shell session hooks to display a compact dashboard of relevant state before the agent even asks. Directory-scoped, so `cd`-ing into a repo shows open PRs, CI status, etc. The agent starts with context instead of spending turns discovering it.
+
+### Key Takeaway
+
+The empirical results are striking: AXI CLIs achieved 100% success at $0.05-0.07/task, while MCP averaged 82-87% success at $0.10-0.15/task. The interface design matters more than the protocol. Structured errors to stdout (not stderr), no interactive prompts, idempotent mutations, and clean exit codes form the baseline — the principles above are what separate good from great.
+
 ## Practical Implications
 
 For lgtm-cli specifically, adding an `agent schema` command and structured error responses would make it significantly easier for the lgtm agent skill and lgtm-mcp to use it programmatically. Right now the skill has to know the CLI's interface upfront — with a schema command, it could discover capabilities at runtime.
 
 The pattern generalizes: any CLI that might be called by an AI agent (which is increasingly all of them) benefits from treating its interface as an API surface rather than a human-readable display.
+
+We tested these ideas by applying AXI principles to lgtm-cli and running controlled experiments — see [AXI Principles Experiment: lgtm-cli Before & After](/notes/axi-principles-lgtm-cli-experiments/) for the full results. TL;DR: contextual hints reduced CLI calls by 15-25% and errors by 80%, but content truncation (which we didn't implement) would have the highest impact.
