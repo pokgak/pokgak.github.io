@@ -83,6 +83,8 @@ Hints didn't help here — both agents needed to figure out PromQL patterns like
 
 **Envelope overhead on small responses.** For quick commands like `labels` or `label-values`, the envelope and hints add ~30% more tokens to already-small responses. The hints are most valuable on responses where the agent doesn't know what to do next — for simple list/get commands, they're just noise.
 
+**TOON format doesn't help for observability CLIs.** AXI recommends Token-Optimized Object Notation (dropping JSON braces/quotes/commas for ~40% savings), but for Prometheus/Loki/Tempo the format isn't the bottleneck — the query is. In our experiments, `prom query 'DCGM_FI_DEV_GPU_UTIL'` returned 250K tokens (1120 individual GPU values), while `prom query 'avg by (cluster) (DCGM_FI_DEV_GPU_UTIL)'` returned 500 tokens — a 500x reduction from better PromQL, not a format change. TOON's 40% savings on 250K tokens would save ~100K, but the agent shouldn't be requesting 1120 raw values in the first place. TOON makes more sense for tools without server-side aggregation (GitHub issues, browser DOM snapshots). Observability backends have powerful query languages — teach the agent to use them.
+
 ## Next Steps
 
 1. **Content truncation** — Auto-truncate responses over N tokens in envelope mode with `"(truncated, showing 50 of 1120 results — use --limit to control)"`. This would address the biggest cost driver.
