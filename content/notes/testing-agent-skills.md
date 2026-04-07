@@ -149,17 +149,33 @@ All scenarios confirmed the skill text steers behavior correctly:
 
 The `percentiles-for-latency` baseline was "not RED" — Sonnet already knows to suggest percentiles for latency without the skill. The skill still passes (reinforces the behavior), but this scenario is less valuable as a regression test since the model has this knowledge baked in.
 
-### Scenario tests: 5/5 comparison tests passed
+### Scenario tests: comparison tests are inherently flaky
 
-Comparison tests (with-skill vs without-skill) ran against real Claude conversations. Each test runs Claude twice with 8-12 max turns. Total runtime: ~33 minutes.
+Comparison tests (with-skill vs without-skill) ran against real Claude conversations. Each test runs Claude twice with 8-12 max turns. Total runtime: ~20-40 minutes per full suite.
 
-| Scenario | Result |
-|----------|--------|
-| investigate-error-spike | PASSED |
-| service-health-check | PASSED |
-| trace-slow-requests | PASSED |
-| metrics-trend-with-chart | PASSED |
-| cross-signal-investigation | PASSED |
+Results across 3 runs:
+
+| Scenario | Run 1 | Run 2 | Run 3 |
+|----------|-------|-------|-------|
+| investigate-error-spike | PASSED | PASSED | PASSED |
+| service-health-check | PASSED | FAILED (-0.25) | PASSED |
+| trace-slow-requests | PASSED | FAILED (-0.25) | PASSED |
+| metrics-trend-with-chart | PASSED | PASSED | FAILED (-0.35) |
+| cross-signal-investigation | PASSED | PASSED | PASSED |
+| **skill-only (all 5)** | **PASSED** | **PASSED** | **PASSED** |
+
+Skill-only tests pass 100% consistently. Comparison tests randomly fail 1-2 scenarios per run due to LLM non-determinism — the with-skill and without-skill runs are independent Claude conversations that can produce wildly different scores for reasons unrelated to the skill.
+
+**Why this happens:** the comparison test runs Claude twice with the same prompt. In one run, Claude might call `lgtm tempo search` (matching our patterns), while in another it might run equivalent commands through a different path that doesn't match. The delta between two stochastic runs isn't a reliable signal at n=1.
+
+**Mitigations we tried:**
+- Started with threshold -0.1, widened to -0.3, then -0.4 — each time a scenario barely exceeded the threshold
+- Removing `required_tools` and relying on `required_patterns` helped (see lesson below) but didn't eliminate flakiness
+
+**What would actually fix this:**
+- Run each scenario K times (e.g., 3-5) and compare average scores — this amortizes LLM variance but multiplies cost/time by K
+- Use skill-only tests as the primary signal (stable, fast) and treat comparison tests as informational rather than gating
+- Use cheaper/faster models for comparison runs to enable more repetitions
 
 ### Lesson: test the right tool names
 
