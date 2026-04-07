@@ -68,7 +68,7 @@ function escapeXml(str) {
 
 function loadContent(dir) {
   if (!fs.existsSync(dir)) return [];
-  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md') && f !== 'CLAUDE.md');
   const items = files.map(file => {
     const raw = fs.readFileSync(path.join(dir, file), 'utf-8');
     const { data, content } = matter(raw);
@@ -268,7 +268,8 @@ function experimentListItem(experiment) {
 function experimentsListPage(experiments) {
   return baseLayout('Experiments', `
     <h1 class="text-2xl font-semibold mb-2">Experiments</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Data and results from experiments — raw findings and observations.</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Structured investigations following a scientific approach: each experiment starts with a question, states a hypothesis, runs a method, presents results, then draws conclusions. Multiple experiments build toward a final answer.</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Raw data and observations — not polished write-ups.</p>
     <ul class="space-y-3">
       ${experiments.map(experimentListItem).join('\n      ')}
     </ul>
