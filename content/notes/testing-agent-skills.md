@@ -1,0 +1,210 @@
+---
+title: "Testing Agent Skills"
+date: 2026-04-07T00:00:00+0800
+tags: [llm, agents, testing, evals]
+---
+
+Notes on testing agent skills (Claude Code plugins that guide model behavior). Based on patterns from [Honeycomb's agent-skills](https://github.com/honeycombio/agent-skills) and applied to my own [LGTM skill](https://github.com/pokgak/agent-skills).
+
+The core question: **does the skill text actually change how the model behaves?** Two testing layers address this at different speeds and costs.
+
+## Layer 1: Skill-Pressure Tests
+
+Fast, cheap tests that verify skill text steers model reasoning. No tools, no API calls — just text in, text out.
+
+### How it works
+
+1. Run Claude with a prompt + `--max-turns 1` + no tools allowed
+2. Run again with the same prompt but skill content appended to system prompt
+3. Check required patterns appear (and anti-patterns don't) in the response
+
+```yaml
+- id: aggregation-before-raw-fetch
+  prompt: "There's an error spike in our checkout service. How would you investigate using Loki logs?"
+  without_skill:
+    expected_patterns:
+      - "(?i)\\b(grep|search|query|fetch)\\b.*\\b(log|error)\\b"
+  with_skill:
+    required_patterns:
+      - "(?i)count_over_time|aggregat|count.*first|overview.*first"
+    anti_patterns: []
+```
+
+The `without_skill.expected_patterns` establishes a RED baseline — it confirms the model defaults to the "wrong" behavior without guidance. This matters because if the model already does the right thing without the skill, the test isn't measuring anything.
+
+### What makes a good skill-pressure scenario
+
+- **One behavioral axis per scenario** — test aggregation-first OR discovery-first, not both at once
+- **Patterns should match intent, not exact syntax** — `(?i)count_over_time|aggregat` catches both the specific function and the general concept
+- **Anti-patterns are optional** — only add them when you specifically want to verify the skill suppresses a bad behavior (e.g., using AVG for latency)
+
+### Running
+
+```bash
+python tests/skill-pressure/run.py                  # all scenarios
+python tests/skill-pressure/run.py lgtm             # one file
+python tests/skill-pressure/run.py --skill-only     # skip baseline
+python tests/skill-pressure/run.py --model opus     # override model
+```
+
+Takes ~2-3 minutes for 8 scenarios. No external services needed.
+
+## Layer 2: Scenario Tests
+
+End-to-end tests that run full multi-turn Claude conversations and evaluate the tool calls made.
+
+### How it works
+
+1. Run Claude with a prompt, `--output-format stream-json`, and `--allowedTools Bash,Read,Glob,Grep,Skill,Task` (with skill)
+2. Run again with the same prompt but without `Skill,Task` in allowed tools (without skill)
+3. Parse NDJSON output to extract all tool calls, their arguments, and text output
+4. Score both runs against expected behavior using a weighted rubric
+5. Compare scores — fail if the skill caused a regression
+
+The skill is always installed in the repo. The with/without toggle is whether `Skill` and `Task` are in `--allowedTools`. Without those tools, Claude can't activate the skill even though it can see it.
+
+### Scoring rubric
+
+Five components, weighted:
+
+| Component | Weight | What it checks |
+|-----------|--------|---------------|
+| Required tools | 30% | Did Claude call the expected tools? (e.g., `Task`) |
+| Required patterns | 25% | Do tool arguments contain expected strings? (regex on args + text) |
+| Anti-patterns | 20% | Are bad patterns absent? |
+| Tool ordering | 15% | Were tools called in the right sequence? (e.g., Skill before Task) |
+| Recommended tools | 10% | Optional bonus tools |
+
+Empty categories score 1.0 (no penalty). Total score is the weighted sum.
+
+### Pass criteria
+
+**Comparison test:** `delta = with_skill_score - without_skill_score >= -0.1`
+
+The -0.1 threshold accounts for LLM non-determinism. Verdicts:
+- `delta > 0.05` → improved
+- `delta < -0.1` → regressed (FAIL)
+- in between → neutral (pass)
+
+**Skill-only test:** `score >= 0.6`
+
+Just checks "does the skill-enhanced run do a reasonable job?"
+
+### Scenario definition
+
+```yaml
+- id: investigate-error-spike
+  prompt: "We're seeing a spike in 500 errors from the checkout service. Can you investigate?"
+  expected:
+    required_tools: [Task]
+    required_patterns:
+      - "(?i)lgtm loki"
+      - "(?i)count_over_time|aggregat"
+    anti_patterns: []
+    tool_ordering:
+      - [Skill, Task]
+    recommended_tools: [Skill]
+  expected_skills: [lgtm]
+  config:
+    max_turns: 8
+    timeout_ms: 180000
+```
+
+### Running
+
+```bash
+make test-scenarios                    # all (slow, ~30-60 min)
+make test-scenarios-core               # core subset
+
+# single scenario
+uv run --group test pytest tests/scenarios/ -v -k "investigate-error-spike"
+
+# inspect results
+cat tests/scenarios/output/_comparison_results.json | python -m json.tool
+cat tests/scenarios/output/investigate-error-spike/with-skill.ndjson
+```
+
+### Debugging failures
+
+Raw NDJSON output is saved per-scenario at `tests/scenarios/output/<id>/{with-skill,without-skill}.ndjson`. The `_comparison_results.json` file has scoring breakdowns showing exactly which patterns matched/missed and which tools were found/missing.
+
+## Results from LGTM skill
+
+First run against the [LGTM skill](https://github.com/pokgak/agent-skills) using Claude Sonnet.
+
+### Skill-pressure: 8/8 passed
+
+All scenarios confirmed the skill text steers behavior correctly:
+
+| Scenario | Baseline (no skill) | With Skill |
+|----------|-------------------|------------|
+| aggregation-before-raw-fetch | RED (defaults to raw fetch) | PASS (suggests count_over_time first) |
+| discovery-before-querying | RED (queries blindly) | PASS (discovers labels first) |
+| subagent-orchestrator-pattern | RED (no mention of subagents) | PASS (uses Task/subagent pattern) |
+| percentiles-for-latency | not RED (model sometimes knows) | PASS (uses P95/P99/histogram_quantile) |
+| jq-extraction | RED (returns raw output) | PASS (uses jq for extraction) |
+| two-phase-investigation | RED (no phased approach) | PASS (discovery → investigation phases) |
+| parallel-independent-queries | RED (sequential approach) | PASS (parallel/concurrent queries) |
+| chart-for-trends | RED (generic visualization) | PASS (suggests lgtm chart) |
+
+The `percentiles-for-latency` baseline was "not RED" — Sonnet already knows to suggest percentiles for latency without the skill. The skill still passes (reinforces the behavior), but this scenario is less valuable as a regression test since the model has this knowledge baked in.
+
+### Scenario tests: comparison tests are inherently flaky
+
+Comparison tests (with-skill vs without-skill) ran against real Claude conversations. Each test runs Claude twice with 8-12 max turns. Total runtime: ~20-40 minutes per full suite.
+
+Results across 3 runs:
+
+| Scenario | Run 1 | Run 2 | Run 3 |
+|----------|-------|-------|-------|
+| investigate-error-spike | PASSED | PASSED | PASSED |
+| service-health-check | PASSED | FAILED (-0.25) | PASSED |
+| trace-slow-requests | PASSED | FAILED (-0.25) | PASSED |
+| metrics-trend-with-chart | PASSED | PASSED | FAILED (-0.35) |
+| cross-signal-investigation | PASSED | PASSED | PASSED |
+| **skill-only (all 5)** | **PASSED** | **PASSED** | **PASSED** |
+
+Skill-only tests pass 100% consistently. Comparison tests randomly fail 1-2 scenarios per run due to LLM non-determinism — the with-skill and without-skill runs are independent Claude conversations that can produce wildly different scores for reasons unrelated to the skill.
+
+**Why this happens:** the comparison test runs Claude twice with the same prompt. In one run, Claude might call `lgtm tempo search` (matching our patterns), while in another it might run equivalent commands through a different path that doesn't match. The delta between two stochastic runs isn't a reliable signal at n=1.
+
+**Mitigations we tried:**
+- Started with threshold -0.1, widened to -0.3, then -0.4 — each time a scenario barely exceeded the threshold
+- Removing `required_tools` and relying on `required_patterns` helped (see lesson below) but didn't eliminate flakiness
+
+**What would actually fix this:**
+- Run each scenario K times (e.g., 3-5) and compare average scores — this amortizes LLM variance but multiplies cost/time by K
+- Use skill-only tests as the primary signal (stable, fast) and treat comparison tests as informational rather than gating
+- Use cheaper/faster models for comparison runs to enable more repetitions
+
+### Lesson: test the right tool names
+
+We initially had all 5 skill-only tests failing. Root cause: our YAML expected `required_tools: [Task]` but Claude actually used `Agent` for subagent calls, and sometimes ran `lgtm` commands via `Bash` directly. Both are valid — Claude just chose a different (but equivalent) tool.
+
+After removing `Task` from `required_tools` and relying on `required_patterns` (which match `lgtm loki`, `lgtm tempo`, etc. in tool arguments), all 5 skill-only tests pass:
+
+| Scenario | Score |
+|----------|-------|
+| investigate-error-spike | 0.90 |
+| trace-slow-requests | 0.90 |
+| metrics-trend-with-chart | 0.88 |
+| service-health-check | 0.78 |
+| cross-signal-investigation | 0.65 |
+
+**Takeaway:** required_patterns (what the agent *says* in tool arguments) are more robust than required_tools (which specific tool it picks). Claude has multiple equivalent ways to accomplish the same thing — `Task`, `Agent`, or direct `Bash` calls can all run `lgtm` commands. Testing the content of what gets executed matters more than testing the tool wrapper it's executed in.
+
+The skill-only test is still valuable: it measures whether Claude picks up and uses the skill at all. If Claude consistently ignores the skill (doesn't call `Skill(skill="lgtm")`), that signals the skill's trigger description or instructions need improvement.
+
+## Design decisions
+
+**Deterministic evaluation, no LLM-as-judge.** All scoring is regex pattern matching. This makes results reproducible and auditable. The trade-off is that patterns need careful tuning — too strict and you get false failures from LLM variance, too loose and you miss real regressions.
+
+**Skill-pressure tests are the inner loop.** They run in minutes and catch most skill text issues. Scenario tests are the outer loop — they catch integration issues (skill activation, tool orchestration) but are slow and expensive.
+
+**The baseline matters.** Skill-pressure tests explicitly verify the model does the "wrong" thing without the skill (RED baseline). Without this, a passing test might just mean the model already knows the right answer, and your skill text is dead weight.
+
+## What to add next
+
+- **HTML report generation** — Honeycomb generates interactive HTML reports with side-by-side timelines and scoring breakdowns. Currently we just have JSON output.
+- **Canary tests** — fast, plugin-only verification that the skill actually activates before running full comparisons.
+- **CI integration** — run skill-pressure tests on every commit, scenario tests on PRs.
