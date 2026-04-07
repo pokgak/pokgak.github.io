@@ -41,6 +41,19 @@ Interpret the results. Was the hypothesis confirmed or refuted? What new questio
 
 ---
 
+## Generational Selection
+
+Not every experiment needs to run to exhaustion. Darwin's method: run a diverse generation of lightweight candidates, select the most promising based on early signal, then go deep on that one.
+
+In practice:
+- **Generation 0** — probe several distinct approaches cheaply (few data points, rough conditions). Goal: eliminate dead ends, not produce final numbers.
+- **Select** — pick the 1-2 candidates with the clearest signal or biggest gap from baseline. Discard the rest without guilt.
+- **Generation 1+** — invest in depth only on the survivors: more iterations, controlled conditions, edge cases.
+
+This avoids the trap of spending equal time on every approach when a quick first pass would have revealed which ones don't matter. Document what was eliminated and why — it's part of the result.
+
+---
+
 ## End with a `## Final Summary`
 
 Summarize the answer to the original question. A table of key findings by factor is useful here.
