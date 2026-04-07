@@ -245,3 +245,78 @@ That's 10x below the ridge point — deeply memory-bound, as expected.
 **At ~11 tokens per batch, we hit the ridge point.** Beyond that, compute saturates the GPU and adding more tokens doesn't amortize weight loading further — it just adds compute time linearly.
 
 This is exactly why speculative decoding works: verifying 8 draft tokens barely costs more than generating 1 (3.1x time for 8x tokens), because the weight loading is amortized and we haven't hit the compute ceiling yet.
+
+## Experiment 11: 4-bit vs 8-bit Quantization Tradeoff
+
+**Goal:** 8-bit models have 2x the weight bytes. Does the compute overhead change, and how does the efficiency tradeoff work?
+
+### Raw quantized matmul
+
+| Size | 4-bit | 8-bit | Slowdown | Data ratio | BW efficiency |
+|------|-------|-------|----------|-----------|---------------|
+| 4096×4096 | 262 µs | 267 µs | 1.02x | 1.80x | 8-bit 1.77x better |
+| 4096×14336 | 300 µs | 302 µs | 1.01x | 1.80x | 8-bit 1.79x better |
+
+At the individual matmul level, 8-bit is barely slower despite moving 1.8x more data — the dequantization compute dominates at this scale, not data movement.
+
+### Full model comparison (Mistral-7B)
+
+| Quant | Weight Size | Tok/s | Effective BW | Efficiency | Compute Overhead |
+|-------|-----------|-------|-------------|-----------|-----------------|
+| 4-bit | 4.08 GB | 113.3 | 462 GB/s | 56% | 3.85 ms |
+| 8-bit | 7.70 GB | 74.3 | 572 GB/s | 70% | 4.05 ms |
+
+**Compute overhead is identical (~4ms) regardless of quantization level.** The 8-bit model is 35% slower in tok/s but achieves 24% higher bandwidth efficiency. The extra weight loading time at 8-bit better hides the fixed compute cost.
+
+**Takeaway:** 4-bit is faster in absolute terms (less data to move). But if you care about bandwidth efficiency or quality (8-bit preserves more model quality), the efficiency argument is interesting: 8-bit better utilizes the available bandwidth.
+
+## Experiment 12: Manual Decode vs mlx-lm Built-in Generate
+
+**Goal:** Our `bench.py` uses a manual prefill+decode loop. Is mlx-lm's built-in `stream_generate()` faster?
+
+| Metric | Manual | Built-in | Δ |
+|--------|--------|----------|---|
+| TTFT | 37-51 ms | 68-79 ms | **+54-80% slower** |
+| Decode tok/s | 123.1 | 126-131 | +1-6% faster |
+| Total tok/s (128 tokens) | 118-119 | 121-123 | +3-4% faster |
+
+Built-in is slightly faster for sustained decode (~5%) — likely from optimized KV cache management. But its TTFT is significantly worse (+54-80%), probably due to prompt processing overhead (sampler initialization, chat template handling in the generate loop).
+
+**Takeaway:** Our manual benchmark approach is representative of real-world performance, within 5% for sustained generation. The small difference means our throughput gap measurements are valid.
+
+## Final Summary
+
+After 12 experiments, the throughput gap on the M3 Ultra Mac Studio is fully characterized:
+
+### The answer: where do the missing tokens/sec go?
+
+For a 4-bit Mistral-7B at 256 context:
+
+| Component | Time | % of decode step |
+|-----------|------|-----------------|
+| Weight loading (bandwidth-limited) | ~5.0 ms | ~56% |
+| SDPA + KV cache (compute) | ~1.5 ms | ~17% |
+| MLP compute (SwiGLU activation) | ~1.0 ms | ~11% |
+| RMSNorm | ~0.9 ms | ~10% |
+| Other (embedding, LM head, argmax, RoPE) | ~0.5 ms | ~6% |
+| **Total** | **~8.9 ms** | **112 tok/s** |
+
+The efficiency breakdown by factor:
+
+| Factor | Impact |
+|--------|--------|
+| Hardware BW ceiling | 82% of spec (669/819 GB/s on raw copy) |
+| Compute overhead (constant ~4ms) | Dominates for small models, hidden for large |
+| Model size | <2B: compute-bound (17% eff), >4B: memory-bound (56-61% eff) |
+| Context length | Minimal impact on M3 Ultra (-5% at 4K) |
+| Quantization level | 4-bit faster but less BW-efficient than 8-bit |
+| Batch size | 12.9x throughput at batch-128, ridge at ~11 tokens |
+
+### The bottom line
+
+**mlx-lm on M3 Ultra is well-optimized.** The 56% efficiency for 7B models is explained by:
+- ~18% lost to hardware memory subsystem overhead (unavoidable)
+- ~26% lost to compute that can't fully overlap with memory transfers (SDPA, MLP, norms)
+- These are fundamental to the transformer architecture, not implementation bugs
+
+The most promising optimization vectors would be: speculative decoding (exploits the roofline gap), larger models (better bandwidth utilization), or hardware with higher bandwidth-to-compute ratio.
