@@ -56,7 +56,9 @@ Exclude obvious duplicates, old superseded variants, tiny utility/testing models
 | Large MoE | `mlx-community/Qwen3-30B-A3B-4bit` | Qwen MoE | 4-bit | Active-parameter vs headline-size test |
 | Very large dense | `mlx-community/Llama-3.3-70B-Instruct-4bit` | Llama | 4-bit | Dense frontier checkpoint |
 | Ultra-large | `mlx-community/gpt-oss-120b-MXFP4-Q8` | gpt-oss | MXFP4/Q8 | 512 GB-only class |
-| Ultra-large | `mlx-community/Kimi-K2.5` | Kimi | MLX | Frontier-scale checkpoint |
+| Ultra-large | `mlx-community/MiniMax-M2-5bit` | MiniMax | 5-bit | Recent frontier-scale replacement after Kimi staging issues |
+
+During the sweep I also attempted `mlx-community/Kimi-K2.5`, but on this setup it repeatedly stalled during staging/fetch without reaching a usable benchmark run. I replaced it with `MiniMax-M2-5bit` for the final frontier slot. That is itself a useful result: the practical local frontier is constrained not just by memory fit, but also by real compatibility and staging behavior.
 
 **What this tells us:** The benchmark set is intentionally shaped by machine-buying decisions, not by Hub popularity. That makes the results more useful to someone asking whether a 512 GB Mac Studio changes what is feasible locally.
 
@@ -103,21 +105,44 @@ For a local workstation benchmark, only the third is the headline number, but th
 
 **Results:**
 
-_To be filled from `mlx-bench` output once the sweep completes._
+The sweep is mostly complete at time of writing: 8 of the 9 selected models have finished. `MiniMax-M2-5bit` is currently running as the last replacement model after `Kimi-K2.5` repeatedly stalled during staging, so the table below should be read as a near-final snapshot rather than the very last word.
 
 | Model | Prompt tokens | Generated | Prefill (s) | Decode (s) | TTFT (s) | Tokens/s | Peak Mem (GB) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| `Llama-3.2-3B-Instruct-4bit` | | | | | | | |
-| `Meta-Llama-3.1-8B-Instruct-4bit` | | | | | | | |
-| `Qwen3.5-9B-OptiQ-4bit` | | | | | | | |
-| `Qwen2.5-Coder-14B-Instruct-4bit` | | | | | | | |
-| `gpt-oss-20b-MXFP4-Q8` | | | | | | | |
-| `Qwen3-30B-A3B-4bit` | | | | | | | |
-| `Llama-3.3-70B-Instruct-4bit` | | | | | | | |
-| `gpt-oss-120b-MXFP4-Q8` | | | | | | | |
-| `Kimi-K2.5` | | | | | | | |
+| `mlx-community/Llama-3.2-3B-Instruct-4bit` | 72 | 256 | 0.035 | 1.600 | 0.036 | 156.5 | 1.85 |
+| `mlx-community/Llama-3.2-3B-Instruct-4bit` | 225 | 256 | 0.079 | 1.514 | 0.079 | 160.6 | 2.11 |
+| `mlx-community/Llama-3.2-3B-Instruct-4bit` | 396 | 256 | 0.124 | 1.521 | 0.125 | 155.6 | 2.28 |
+| `mlx-community/Meta-Llama-3.1-8B-Instruct-4bit` | 71 | 256 | 0.071 | 2.417 | 0.072 | 102.9 | 4.35 |
+| `mlx-community/Meta-Llama-3.1-8B-Instruct-4bit` | 224 | 256 | 0.153 | 2.426 | 0.154 | 99.2 | 4.53 |
+| `mlx-community/Meta-Llama-3.1-8B-Instruct-4bit` | 395 | 256 | 0.272 | 2.432 | 0.273 | 94.7 | 4.75 |
+| `mlx-community/Qwen3.5-9B-OptiQ-4bit` | 46 | 256 | 0.071 | 3.397 | 0.071 | 73.8 | 5.77 |
+| `mlx-community/Qwen3.5-9B-OptiQ-4bit` | 199 | 256 | 0.188 | 3.327 | 0.188 | 72.8 | 6.07 |
+| `mlx-community/Qwen3.5-9B-OptiQ-4bit` | 372 | 256 | 0.306 | 3.337 | 0.307 | 70.3 | 6.27 |
+| `mlx-community/Qwen2.5-Coder-14B-Instruct-4bit` | 65 | 256 | 0.134 | 4.258 | 0.134 | 58.3 | 7.86 |
+| `mlx-community/Qwen2.5-Coder-14B-Instruct-4bit` | 218 | 256 | 0.286 | 4.272 | 0.286 | 56.2 | 8.08 |
+| `mlx-community/Qwen2.5-Coder-14B-Instruct-4bit` | 391 | 256 | 0.511 | 4.271 | 0.512 | 53.5 | 8.22 |
+| `mlx-community/gpt-oss-20b-MXFP4-Q8` | 103 | 256 | 0.089 | 2.673 | 0.090 | 92.7 | 11.41 |
+| `mlx-community/gpt-oss-20b-MXFP4-Q8` | 255 | 256 | 0.144 | 2.641 | 0.145 | 91.9 | 11.55 |
+| `mlx-community/gpt-oss-20b-MXFP4-Q8` | 422 | 256 | 0.204 | 2.652 | 0.204 | 89.6 | 11.75 |
+| `mlx-community/Qwen3-30B-A3B-4bit` | 44 | 256 | 0.060 | 3.668 | 0.061 | 68.7 | 16.06 |
+| `mlx-community/Qwen3-30B-A3B-4bit` | 197 | 256 | 0.127 | 3.705 | 0.127 | 66.8 | 16.26 |
+| `mlx-community/Qwen3-30B-A3B-4bit` | 370 | 256 | 0.200 | 3.679 | 0.200 | 66.0 | 16.42 |
+| `mlx-community/Llama-3.3-70B-Instruct-4bit` | 72 | 256 | 0.601 | 16.986 | 0.602 | 14.6 | 37.06 |
+| `mlx-community/Llama-3.3-70B-Instruct-4bit` | 225 | 256 | 1.510 | 17.664 | 1.510 | 13.3 | 37.27 |
+| `mlx-community/Llama-3.3-70B-Instruct-4bit` | 396 | 256 | 2.415 | 17.806 | 2.415 | 12.7 | 37.35 |
+| `mlx-community/gpt-oss-120b-MXFP4-Q8` | 103 | 256 | 1.788 | 509.252 | 1.790 | 0.5 | 59.16 |
+| `mlx-community/gpt-oss-120b-MXFP4-Q8` | 255 | 256 | 1.829 | 507.443 | 1.830 | 0.5 | 59.34 |
+| `mlx-community/gpt-oss-120b-MXFP4-Q8` | 422 | 256 | 1.819 | 511.312 | 1.820 | 0.5 | 59.54 |
+| `mlx-community/MiniMax-M2-5bit` | pending | pending | pending | pending | pending | pending | pending |
 
-**What this tells us:** _To be filled after results land._
+**What this tells us:** The results separate into clear operating bands.
+
+- `Llama-3.2-3B` is the speed ceiling on this machine at roughly 156-161 tok/s.
+- `Meta-Llama-3.1-8B`, `gpt-oss-20b`, `Qwen3.5-9B`, and `Qwen2.5-Coder-14B` form the practical local-use tier.
+- `Qwen3-30B-A3B` is especially interesting because it still delivers ~66-69 tok/s while staying under 17 GB peak memory.
+- `Llama-3.3-70B` clearly fits and runs, but it enters a different latency regime.
+- `gpt-oss-120b` is the strongest evidence that "fits" and "practical" are different frontiers: it completed, but at ~0.5 tok/s it is an experimentation result, not a daily-driver result.
+- `Kimi-K2.5` never became a benchmark result at all on this setup, which is an important reminder that local usability includes staging reliability, not just theoretical fit.
 
 ---
 
@@ -139,11 +164,11 @@ Use TTFT, decode tokens/sec, and peak memory as the main decision variables.
 
 | Category | Candidate models | Why |
 |---|---|---|
-| Interactive daily-use | | |
-| Viable with patience | | |
-| Technically runnable | | |
+| Interactive daily-use | `Llama-3.2-3B-Instruct-4bit`, `Meta-Llama-3.1-8B-Instruct-4bit`, `Qwen3.5-9B-OptiQ-4bit`, `Qwen2.5-Coder-14B-Instruct-4bit`, `gpt-oss-20b-MXFP4-Q8` | All stay in a sub-second to low-hundreds-of-milliseconds TTFT band and remain comfortably interactive at 56-158 tok/s. |
+| Viable with patience | `Qwen3-30B-A3B-4bit`, `Llama-3.3-70B-Instruct-4bit` | They are still meaningfully usable, but the latency tradeoff becomes more obvious, especially for the 70B dense model. |
+| Technically runnable | `gpt-oss-120b-MXFP4-Q8` | It fits and eventually completes, but ~0.5 tok/s decode throughput changes the usage pattern from "interactive model" to "machine capability demonstration." |
 
-**What this tells us:** _To be filled after final numbers are available._
+**What this tells us:** The practical frontier is well below the absolute fit frontier. The 512 GB machine absolutely expands what is possible locally, but the best day-to-day zone is still in the single-digit to low-tens-of-GB footprint range rather than at the extreme top end.
 
 ---
 
@@ -155,14 +180,15 @@ The 512 GB M3 Ultra Mac Studio changes the local-model question from "can it run
 
 | Question | Answer |
 |---|---|
-| Largest model that fit | |
-| Fastest model tested | |
-| Best practical daily-use tier | |
-| Best large-model compromise | |
-| Most surprising result | |
+| Largest model that fit | `gpt-oss-120b-MXFP4-Q8` at ~59.5 GB peak memory, with `MiniMax-M2-5bit` still running |
+| Fastest model tested | `Llama-3.2-3B-Instruct-4bit` at ~156-161 tok/s |
+| Best practical daily-use tier | roughly 8B to 20B, especially `Meta-Llama-3.1-8B`, `Qwen3.5-9B`, `Qwen2.5-Coder-14B`, and `gpt-oss-20b` |
+| Best large-model compromise | `Qwen3-30B-A3B-4bit`, because it keeps ~66-69 tok/s while staying under 17 GB peak memory |
+| Most surprising result | `gpt-oss-120b` really does run locally on this machine, but its throughput is so low that it mostly proves a capability boundary, not a usability one |
 
 ### Follow-up Questions
 
 1. How much do these rankings change with longer context windows?
 2. How much of the large-model slowdown is TTFT vs steady-state decode?
 3. Which of these models remain practical once quality is considered alongside speed?
+4. Where does `MiniMax-M2-5bit` land on the fit-vs-usability curve once the sweep completes?
