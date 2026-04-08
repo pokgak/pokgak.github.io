@@ -58,7 +58,7 @@ Exclude obvious duplicates, old superseded variants, tiny utility/testing models
 | Ultra-large | `mlx-community/gpt-oss-120b-MXFP4-Q8` | gpt-oss | MXFP4/Q8 | 512 GB-only class |
 | Ultra-large | `mlx-community/MiniMax-M2-5bit` | MiniMax | 5-bit | Recent frontier-scale replacement after Kimi staging issues |
 
-During the sweep I also attempted `mlx-community/Kimi-K2.5`, but on this setup it repeatedly stalled during staging/fetch without reaching a usable benchmark run. I replaced it with `MiniMax-M2-5bit` for the final frontier slot. That is itself a useful result: the practical local frontier is constrained not just by memory fit, but also by real compatibility and staging behavior.
+During the sweep I also attempted `mlx-community/Kimi-K2.5`, but on this setup it repeatedly stalled during staging/fetch without reaching a usable benchmark run. I replaced it with `MiniMax-M2-5bit` for the final frontier slot. `MiniMax` staged and ran much further than Kimi, but still failed to produce a persisted result inside the 90-minute per-model budget, so the last frontier slot ultimately became a usability finding rather than a clean benchmark row. That is itself a useful result: the practical local frontier is constrained not just by memory fit, but also by real compatibility and staging behavior.
 
 **What this tells us:** The benchmark set is intentionally shaped by machine-buying decisions, not by Hub popularity. That makes the results more useful to someone asking whether a 512 GB Mac Studio changes what is feasible locally.
 
@@ -105,7 +105,7 @@ For a local workstation benchmark, only the third is the headline number, but th
 
 **Results:**
 
-The sweep is mostly complete at time of writing: 8 of the 9 selected models have finished. `MiniMax-M2-5bit` is currently running as the last replacement model after `Kimi-K2.5` repeatedly stalled during staging, so the table below should be read as a near-final snapshot rather than the very last word.
+The sweep is complete in the sense that every selected slot was exercised, but only 8 of the 9 models produced persisted benchmark rows. `Kimi-K2.5` repeatedly stalled during staging, and `MiniMax-M2-5bit` ran substantially further but still exceeded the 90-minute per-model budget without producing saved benchmark results.
 
 | Model | Prompt tokens | Generated | Prefill (s) | Decode (s) | TTFT (s) | Tokens/s | Peak Mem (GB) |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -133,7 +133,6 @@ The sweep is mostly complete at time of writing: 8 of the 9 selected models have
 | `mlx-community/gpt-oss-120b-MXFP4-Q8` | 103 | 256 | 1.788 | 509.252 | 1.790 | 0.5 | 59.16 |
 | `mlx-community/gpt-oss-120b-MXFP4-Q8` | 255 | 256 | 1.829 | 507.443 | 1.830 | 0.5 | 59.34 |
 | `mlx-community/gpt-oss-120b-MXFP4-Q8` | 422 | 256 | 1.819 | 511.312 | 1.820 | 0.5 | 59.54 |
-| `mlx-community/MiniMax-M2-5bit` | pending | pending | pending | pending | pending | pending | pending |
 
 **What this tells us:** The results separate into clear operating bands.
 
@@ -142,7 +141,9 @@ The sweep is mostly complete at time of writing: 8 of the 9 selected models have
 - `Qwen3-30B-A3B` is especially interesting because it still delivers ~66-69 tok/s while staying under 17 GB peak memory.
 - `Llama-3.3-70B` clearly fits and runs, but it enters a different latency regime.
 - `gpt-oss-120b` is the strongest evidence that "fits" and "practical" are different frontiers: it completed, but at ~0.5 tok/s it is an experimentation result, not a daily-driver result.
-- `Kimi-K2.5` never became a benchmark result at all on this setup, which is an important reminder that local usability includes staging reliability, not just theoretical fit.
+- `Kimi-K2.5` never became a benchmark result at all on this setup.
+- `MiniMax-M2-5bit` progressed through load, warmup, and long decode runs, but it still exceeded the 90-minute model budget and did not produce persisted result rows.
+- Together those failures are a useful reminder that local usability includes staging reliability and end-to-end runtime behavior, not just theoretical fit.
 
 ---
 
@@ -180,15 +181,16 @@ The 512 GB M3 Ultra Mac Studio changes the local-model question from "can it run
 
 | Question | Answer |
 |---|---|
-| Largest model that fit | `gpt-oss-120b-MXFP4-Q8` at ~59.5 GB peak memory, with `MiniMax-M2-5bit` still running |
+| Largest model that fit cleanly in the reported results | `gpt-oss-120b-MXFP4-Q8` at ~59.5 GB peak memory |
 | Fastest model tested | `Llama-3.2-3B-Instruct-4bit` at ~156-161 tok/s |
 | Best practical daily-use tier | roughly 8B to 20B, especially `Meta-Llama-3.1-8B`, `Qwen3.5-9B`, `Qwen2.5-Coder-14B`, and `gpt-oss-20b` |
 | Best large-model compromise | `Qwen3-30B-A3B-4bit`, because it keeps ~66-69 tok/s while staying under 17 GB peak memory |
 | Most surprising result | `gpt-oss-120b` really does run locally on this machine, but its throughput is so low that it mostly proves a capability boundary, not a usability one |
+| Most useful negative result | `Kimi-K2.5` stalled in staging and `MiniMax-M2-5bit` overran the 90-minute budget without producing persisted benchmark rows |
 
 ### Follow-up Questions
 
 1. How much do these rankings change with longer context windows?
 2. How much of the large-model slowdown is TTFT vs steady-state decode?
 3. Which of these models remain practical once quality is considered alongside speed?
-4. Where does `MiniMax-M2-5bit` land on the fit-vs-usability curve once the sweep completes?
+4. How should very large models that stage or run but fail practical benchmark budgets be represented in local-model evaluations?
