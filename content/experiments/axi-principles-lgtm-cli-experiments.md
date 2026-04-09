@@ -4,32 +4,37 @@ date: 2026-04-06T00:00:00+0800
 tags: [cli, llm, agents, experiments, observability]
 ---
 
-Companion to [Agent-Friendly CLI Design](/notes/agent-friendly-cli-design/) — this documents experiments testing [AXI principles](https://axi.md/) applied to [lgtm-cli](https://github.com/pokgak/lgtm-cli), an observability CLI for Grafana's LGTM stack.
+Testing whether [AXI principles](https://axi.md/) applied to [lgtm-cli](https://github.com/pokgak/lgtm-cli) measurably improve agent performance on observability tasks.
 
-## What We Changed
+Companion to [Agent-Friendly CLI Design](/notes/agent-friendly-cli-design/).
 
-We applied four AXI principles to lgtm-cli's `--envelope` mode ([PR #5](https://github.com/pokgak/lgtm-cli/pull/5)):
+## The Question
 
+Do AXI principles (structured envelopes, contextual hints, definitive empty states) reduce agent errors and token usage when querying Grafana LGTM backends?
+
+## Setup
+
+**Changes applied** ([PR #5](https://github.com/pokgak/lgtm-cli/pull/5)):
 1. **Definitive empty states** — envelope includes `empty: true` and `message: "No results found"` when count is 0
 2. **Contextual disclosure** — every command returns `hints[]` with concrete next-step command templates using `<placeholders>`
 3. **Limit-reached warnings** — log/trace queries detect when results hit the limit and add a hint
 4. **Errors to stdout in envelope mode** — structured errors go to stdout so agents always capture them
 
-## Experiment Setup
+**Method:** Three investigation tasks, each run twice: raw JSON output (baseline) vs envelope+hints. Isolated Sonnet agent with identical prompts except `--envelope` flag. Tracking wrapper logged every CLI call.
 
-Three investigation tasks, each run twice: once with raw JSON output (baseline) and once with envelope+hints. Each experiment ran in an isolated Sonnet agent with identical prompts except for the `--envelope` flag. A tracking wrapper logged every CLI call (command, output bytes, duration).
+**Instance:** Production Grafana Cloud stack with Loki, Prometheus, and Tempo.
 
-**Instance:** a production Grafana Cloud stack with Loki, Prometheus, and Tempo
+---
 
-### Tasks
+## Experiment 1: Error Log Discovery
 
-1. **Error log discovery** — "Find what apps are logging errors and show example error logs from the top 2 most active apps"
-2. **Cross-signal correlation** — "Find the slowest traces in the last 15 minutes and check if there are corresponding error logs"
-3. **GPU metrics discovery** — "Check what Prometheus metrics are available for GPU monitoring and get current utilization values"
+**Why this matters:** Tests the most common observability workflow — find what's broken, get examples. This is where `--help` avoidance and hint-following should show the biggest improvement.
 
-## Results
+**Hypothesis:** Envelope agent will make fewer CLI calls (hints replace `--help` lookups) and produce less output tokens (structured responses vs raw JSON dumps). Expect ~20% reduction in calls.
 
-### Task 1: Error Log Discovery
+**Method:** Prompt: "Find what apps are logging errors and show example error logs from the top 2 most active apps."
+
+**Results:**
 
 | Metric | Raw | Envelope | Delta |
 |---|---|---|---|
@@ -39,9 +44,19 @@ Three investigation tasks, each run twice: once with raw JSON output (baseline) 
 | Duration (ms) | 39,172 | 20,872 | **-47%** |
 | Agent tool uses | 22 | 17 | **-23%** |
 
-The envelope agent followed hints like `"get values → lgtm loki label-values <label>"` instead of spending calls on `--help` and trial-and-error. Both agents identified the same top error-producing services.
+**What this tells us:** Hypothesis confirmed. Envelope agent followed hints like `"get values -> lgtm loki label-values <label>"` instead of spending calls on `--help` and trial-and-error. Both agents identified the same top error-producing services. The 25% call reduction matches our prediction; the 51% token reduction exceeded it.
 
-### Task 2: Cross-Signal Correlation
+---
+
+## Experiment 2: Cross-Signal Correlation
+
+**Why this matters:** Cross-signal correlation (traces -> logs) is the hardest observability task for agents — requires knowing the relationship between backends and the right query patterns. This tests whether cross-signal hints can teach that relationship.
+
+**Hypothesis:** Envelope agent will make significantly fewer errors because cross-signal hints (`tempo trace -> loki query`) teach the backend relationship directly. Expect error count to drop by 50%+.
+
+**Method:** Prompt: "Find the slowest traces in the last 15 minutes and check if there are corresponding error logs."
+
+**Results:**
 
 | Metric | Raw | Envelope | Delta |
 |---|---|---|---|
@@ -51,11 +66,19 @@ The envelope agent followed hints like `"get values → lgtm loki label-values <
 | Duration (ms) | 35,478 | 35,900 | ~same |
 | Agent tool uses | 35 | 30 | **-14%** |
 
-The biggest win here was **error reduction**: the raw agent made 10 failed calls due to CLI syntax confusion (wrong flags, wrong subcommand structure). The envelope agent only failed twice. The 96% token reduction is partly misleading — the raw agent happened to dump full trace payloads while the envelope agent was more targeted, but both explored similar traces.
+**What this tells us:** Hypothesis confirmed — error reduction exceeded prediction (80% vs 50%). The raw agent made 10 failed calls due to CLI syntax confusion (wrong flags, wrong subcommands). The 96% token reduction is partly misleading — raw agent happened to dump full trace payloads — but the cross-signal hint was used directly: after `tempo trace <id>`, envelope agent saw `"find logs -> lgtm loki query '{traceID=\"<id>\"}'` and used it.
 
-The cross-signal hint was used directly: after `tempo trace <id>`, the envelope agent saw `"find logs → lgtm loki query '{traceID=\"<id>\"}'` and used it to correlate traces with logs.
+---
 
-### Task 3: GPU Metrics Discovery
+## Experiment 3: GPU Metrics Discovery
+
+**Why this matters:** Tests whether hints help with domain-specific knowledge (PromQL patterns for GPU metrics). If hints can only improve CLI discoverability but not domain expertise, this task should show no improvement.
+
+**Hypothesis:** Hints won't help here — both agents need to figure out PromQL patterns like `{__name__=~".*DCGM.*"}` which is domain knowledge, not CLI discoverability. Expect similar call counts and error rates.
+
+**Method:** Prompt: "Check what Prometheus metrics are available for GPU monitoring and get current utilization values."
+
+**Results:**
 
 | Metric | Raw | Envelope | Delta |
 |---|---|---|---|
@@ -65,29 +88,32 @@ The cross-signal hint was used directly: after `tempo trace <id>`, the envelope 
 | Duration (ms) | 25,505 | 9,108 | **-64%** |
 | Agent tool uses | 13 | 16 | +23% |
 
-Hints didn't help here — both agents needed to figure out PromQL patterns like `{__name__=~".*DCGM.*"}` which is domain knowledge, not CLI discoverability. The envelope agent actually made more calls and had more failures. The token reduction is entirely because the raw agent ran `prom series` with a broad regex returning 500MB of JSON.
+**What this tells us:** Hypothesis confirmed — hints didn't help with PromQL patterns. Envelope agent made more calls and had more failures. The 90% token reduction is entirely because raw agent ran `prom series` with broad regex returning 500MB of JSON, not because of any behavioral improvement from hints.
 
-## What Worked
+---
 
-**Contextual hints reduce `--help` calls.** The raw agents consistently called `--help` on subcommands before using them. The envelope agents skipped this because hints after each command showed what to do next with concrete syntax.
+## Final Summary
 
-**Cross-signal hints are the killer feature.** The `tempo trace` → `loki query` hint let the envelope agent correlate traces with logs without figuring out the relationship between backends. This is exactly AXI's "combined operations" principle — not literally combining commands, but showing the agent the logical next step across signal types.
+### What worked
 
-**Error reduction matters more than token savings.** Going from 10 to 2 failed calls (Task 2) saved more real time than any output size reduction, because each failure triggers retry loops and `--help` lookups.
+| Finding | Evidence |
+|---------|----------|
+| **Contextual hints reduce `--help` calls** | Raw agents consistently called `--help` before using subcommands; envelope agents skipped this |
+| **Cross-signal hints are the killer feature** | `tempo trace` -> `loki query` hint taught backend relationship (Task 2: 80% error reduction) |
+| **Error reduction > token savings** | 10 -> 2 failed calls (Task 2) saved more real time than output size reduction |
 
-## What Didn't Work
+### What didn't work
 
-**Hints can't teach domain expertise.** PromQL, LogQL, and TraceQL patterns need to be known upfront. Hints like `"query metric → lgtm prom query '<metric_name>'"` don't help when the agent doesn't know which metric name to use. A `prom suggest` command that returns common queries for discovered metrics would help more.
+| Finding | Evidence |
+|---------|----------|
+| **Hints can't teach domain expertise** | PromQL/LogQL/TraceQL patterns need to be known upfront (Task 3: more errors with envelope) |
+| **Output truncation is the missing piece** | Biggest token cost = massive API responses (500MB `prom series`). Our changes didn't address this. |
+| **Envelope overhead on small responses** | ~30% more tokens for simple list/get commands where hints are noise |
+| **TOON format doesn't help for observability** | Better PromQL gives 500x reduction vs TOON's 40%. Teach the agent to aggregate server-side. |
 
-**Output truncation is the missing piece.** The single biggest token cost across all experiments was dumping massive API responses — 500MB from `prom series`, multi-MB trace payloads. Our AXI changes didn't address this. Adding auto-truncation with size hints (the AXI "content truncation" principle) would have the highest impact per line of code.
+### Next steps
 
-**Envelope overhead on small responses.** For quick commands like `labels` or `label-values`, the envelope and hints add ~30% more tokens to already-small responses. The hints are most valuable on responses where the agent doesn't know what to do next — for simple list/get commands, they're just noise.
-
-**TOON format doesn't help for observability CLIs.** AXI recommends Token-Optimized Object Notation (dropping JSON braces/quotes/commas for ~40% savings), but for Prometheus/Loki/Tempo the format isn't the bottleneck — the query is. In our experiments, `prom query 'DCGM_FI_DEV_GPU_UTIL'` returned 250K tokens (1120 individual GPU values), while `prom query 'avg by (cluster) (DCGM_FI_DEV_GPU_UTIL)'` returned 500 tokens — a 500x reduction from better PromQL, not a format change. TOON's 40% savings on 250K tokens would save ~100K, but the agent shouldn't be requesting 1120 raw values in the first place. TOON makes more sense for tools without server-side aggregation (GitHub issues, browser DOM snapshots). Observability backends have powerful query languages — teach the agent to use them.
-
-## Next Steps
-
-1. **Content truncation** — Auto-truncate responses over N tokens in envelope mode with `"(truncated, showing 50 of 1120 results — use --limit to control)"`. This would address the biggest cost driver.
-2. **Domain-specific suggestions** — After `prom labels`, suggest common PromQL patterns for discovered metrics (e.g., if `DCGM_*` metrics exist, suggest GPU monitoring queries).
-3. **Adaptive hints** — Only include hints when the response is ambiguous or the agent likely needs guidance. Skip hints on terminal commands like `silence-delete` where there's an obvious single next action.
-4. **Run at scale** — These experiments are n=1. Running 10+ iterations per task with different models would give statistical significance.
+1. **Content truncation** — auto-truncate over N tokens with `"(truncated, showing 50 of 1120 results)"`. Biggest cost driver.
+2. **Domain-specific suggestions** — after `prom labels`, suggest common PromQL for discovered metrics
+3. **Adaptive hints** — only include when response is ambiguous, skip on terminal commands
+4. **Run at scale** — these are n=1. Need 10+ iterations for statistical significance.

@@ -10,30 +10,28 @@ Runbooks and diagnostic procedures for GPU cluster performance issues.
 
 ### IOMMU
 
-IOMMU sits between PCIe devices and system memory, translating device-virtual addresses to physical addresses. Every DMA transaction goes through this translation.
+Sits between PCIe devices and system memory, translating device-virtual to physical addresses. Every DMA transaction goes through translation.
 
 ```
 Normal:    GPU --[DMA]--> Physical Memory
 With IOMMU: GPU --[DMA]--> IOMMU --[translate IOVA->PA]--> Physical Memory
 ```
 
-Impact: **2x-10x degradation** in AllReduce bandwidth due to IOTLB thrashing, ACS routing penalty, and GPUDirect RDMA overhead.
+**Impact:** 2x-10x degradation in AllReduce bandwidth (IOTLB thrashing, ACS routing penalty, GPUDirect RDMA overhead).
 
 #### How to Check
 
 **1. IOMMU groups count (most reliable)**
 ```bash
 ls /sys/kernel/iommu_groups/ | wc -l
+# 0 = disabled (good), > 0 = active (bad for GPU perf)
 ```
-- `0` = disabled (good)
-- `> 0` = active (bad for GPU perf)
 
 **2. IOMMU domain type**
 ```bash
 cat /sys/kernel/iommu_groups/*/type 2>/dev/null | sort | uniq -c
+# DMA-FQ or DMA = full translation (worst), identity = passthrough (less bad)
 ```
-- `DMA-FQ` or `DMA` = full translation (worst)
-- `identity` = passthrough (less bad)
 
 **3. Kernel command line**
 ```bash
@@ -74,28 +72,24 @@ GRUB_CMDLINE_LINUX="amd_iommu=on iommu=pt"
 
 #### Real-world case: H200 cluster, PXE-booted
 
-Nodes were PXE-booted. Initial image shipped without `intel_iommu=on iommu=pt` — NCCL all-reduce busbw was capped at ~98-101 GB/s on large messages (target: ~180 GB/s algbw / ~337 GB/s busbw for 16-GPU).
+- PXE-booted nodes missing `intel_iommu=on iommu=pt`
+- NCCL all-reduce busbw capped at ~98-101 GB/s (target: ~180 GB/s algbw / ~337 GB/s busbw for 16-GPU)
+- After adding `intel_iommu=on iommu=pt iomem=relaxed pci=bfsort,realloc=off rd.driver.blacklist=nouveau`:
+- busbw jumped ~103 GB/s -> ~484 GB/s
+- `iommu=pt` (passthrough mode) was the key change enabling GPUDirect RDMA to bypass CPU
 
-After the PXE boot image was updated with the following params:
-
-```
-intel_iommu=on iommu=pt iomem=relaxed pci=bfsort,realloc=off rd.driver.blacklist=nouveau
-```
-
-busbw jumped from ~103 GB/s → ~484 GB/s — exceeding the original target. `iommu=pt` (passthrough mode) was the key change enabling GPUDirect RDMA to bypass the CPU.
-
-> **Note for PXE-booted clusters:** kernel params are set by the provisioning server, not `/etc/default/grub`. To check boot history, use `sudo journalctl -b -N -k | grep "Command line:"` across boots (`-b -1`, `-b -2`, etc.).
+> **PXE-booted clusters:** kernel params set by provisioning server, not `/etc/default/grub`. Check boot history: `sudo journalctl -b -N -k | grep "Command line:"` across boots.
 
 ### ACS (Access Control Services)
 
-ACS controls whether P2P traffic passes through a PCIe switch directly or must route up to the root complex first.
+Controls whether P2P traffic passes through PCIe switch directly or routes up to root complex.
 
 ```
 Normal:   GPU0 --[PCIe switch]--> GPU1         (direct)
 With ACS: GPU0 --[up to root complex]--> GPU1  (detour)
 ```
 
-ACS is often **auto-enabled by the kernel when IOMMU is active**. IOMMU has a double penalty: translation overhead + ACS forcing suboptimal routing.
+Often auto-enabled by kernel when IOMMU is active — IOMMU has double penalty: translation overhead + ACS forcing suboptimal routing.
 
 #### How to Check
 
@@ -106,7 +100,7 @@ echo "ACS with ReqRedir+: $(sudo lspci -vvv 2>/dev/null | grep 'ACSCtl:' | grep 
 echo "ACS all bits off: $(sudo lspci -vvv 2>/dev/null | grep 'ACSCtl:' | grep -c 'SrcValid- TransBlk- ReqRedir- CmpltRedir- UpstreamFwd- EgressCtrl- DirectTrans-')"
 ```
 
-Key bits: `ReqRedir+` is the perf killer — forces all P2P through root complex.
+Key: `ReqRedir+` is the perf killer — forces all P2P through root complex.
 
 **Quick fleet check:**
 ```bash
@@ -123,10 +117,10 @@ done
 
 ### PPCIe (Protected PCIe)
 
-Part of NVIDIA's Confidential Computing stack. Encrypts data on the PCIe bus between GPU/NVSwitch and host memory. Some cloud providers ship nodes with this enabled by default.
+Part of NVIDIA's Confidential Computing stack. Encrypts data on PCIe bus. Some cloud providers enable by default.
 
-- **Intra-node**: Minimal impact (NVLink bypasses PCIe)
-- **Inter-node**: Overhead on PCIe segments in the `GPU -> NVSwitch -> PCIe -> NIC` path
+- **Intra-node:** Minimal impact (NVLink bypasses PCIe)
+- **Inter-node:** Overhead on PCIe segments in `GPU -> NVSwitch -> PCIe -> NIC` path
 
 #### Fix: Disable PPCIe
 
@@ -141,11 +135,11 @@ reboot
 ### Fleet Diagnostics
 
 ```bash
-# With ansible
+# Ansible
 ansible compute -i inventory.ini -m shell -a \
   'echo "$(hostname): iommu_groups=$(ls /sys/kernel/iommu_groups/ 2>/dev/null | wc -l) acs_redir=$(sudo lspci -vvv 2>/dev/null | grep ACSCtl: | grep -c ReqRedir+)"'
 
-# With pssh
+# pssh
 pssh -h hosts.txt -i \
   'echo "$(hostname): iommu_groups=$(ls /sys/kernel/iommu_groups/ 2>/dev/null | wc -l) acs_redir=$(sudo lspci -vvv 2>/dev/null | grep ACSCtl: | grep -c ReqRedir+)"'
 ```
@@ -174,55 +168,55 @@ nccl-tests/build/all_reduce_perf -b 8 -e 256M -f 2 -g 8
 
 ## Node-Level: Pre-Job Health Checks
 
-Systematic verification before launching workloads. Can be scripted into Slurm prolog or run manually after node maintenance.
+Systematic verification before launching workloads. Can be scripted into Slurm prolog.
 
 ### Quick Checklist
 
 ```bash
-# 1. Driver and modules loaded
+# 1. Driver and modules
 nvidia-smi > /dev/null && echo "driver: ok" || echo "driver: MISSING"
 lsmod | grep -q nvidia_peermem && echo "peermem: ok" || echo "peermem: MISSING"
 lsmod | grep -q gdrdrv && echo "gdrdrv: ok" || echo "gdrdrv: MISSING (optional)"
 
-# 2. Persistence mode on
+# 2. Persistence mode
 nvidia-smi -q -d PERFORMANCE | grep -i "Persistence" | head -1
 
-# 3. Fabric Manager running (HGX/NVSwitch systems)
+# 3. Fabric Manager (HGX/NVSwitch)
 systemctl is-active nvidia-fabricmanager
 
-# 4. GPU count matches expected
+# 4. GPU count
 echo "GPUs: $(nvidia-smi -L | wc -l)"
 
-# 5. PCIe link speed (should be Gen5 x16 for H100/H200)
+# 5. PCIe link speed (Gen5 x16 for H100/H200)
 nvidia-smi -q -d PERFORMANCE | grep -E "Link (Gen|Width)"
 
-# 6. NVLink topology healthy
+# 6. NVLink topology
 nvidia-smi nvlink -s
 
-# 7. Recent XID errors (last boot)
+# 7. Recent XID errors
 dmesg | grep -i "Xid" | tail -5 || echo "clean"
 
 # 8. ECC errors and page retirement
 nvidia-smi -q -d ECC | grep -E "Uncorrected|Corrected" | grep -v ": 0"
 nvidia-smi -q -d PAGE_RETIREMENT | grep -E "Pending|Cause"
 
-# 9. DCGM quick diagnostic
+# 9. DCGM diagnostic
 dcgmi diag -r 2
 ```
 
 ### DCGM Diagnostic Levels
 
-`dcgmi diag` runs progressively deeper GPU health checks. GPUs must be idle (no running workloads).
+GPUs must be idle.
 
 | Level | Command | Duration | Tests |
 |-------|---------|----------|-------|
-| 1 (quick) | `dcgmi diag -r 1` | ~seconds | Deployment checks: driver loaded, NVML working, persistence mode, GPU count, permissions |
-| 2 (medium) | `dcgmi diag -r 2` | ~2 min | Level 1 + PCIe bandwidth, targeted stress, targeted power. Catches degraded PCIe links and GPUs that fail under load |
-| 3 (long) | `dcgmi diag -r 3` | ~15 min | Level 2 + full GPU memory scan (memtest), diagnostic plugin. Catches intermittent memory errors |
+| 1 (quick) | `dcgmi diag -r 1` | ~seconds | Deployment: driver, NVML, persistence mode, GPU count, permissions |
+| 2 (medium) | `dcgmi diag -r 2` | ~2 min | Level 1 + PCIe bandwidth, targeted stress/power. Catches degraded links. |
+| 3 (long) | `dcgmi diag -r 3` | ~15 min | Level 2 + full memory scan, diagnostic plugin. Catches intermittent memory errors. |
 
-**Level 2 is the sweet spot for pre-job checks** — fast enough to run in a Slurm prolog, thorough enough to catch most hardware issues before they waste job runtime. Level 3 is for post-maintenance validation or investigating suspected hardware issues.
+**Level 2 = sweet spot for pre-job checks.** Fast enough for Slurm prolog, thorough enough for most hardware issues.
 
-Example Slurm prolog snippet:
+Example Slurm prolog:
 ```bash
 #!/bin/bash
 dcgmi diag -r 2 > /tmp/dcgm-prolog-$(hostname).log 2>&1
@@ -247,16 +241,16 @@ ansible compute -i inventory.ini --become -m shell -a \
 
 ## Node-Level: Proactive Monitoring
 
-Key metrics to collect continuously (via DCGM, Prometheus `dcgm-exporter`, or custom scripts).
+Key metrics to collect continuously (DCGM, `dcgm-exporter`, or custom scripts):
 
 | Metric | Source | Why |
 |--------|--------|-----|
 | GPU temperature | `nvidia-smi -q -d TEMPERATURE` | Thermal throttling degrades perf silently |
-| Memory temperature | DCGM `DCGM_FI_DEV_MEMORY_TEMP` | HBM throttles independently from GPU die |
+| Memory temperature | DCGM `DCGM_FI_DEV_MEMORY_TEMP` | HBM throttles independently |
 | Power draw | `nvidia-smi -q -d POWER` | Hitting power cap = clock throttling |
-| Clock speeds (SM, Mem) | `nvidia-smi -q -d CLOCK` | Lower than max = throttling active |
+| Clock speeds | `nvidia-smi -q -d CLOCK` | Lower than max = throttling active |
 | ECC error counts | `nvidia-smi -q -d ECC` | Rising corrected errors = failing memory |
-| NVLink error counters | `nvidia-smi nvlink -e` | Link degradation before failure |
+| NVLink errors | `nvidia-smi nvlink -e` | Link degradation before failure |
 | PCIe replay count | DCGM `DCGM_FI_DEV_PCIE_REPLAY_COUNTER` | Rising = signal integrity issue |
 | XID error count | DCGM `DCGM_EXP_XID_ERRORS_COUNT` | Alert on any XID >= 48 |
 
@@ -266,16 +260,12 @@ Key metrics to collect continuously (via DCGM, Prometheus `dcgm-exporter`, or cu
 
 ### IB PHY Error Monitoring
 
-#### Metrics
+**Metrics:**
+- `rx_err_lane_*_phy` via ethtool (per-lane physical layer errors)
+- Exposed via Grafana Alloy ethtool collector as `node_net_ethtool_received_err_lane_*_phy`
+- Manual: `ethtool -S <ib_interface> | grep rx_err_lane`
 
-- **ethtool counters**: `rx_err_lane_*_phy` (per-lane physical layer errors on IB interfaces)
-- Exposed via Grafana Alloy's **ethtool collector** as `node_net_ethtool_received_err_lane_*_phy`
-- Query error rate with Prometheus `rate()` over these counters
-- Manual CLI check: `ethtool -S <ib_interface> | grep rx_err_lane`
-
-#### Heuristics
-
-IB uses FEC (Forward Error Correction) to silently correct physical layer errors. At high rates, FEC gets overwhelmed and link-level retransmissions occur, adding latency to NCCL collectives.
+**Heuristics** (IB uses FEC to correct errors; at high rates, FEC overwhelmed -> retransmissions -> latency):
 
 | Tier | Threshold | Interpretation |
 |------|-----------|----------------|
@@ -284,42 +274,28 @@ IB uses FEC (Forward Error Correction) to silently correct physical layer errors
 | Moderate | 100K-300K err/s | FEC handles it |
 | Normal | <100K err/s | Baseline |
 
-Thresholds are heuristic based on:
-- Statistical outliers vs cluster median
-- Correlation with observed issues (NCCL hangs, XID errors on high-error nodes)
-- Natural gaps in the data distribution
-
-#### Better signal: actual retransmissions
-
-`port_rcv_remote_physical_errors` from `perfquery` counts cases where FEC **failed** to correct — these are actual retransmissions and a more direct indicator of link degradation than raw PHY error rates.
+**Better signal:** `port_rcv_remote_physical_errors` from `perfquery` — counts cases where FEC failed to correct (actual retransmissions).
 
 ```bash
-# Check IB PHY error counters
 ethtool -S <ib_interface> | grep rx_err_lane
-
-# Check retransmission counters (more direct signal)
 perfquery -x <lid> | grep RcvRemotePhysErrors
 ```
 
 ### ib_write_bw vs ibdiagnet
 
-These test fundamentally different things. Understanding the difference prevents being fooled by "all links look healthy" when collective performance is degraded.
-
 | | ib_write_bw | ibdiagnet |
 |---|---|---|
-| **What it does** | RDMA write throughput between 2 nodes | Fabric-wide topology discovery + hardware counter analysis |
-| **Plane** | Data plane — sends actual data | Management plane — reads switch/HCA registers via SMP/GMP |
-| **Scope** | One HCA pair at a time | Every port on every switch and HCA in the fabric |
-| **Detects** | Link throughput (GB/s) | BER, port errors, cabling mistakes, firmware mismatches, topology issues |
-| **Limitation** | High-BER link still shows full line rate (retransmissions transparent on single stream) | Doesn't measure actual data throughput |
+| **What** | RDMA write throughput between 2 nodes | Fabric-wide topology + hardware counter analysis |
+| **Plane** | Data plane | Management plane (SMP/GMP) |
+| **Scope** | One HCA pair | Every port on every switch/HCA |
+| **Detects** | Link throughput (GB/s) | BER, port errors, cabling, firmware mismatches, topology |
+| **Limitation** | High-BER link still shows full line rate (retransmissions transparent on single stream) | Doesn't measure actual throughput |
 
-**Key insight:** A link with BER 6e-08 (6 orders of magnitude above threshold) still shows 396 Gb/s on `ib_write_bw` because the hardware retransmits corrupted packets transparently for a single stream. Under collective load with thousands of concurrent flows, every retransmission cascades into congestion. **Always run ibdiagnet even if point-to-point bandwidth looks healthy.**
+**Key insight:** A link with BER 6e-08 still shows 396 Gb/s on `ib_write_bw` because hardware retransmits transparently for a single stream. Under collective load, every retransmission cascades. **Always run ibdiagnet even if point-to-point looks healthy.**
 
 ### ibdiagnet
 
-Fabric-wide diagnostic tool from Mellanox/NVIDIA. Discovers the entire IB fabric topology via Subnet Manager queries, reads hardware counters from every switch and HCA, and compares against known-good baselines.
-
-#### Running ibdiagnet
+Fabric-wide diagnostic. Discovers IB fabric topology via SM queries, reads hardware counters, compares against baselines.
 
 ```bash
 ibdiagnet -i mlx5_0 -r --ft --ber_test --rail_validation -sc \
@@ -328,76 +304,50 @@ ibdiagnet -i mlx5_0 -r --ft --ber_test --rail_validation -sc \
   --cable_info_disconnected
 ```
 
-| Flag | What it checks |
-|------|---------------|
-| `-i mlx5_0` | Start fabric discovery from this HCA port |
-| `-r` | Include routing information |
-| `--ber_test` | Bit Error Rate testing — catches degraded links before they fail |
+| Flag | What |
+|------|------|
+| `-i mlx5_0` | Start discovery from this HCA |
+| `-r` | Include routing info |
+| `--ber_test` | BER testing — catches degraded links pre-failure |
 | `--rail_validation` | Verify rail-optimized cabling matches expected topology |
-| `-sc` | Subnet configuration checks |
-| `--pm_pause_time 60` | Collect performance counters over 60s window to detect error accumulation |
-| `-P all=1` | Reset all port counters first for clean delta measurement |
-| `--extended_speeds all` | Validate all NDR-speed links |
-| `--pm_per_lane` | Per-lane stats — catches single-lane degradation within a multi-lane link |
-| `--get_phy_info` | Physical layer info (signal quality, eye opening) |
+| `-sc` | Subnet config checks |
+| `--pm_pause_time 60` | Collect perf counters over 60s window |
+| `-P all=1` | Reset all port counters first |
+| `--extended_speeds all` | Validate all NDR links |
+| `--pm_per_lane` | Per-lane stats — catches single-lane degradation |
+| `--get_phy_info` | Signal quality, eye opening |
 | `--get_cable_info` | Cable type, vendor, length, temperature |
 
-#### What ibdiagnet Catches That Point-to-Point Tests Miss
+#### What ibdiagnet catches that point-to-point misses
 
-**1. Bit Error Rate (BER) on links**
+1. **BER on links** — high BER passes throughput tests (hardware retransmits transparently). Threshold: 1e-14. Bad: 6e-08. Fix: reseat/replace cable.
+2. **Port counter errors** — cumulative counters; `--pm_pause_time 60` + `-P all=1` resets then measures delta
+3. **Rail cabling mismatches** — `--rail_validation` compares actual wiring vs expected. Mismatches break NCCL topology-aware algorithms (PXN, rail-local routing).
+4. **Firmware inconsistencies** — mixed versions cause subtle interop issues under load
+5. **Uneven leaf switch downlinks** — asymmetric fabric capacity
 
-Links with high BER still pass throughput tests because the hardware retransmits transparently. ibdiagnet reads the BER counter directly from the HCA firmware.
-
-- Threshold: **1e-14** (acceptable)
-- Example bad value: **6e-08** (6 orders of magnitude above threshold)
-- Fix: reseat or replace the cable
-
-**2. Port counter errors**
-
-Cumulative counters like `port_rcv_remote_physical_errors` that increment over time. The `--pm_pause_time 60` flag with `-P all=1` resets counters first, then measures the delta — catching actively degrading ports.
-
-**3. Rail cabling mismatches**
-
-In a rail-optimized fat-tree, GPU N on every node should connect to the same leaf switch (rail N). `--rail_validation` compares actual wiring against expected topology. Mismatches break NCCL's topology-aware algorithms (PXN, rail-local routing).
-
-**4. Firmware inconsistencies**
-
-Detects mixed firmware versions across the fabric. Mismatched firmware between HCAs or switches can cause subtle interop issues under load.
-
-**5. Uneven leaf switch downlinks**
-
-Reports actual vs expected host port counts per leaf, revealing asymmetric fabric capacity.
-
-#### Output Location
-
-ibdiagnet writes results to `/var/tmp/ibdiagnet2/` by default:
-- `ibdiagnet2.log` — full diagnostic log
-- `ibdiagnet2.db_csv` — topology database
-- `ibdiagnet2.pm` — performance counter data
+**Output:** `/var/tmp/ibdiagnet2/` — `ibdiagnet2.log`, `ibdiagnet2.db_csv`, `ibdiagnet2.pm`
 
 ### mlxlink
 
-Per-port diagnostic tool that reads directly from the HCA firmware. Catches signal integrity issues that ibdiagnet may miss.
-
-#### mlxlink vs ibdiagnet
+Per-port diagnostic reading directly from HCA firmware. Catches signal integrity issues ibdiagnet may miss.
 
 | | mlxlink | ibdiagnet |
 |---|---|---|
 | **Scope** | Single HCA port | Entire fabric |
-| **Error counters** | Cumulative since last reset/reboot | Delta over `--pm_pause_time` window |
-| **Sensitivity** | Shows pre-FEC physical errors (more sensitive) | Checks post-FEC symbol BER against threshold |
-| **Diagnosis** | Provides `Recommendation` (e.g., "Bad signal integrity") | Reports pass/fail against thresholds |
-| **Counter reset** | `mlxlink --pc` (clear port counters) | `-P all=1` (reset before measurement) |
+| **Counters** | Cumulative since last reset | Delta over `--pm_pause_time` |
+| **Sensitivity** | Pre-FEC physical errors (more sensitive) | Post-FEC symbol BER |
+| **Diagnosis** | Provides `Recommendation` (e.g., "Bad signal integrity") | Pass/fail against thresholds |
+| **Reset** | `mlxlink --pc` | `-P all=1` |
 
-**Key insight:** A port accumulating ~600 pre-FEC errors/second will be caught by mlxlink but may pass ibdiagnet's BER check — FEC corrects the errors at the physical layer, so the post-FEC symbol BER stays below ibdiagnet's 1e-14 threshold in the 60s window. **Always run mlxlink alongside ibdiagnet for signal quality checks.**
+**Key insight:** ~600 pre-FEC errors/sec caught by mlxlink but may pass ibdiagnet's BER check (FEC corrects at physical layer). **Always run mlxlink alongside ibdiagnet.**
 
-#### When to use which
+**When to use:**
+- **ibdiagnet** — first pass, fabric-wide. Catches topology, rails, firmware, high post-FEC BER.
+- **mlxlink** — targeted follow-up, or sweep all nodes for pre-FEC degradation
+- **Both** — after datacenter fixes to verify repairs
 
-- **ibdiagnet**: first pass, fabric-wide health check. Catches topology issues, rail mismatches, firmware mismatches, and ports with high post-FEC BER
-- **mlxlink**: targeted follow-up on suspect nodes, or sweep all nodes to catch pre-FEC degradation that ibdiagnet misses
-- **Both together**: after datacenter fixes, to verify repairs. ibdiagnet for fabric-level, mlxlink for per-port signal quality
-
-#### Running mlxlink across a cluster
+#### Running mlxlink across cluster
 
 ```bash
 ansible compute -i inventory.ini -m shell -a \
@@ -408,136 +358,97 @@ ansible compute -i inventory.ini -m shell -a \
 
 #### Interpreting Effective Physical Errors
 
-These are cumulative pre-FEC errors since last counter reset. What matters is whether they're **actively increasing**, not the absolute number.
+Cumulative pre-FEC errors since last counter reset. What matters: **actively increasing**, not absolute number.
 
 | BER | Severity | Action |
 |-----|----------|--------|
-| 0 or 15E-255 | Clean | No action |
+| 0 or 15E-255 | Clean | None |
 | 1E-17 to 1E-15 | Normal | Low-level noise, monitor |
-| 1E-15 to 1E-13 | Elevated | Monitor, check if actively increasing |
-| 1E-13 to 1E-10 | Bad | Verify if stale or active; schedule cable check |
-| >= 1E-10 | Critical | Likely active; verify and escalate for cable replacement |
+| 1E-15 to 1E-13 | Elevated | Monitor, check if increasing |
+| 1E-13 to 1E-10 | Bad | Verify stale vs active; schedule cable check |
+| >= 1E-10 | Critical | Likely active; escalate for cable replacement |
 
-**To verify if errors are active vs stale:**
+**Verify active vs stale:**
 ```bash
-# Clear counters
-mlxlink -d <bus_id> --pc
-
-# Wait some time, then check
+mlxlink -d <bus_id> --pc        # clear counters
+# wait, then:
 mlxlink -d <bus_id> -c | grep "Effective Physical Errors"
 ```
 
-If errors resume immediately after clearing, the port has an active signal integrity issue. If they stay at 0, the errors were historical (e.g., from before a cable fix) and counters just hadn't been reset.
+Errors resume immediately = active issue. Stay at 0 = historical.
 
-#### mlxlink troubleshooting flags
+#### mlxlink flags
 
 | Flag | Purpose |
 |------|---------|
 | `-c` | Cable/link info + effective BER |
 | `-e` | Extended error counters |
-| `-c -e` | Both — full picture |
-| `--pc` | Clear port counters (reset to 0) |
-| `--port_type PCIE` | Check PCIe link instead of IB |
+| `-c -e` | Both |
+| `--pc` | Clear port counters |
+| `--port_type PCIE` | Check PCIe link |
 
-#### Diagnostic output to look for
-
-```
-Troubleshooting Info
---------------------
-Status Opcode   : 15
-Group Opcode    : PHY FW
-Recommendation  : Bad signal integrity
-```
-
-When mlxlink shows `Bad signal integrity`, the firmware itself has diagnosed a hardware problem — cable or transceiver needs replacement.
+When mlxlink shows `Bad signal integrity`, firmware has diagnosed a hardware problem — cable/transceiver needs replacement.
 
 ---
 
-## Troubleshooting Checklist: Cross-Switch Performance Degradation
+## Checklist: Cross-Switch Performance Degradation
 
 When NCCL collective performance degrades at scale but point-to-point looks fine:
 
-**1. Confirm the problem is cross-switch**
-
-Run the same NCCL test on nodes within a single switch unit vs across switch units. If same-SU gets full bandwidth but cross-SU degrades, the problem is in the spine/fabric.
+**1. Confirm problem is cross-switch**
 
 ```bash
 # Same-SU baseline (should get full bandwidth)
 mpirun --hostfile /tmp/hostfile-same-su ... all_reduce_perf -b 1G -e 8G -f 2 -g 1
 
-# Cross-SU test (if this degrades, spine is the problem)
+# Cross-SU test (if degrades, spine is the problem)
 mpirun --hostfile /tmp/hostfile-cross-su ... all_reduce_perf -b 1G -e 8G -f 2 -g 1
 ```
 
-**2. Run pairwise NCCL tests to find outlier nodes**
+**2. Pairwise NCCL tests** — each suspect node paired with known-good node. Outliers with lower bandwidth need investigation.
 
-Test each suspect node paired with a known-good node. Outliers with significantly lower bandwidth need further investigation.
-
-**3. Run ib_write_bw per-HCA to verify link-level health**
+**3. Per-HCA ib_write_bw**
 
 ```bash
-# Server side
-ib_write_bw -d mlx5_0 --report_gbits -D 10
-
-# Client side
-ib_write_bw -d mlx5_0 --report_gbits -D 10 <server_ip>
+# Server: ib_write_bw -d mlx5_0 --report_gbits -D 10
+# Client: ib_write_bw -d mlx5_0 --report_gbits -D 10 <server_ip>
 ```
 
-Repeat for all 8 IB HCAs (mlx5_0 through mlx5_11). All should hit line rate (~396 Gb/s for NDR).
+Repeat for all 8 IB HCAs (mlx5_0 through mlx5_11). All should hit ~396 Gb/s (NDR).
 
-**4. Run mlxlink sweep across all nodes**
+**4. mlxlink sweep** — catches pre-FEC signal degradation. Faster than ibdiagnet, per-node.
 
-Catches pre-FEC signal degradation that ibdiagnet may miss. Run this before ibdiagnet — it's faster and per-node.
-
-**5. Run ibdiagnet for fabric-wide diagnostics**
-
-This catches topology, routing, and switch-level issues that per-node mlxlink can't see. Use the full command above.
-
-Check the output for:
-- [ ] BER above threshold (1e-14) on any link
-- [ ] Port counter errors incrementing during the test window
-- [ ] Rail validation failures (nodes on wrong rails)
-- [ ] Firmware version mismatches across HCAs and switches
+**5. ibdiagnet** — fabric-wide diagnostics. Check output for:
+- [ ] BER above 1e-14
+- [ ] Port counter errors incrementing
+- [ ] Rail validation failures
+- [ ] Firmware version mismatches
 - [ ] Uneven downlink counts on leaf switches
 
-**6. Check for SHARP availability**
+**6. Check SHARP**
 
 ```bash
 sharp_hello
+# Fails with "Failed to connect to Aggregation Manager" = not enabled
 ```
 
-If it fails with "Failed to connect to Aggregation Manager", SHARP is not enabled. SHARP does in-network reductions on switches, which can bypass spine congestion for collective operations.
+SHARP does in-network reductions, can bypass spine congestion.
 
-**7. Try NCCL algorithm tuning as a workaround**
+**7. NCCL algorithm tuning** (workaround)
 
 ```bash
 NCCL_ALGO=Tree mpirun ... all_reduce_perf -b 1G -e 8G -f 2 -g 1
 ```
 
-Tree algorithm often works better on congested fabrics (~24% improvement observed in cross-SU tests).
+Tree often works better on congested fabrics (~24% improvement observed).
 
-**8. Escalate to provider with evidence**
-
-Collect artifacts before escalating:
+**8. Escalate with evidence**
 
 ```bash
-# GPU/driver bug report
 sudo nvidia-bug-report.sh
-
-# Fabric Manager logs (HGX/NVSwitch systems)
 journalctl -u nvidia-fabricmanager --since "24 hours ago" > fabmgr.log
-
-# DCGM diagnostics
 dcgmi diag -r 3 2>&1 | tee dcgm-diag-r3.log
-
-# ibdiagnet output
 ls /var/tmp/ibdiagnet2/
 ```
 
-Send to provider:
-- `nvidia-bug-report.log.gz` — driver state, GPU info, dmesg, XID history
-- Fabric Manager logs (if NVSwitch system)
-- ibdiagnet output files (`/var/tmp/ibdiagnet2/`)
-- Same-SU vs cross-SU NCCL results showing the gap
-- Specific BER values, port errors, rail mismatches
-- DCGM diag results if GPU hardware is suspect
+Send: nvidia-bug-report, fabmgr logs, ibdiagnet output, same-SU vs cross-SU results, BER values, port errors, rail mismatches, DCGM diag.

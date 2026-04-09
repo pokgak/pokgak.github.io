@@ -13,10 +13,11 @@ make clean     # rm -rf public
 
 ## Content Types
 
-There are two content types:
+There are three content types:
 
-- **Articles** (`content/articles/`) — fully fleshed posts
-- **Notes** (`content/notes/`) — quick thoughts and rough ideas, possibly AI-assisted. Each note page shows a disclaimer.
+- **Articles** (`content/articles/`) — human-written posts. Agent may assist with fact checking, drafting, or proofreading, but must not author content directly.
+- **Notes** (`content/notes/`) — mostly agent-written. Concise, point-based style. Quick publish format for getting ideas out fast with minimal human editing. Not full prose — use bullet points, short paragraphs, direct statements.
+- **Experiments** (`content/experiments/`) — fully agent-written research logs. Scientific style: state the question, describe the setup, record observations, draw conclusions. Used as a learning tool especially for topics still being explored (e.g. ML/AI). Compile agent knowledge into the write-up as educational reference.
 
 ## Creating a New Article
 
@@ -66,8 +67,9 @@ The build script rewrites `images/` → `/images/` automatically.
 ├── package.json              # Deps: marked, gray-matter, highlight.js
 ├── Makefile                  # Build/preview/new-article commands
 ├── content/
-│   ├── articles/             # Markdown articles (YAML frontmatter + body)
-│   └── notes/                # Quick notes — less polished, possibly AI-assisted
+│   ├── articles/             # Human-written articles (YAML frontmatter + body)
+│   ├── notes/                # Agent-written quick notes — concise, point-based
+│   └── experiments/          # Agent-written research logs — scientific style
 ├── static/
 │   └── images/               # Images copied to public/images/ during build
 ├── public/                   # Build output (gitignored)
@@ -79,6 +81,9 @@ The build script rewrites `images/` → `/images/` automatically.
 │   ├── notes/
 │   │   ├── index.html        # Notes list page
 │   │   └── <slug>/index.html # Individual note pages
+│   ├── experiments/
+│   │   ├── index.html        # Experiments list page
+│   │   └── <slug>/index.html # Individual experiment pages
 │   └── images/
 └── .github/workflows/hugo.yml # CI: npm ci + node build.js → GitHub Pages
 ```
@@ -87,10 +92,10 @@ The build script rewrites `images/` → `/images/` automatically.
 
 `build.js` does everything in one file:
 
-1. Reads all `content/articles/*.md` and `content/notes/*.md`, parses YAML frontmatter with `gray-matter`
+1. Reads all `content/articles/*.md`, `content/notes/*.md`, and `content/experiments/*.md`, parses YAML frontmatter with `gray-matter`
 2. Renders markdown → HTML with `marked` + `highlight.js` for syntax highlighting
 3. Injects into HTML templates (template literals in build.js)
-4. Writes `public/index.html`, `public/articles/…`, `public/notes/…`
+4. Writes `public/index.html`, `public/articles/…`, `public/notes/…`, `public/experiments/…`
 5. Copies `static/images/` → `public/images/`
 6. Generates RSS feed at `public/index.xml`
 
