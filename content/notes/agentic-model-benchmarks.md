@@ -231,6 +231,33 @@ A model with 90% pass@1 sounds great until you realize that's 35% pass^10. Would
 
 ---
 
+## When Your Eval Reveals a Gap
+
+A model topping BFCL but failing your product eval doesn't mean you picked the wrong model. It means the base capability is there — the model understands tool calling mechanics — but it hasn't learned *your* domain. That's a fine-tuning problem, not a fundamental capability gap.
+
+### The pipeline
+
+1. **Select via benchmarks** — BFCL, τ-bench, SWE-bench tell you the model has the raw skill (tool calling, multi-turn coherence, code reasoning). This narrows your candidates.
+2. **Evaluate on your tasks** — your product eval reveals the specific gap: wrong tool selection? bad argument formatting? fails on multi-step workflows? The failure mode tells you what to train on.
+3. **SFT (supervised fine-tuning)** — teach it your specific tool schemas, output formats, and domain patterns. This is where most product-specific gains come from. Collect examples of correct tool-use traces from your eval tasks (or human demonstrations) and fine-tune on those.
+4. **RL (reinforcement learning)** — optimize for task completion, not just format correctness. Especially valuable when there are multiple valid paths to a solution — exactly the case where rigid benchmarks and SFT both struggle. Use your eval's outcome-based graders as the reward signal.
+
+### SFT vs RL: when to use which
+
+- **SFT** is the default starting point. It's simpler, more data-efficient, and directly addresses "the model doesn't know my tool schemas / output format." If your eval failures are about format or domain knowledge, SFT is probably enough.
+- **RL** shines when the model knows the tools but makes bad decisions about *when and how* to use them. It learns policies (prefer tool A over tool B in situation X) that SFT can't easily encode from static examples. Outcome-based RL (reward = did the task succeed?) is particularly powerful because it lets the model discover strategies you didn't anticipate.
+- **Both together** is the standard production recipe: SFT first to get the model into the right ballpark, then RL to optimize the policy against your eval metric.
+
+### Your eval *is* your reward function
+
+This is where benchmarks and evals connect to training. The product eval you built (with code-based and model-based graders, measuring pass^k) is exactly the reward signal RL needs. A well-designed eval does double duty:
+- During development: tells you whether to ship
+- During training: tells the model what "good" looks like
+
+This is why grading outcomes (not paths) matters for training too — if your eval penalizes valid alternative solutions, your RL reward will push the model toward a narrow strategy instead of robust task completion.
+
+---
+
 ## Picking the Right Benchmark
 
 - Raw tool-calling correctness → **BFCL**
