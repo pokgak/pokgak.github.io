@@ -141,6 +141,96 @@ These aren't agentic-specific but matter when interpreting agent performance:
 | Long context recall | RULER / Needle-in-a-Haystack | MoE models may degrade differently at long context vs dense models |
 | Hallucination rate | TruthfulQA / FActScore | Models reasoning about tool results can confidently fabricate; worse in multi-hop chains |
 
+## Companies Publishing Product-Specific Evals
+
+Academic benchmarks test general capabilities. These companies built evals for *their* workload — worth studying as templates.
+
+**[CursorBench](https://cursor.com/blog/cursorbench)** (Cursor) — Tasks sourced from real Cursor sessions via "Cursor Blame" (traces committed code back to the agent request that produced it). Uses LLM graders, not just unit tests, because most dev requests have multiple valid solutions. Plots correctness against token cost to capture the quality/latency tradeoff. Key insight: real developer prompts are short and underspecified — nothing like the verbose issue descriptions in SWE-bench.
+
+**[Cognition-Golden](https://x.com/cognition_labs/status/1834292727464488966)** (Cognition/Devin) — Internal benchmark using "realistic evaluations for economically valuable tasks," sometimes on codebases with millions of lines. Train/test split to prevent overfitting. Production Devin scores 74.2% on the test split. Designed around what paying customers actually need.
+
+**[Stripe Integration Benchmark](https://stripe.com/blog/can-ai-agents-build-real-stripe-integrations)** (Stripe) — 11 environments testing autonomous Stripe integration building (backend-only, full-stack, focused exercises). Grading is deterministic: automated tests exercise the finished software via API calls and UI tests, then validates Stripe API objects were created correctly. Their philosophy: "a mostly correct integration is a failure; payments require 100% accuracy."
+
+**[v0 Evals](https://vercel.com/blog/eval-driven-development-build-better-ai-faster)** + **[next-evals-oss](https://github.com/vercel/next-evals-oss)** (Vercel) — Multi-layered: code-based checks (valid imports, file structure), LLM-based grading for subjective quality, and human feedback. Every PR that affects output requires eval documentation. The open-source Next.js eval has 20 fixture-based tasks with vitest assertions. Notable finding: an 8KB AGENTS.md file achieved 100% pass rate vs 79% for skills-based retrieval.
+
+**[Terminal-Bench](https://www.vals.ai/benchmarks/terminal-bench)** (VALS AI) — Tests the full terminal-based dev workflow: read code, run tests, interpret output, fix issues, commit. Used by OpenAI to benchmark Codex. More operational than SWE-bench — measures agent competence at *using terminal tools*, not just generating patches.
+
+**Common pattern:** every product-specific eval shares the same structure — real task inputs sourced from production (not synthetic), domain-appropriate environments, deterministic outcome verification where possible, and LLM-based grading for subjective quality.
+
+---
+
+## Benchmarks vs Evals
+
+Worth clarifying the distinction:
+
+- **Benchmarks** are standardized, public, and comparative. They answer "how does model A compare to model B on a known task distribution?" BFCL, SWE-bench, τ-bench are benchmarks.
+- **Evals** are product-specific, often private, and diagnostic. They answer "does this model/prompt/system work for *our* use case?" CursorBench, Stripe's integration tests are evals.
+
+Benchmarks are useful for model selection. Evals are useful for shipping. You need both — but if you're building a product, evals are the ones that actually prevent regressions.
+
+---
+
+## Designing a Product-Specific Eval
+
+Based on [Anthropic's eval guide](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) and patterns from the companies above:
+
+### Start small, source from real failures
+
+- **20-50 tasks** is enough to start. Early changes have large effect sizes — small samples suffice to detect them.
+- Source tasks from **real user failures and production data**, not invented scenarios. Cursor uses "Cursor Blame" to trace agent-generated code back to the original request. Stripe uses real integration patterns.
+- If you don't have production data yet, start with your own dogfooding sessions — record the inputs that broke.
+
+### Three types of graders
+
+| Grader type | Speed | Flexibility | When to use |
+|---|---|---|---|
+| **Code-based** (string match, assertion, API check) | Fast, deterministic | Rigid | Structured outputs, API state, pass/fail outcomes |
+| **Model-based** (LLM judges the output) | Slower, needs calibration | Flexible | Subjective quality, multiple valid solutions, natural language outputs |
+| **Human** | Slow, expensive | Gold standard | Calibrating model graders, ambiguous cases, initial eval design |
+
+Most product evals use a mix. Stripe leans heavily on code-based (deterministic API checks). Cursor leans on model-based (many valid code solutions). Start with code-based where you can, add model-based for the rest.
+
+### Grade outcomes, not paths
+
+Agents find alternative valid solutions. If you check "did it call tool X with param Y at step 3", you'll get false failures from agents that solved the task differently. τ-bench's DB hash comparison is a cautionary tale — correct behavior via a different action sequence scores 0.
+
+Instead: check the end state. Did the database have the right records? Did the API return the right response? Did the tests pass? Did the user's request get fulfilled?
+
+### Capability evals vs regression evals
+
+Two different purposes, two different design philosophies:
+
+- **Capability evals** measure potential. Start at low pass rates, expect improvement over time. These are your frontier tasks — the hardest things your agent should eventually handle. When pass rate exceeds ~80%, graduate tasks to the regression suite and create harder ones.
+- **Regression evals** ensure reliability. Target ~100% pass rate. These are tasks your agent already handles — the eval exists to catch regressions when you change prompts, models, or tools. A failure here is a bug.
+
+### Measure reliability, not just accuracy
+
+Steal τ-bench's pass^k metric. For any customer-facing agent:
+- **pass@k** = "did it succeed at least once in k tries" — measures potential, useful during development
+- **pass^k** = "did it succeed every time in k tries" — measures reliability, what matters in production
+
+A model with 90% pass@1 sounds great until you realize that's 35% pass^10. Would you ship a product that fails 65% of the time over 10 interactions?
+
+### Keep the eval alive
+
+- **Refresh tasks** regularly — models memorize patterns, and your product evolves
+- **Gate PRs on eval results** — Vercel requires eval documentation for every output-affecting PR
+- **Feed production failures back** — when users report issues, add them to the eval suite
+- **Monitor saturation** — an eval where everything passes is no longer providing signal
+
+### Starter checklist
+
+1. Collect 20-50 real tasks from production/dogfooding failures
+2. Define what "success" looks like for each (end-state, not path)
+3. Build code-based graders for deterministic checks
+4. Add model-based graders for subjective quality
+5. Split into capability (hard, low pass rate) and regression (known-good, target 100%)
+6. Run each task k times, track pass^k
+7. Set up CI to run regression evals on every change
+8. Review failures manually — catch grader bugs, not just agent bugs
+
+---
+
 ## Picking the Right Benchmark
 
 - Raw tool-calling correctness → **BFCL**
@@ -149,9 +239,14 @@ These aren't agentic-specific but matter when interpreting agent performance:
 - Broad capability scan → **AgentBench**
 - Diagnosing long-task failures → **RULER + MT-Bench**
 - Small model (≤8B) deployment → **BFCL irrelevance detection + IFEval**
+- Your specific product workload → **build your own eval** (see above)
 
 ## Takeaway
 
-Every benchmark optimizes for something and is blind to something else. BFCL optimizes for structural correctness but is blind to task completion. τ-bench optimizes for reliability but is blind to efficiency. SWE-bench optimizes for real-world grounding but is vulnerable to gaming. AgentBench optimizes for breadth but lacks depth.
+Academic benchmarks tell you which model to pick. Product evals tell you whether to ship. You need both, but they serve different stages:
 
-The meta-lesson: benchmark scores are most useful when you understand what the benchmark *doesn't* test. A model that tops BFCL but bombs τ-bench can call tools perfectly but can't complete tasks. A model that tops SWE-bench Lite but was never tested on SWE-bench+ might just be pattern-matching leaked solutions. Always pair a primary benchmark with supporting dimensions that cover its blind spots.
+1. **Model selection** — use BFCL, τ-bench, SWE-bench to narrow your options
+2. **Product validation** — build your own eval from real failures, grade outcomes not paths, measure reliability with pass^k
+3. **Ongoing quality** — gate deployments on regression evals, feed production failures back into the suite
+
+The meta-lesson: benchmark scores are most useful when you understand what the benchmark *doesn't* test. A model that tops BFCL but bombs τ-bench can call tools perfectly but can't complete tasks. A model that tops SWE-bench Lite but was never tested on SWE-bench+ might just be pattern-matching leaked solutions. Always pair a primary benchmark with supporting dimensions that cover its blind spots — and always supplement with evals that test *your* workload.
