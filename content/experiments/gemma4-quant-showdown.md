@@ -140,6 +140,40 @@ The 26b-a4b MoE model matches e4b on speed (92–97 vs 94–100 tok/s) while pac
 
 ---
 
+## Quality: BFCL Tool-Calling Evaluation
+
+Speed tells half the story. To measure tool-calling quality, I ran the [Berkeley Function Calling Leaderboard v4](https://gorilla.cs.berkeley.edu/) on the top 5 configurations — picking the fastest quant per family plus the 26b-a4b-8bit as a quality reference point.
+
+**Models evaluated:** `e2b-it-4bit`, `e4b-it-4bit`, `26b-a4b-it-mxfp4`, `26b-a4b-it-8bit`, `31b-it-4bit`  
+**Categories:** simple (single function), multiple (pick from candidates), parallel (emit multiple calls)  
+**Samples:** 50 per category, Python subset
+
+### Results
+
+| Model | Simple | Multiple | Parallel | Avg |
+|---|---|---|---|---|
+| `e2b-it-4bit` | 68% | 36% | 18% | 40.7% |
+| `e4b-it-4bit` | 66% | 36% | 18% | 40.0% |
+| `26b-a4b-it-mxfp4` | **70%** | 36% | 14% | 40.0% |
+| `26b-a4b-it-8bit` | 66% | 36% | 16% | 39.3% |
+| `31b-it-4bit` | 68% | **38%** | 18% | **41.3%** |
+
+Name accuracy (correct function selected, args may differ) was near-perfect across the board: 88–100% on simple, 92–98% on multiple, 92–98% on parallel.
+
+### Observations
+
+**Quality scaling is surprisingly flat.** Going from e2b (2B active) to 31b (31B active) moves simple accuracy by 2 points (66→68%). The gap between best and worst is only ~2 points across all five models on every category.
+
+**Name accuracy is the easy part.** Every model knows which function to call — 88–100% name accuracy across all categories. The ceiling is argument precision: getting every required argument correct in one shot.
+
+**31b-4bit is the best overall.** Only model to break 36% on multiple (38%), and the only one with 96% name accuracy on both multiple and parallel. The extra capacity pays off in the details, not the headline number.
+
+**26b-a4b-mxfp4 is the best speed/quality trade-off.** It leads on simple (70%), runs fastest (1.75s/sample vs 4–9s for 31b), and uses 13 GB vs 17 GB. If you're running tool-calling agents continuously on Apple Silicon, this is the pick.
+
+**Parallel tool calls are hard for all models.** 14–18% exact match despite 92–98% name accuracy. Getting all arguments right across multiple simultaneous calls in one response is the real ceiling — no model comes close to solving it.
+
+---
+
 ## Failures
 
 | Model | Error |
