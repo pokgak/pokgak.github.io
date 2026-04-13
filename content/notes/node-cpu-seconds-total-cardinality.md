@@ -83,3 +83,33 @@ metric_relabel_configs:
 ```
 
 Takes 800 series down to ~400.
+
+## Follow-up: `labeldrop` Doesn't Reduce Samples — It Breaks DPM Billing
+
+Learned this the hard way. Dropping the `cpu` label reduced series count (cardinality) but **tripled the Grafana Cloud bill**.
+
+**Why:** Grafana Cloud's usage-based tier charges per *samples ingested* (DPM — data points per minute), not per series count. When you `labeldrop` the `cpu` label, 128 samples per scrape that previously had distinct label sets now all share the same label set. They still get scraped and forwarded individually. One "series" now receives 128 samples per scrape interval instead of 1.
+
+- Before: 128 series × 1 sample each per scrape = 128 DPM per (instance, mode)
+- After labeldrop: 1 series × 128 samples per scrape = 128 DPM per (instance, mode)
+
+Cardinality goes down, DPM stays the same. If your vendor bills on DPM, you get nothing.
+
+**The actual fix: pre-aggregate with a recording rule before remote_write.**
+
+```yaml
+groups:
+  - name: node_cpu_agg
+    rules:
+      - record: node_cpu_seconds_total:by_mode
+        expr: sum without (cpu) (node_cpu_seconds_total)
+```
+
+Prometheus evaluates this locally and only remote-writes the aggregated series — one sample per `(instance, mode)` per scrape interval. DPM drops proportionally to core count.
+
+**Catch: Grafana Alloy doesn't support recording rules.** If your pipeline is Alloy → Grafana Cloud, you can't pre-aggregate this way. Your options are:
+
+1. **Grafana Cloud Adaptive Metrics** — detects unused label dimensions and aggregates them server-side. But you still pay full ingest cost for the raw samples that already came in; it only reduces the *active series* charge, not ingestion.
+2. **Run a self-managed Prometheus** in front of Alloy — let it evaluate recording rules, then remote-write the aggregated output to Grafana Cloud. Adds operational overhead.
+
+**TL;DR:** `labeldrop` is a cardinality fix. For DPM-based billing you need pre-aggregation via recording rules — but if you're on Alloy you can't do that locally, and Grafana Cloud's Adaptive Metrics doesn't help with ingest cost.
