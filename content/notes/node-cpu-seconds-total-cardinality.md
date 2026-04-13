@@ -112,4 +112,4 @@ Prometheus evaluates this locally and only remote-writes the aggregated series �
 1. **Grafana Cloud Adaptive Metrics** — detects unused label dimensions and aggregates them server-side. But you still pay full ingest cost for the raw samples that already came in; it only reduces the *active series* charge, not ingestion.
 2. **Run a self-managed Prometheus** in front of Alloy — let it evaluate recording rules, then remote-write the aggregated output to Grafana Cloud. Adds operational overhead.
 
-**TL;DR:** `labeldrop` is a cardinality fix. For DPM-based billing you need pre-aggregation via recording rules — but if you're on Alloy you can't do that locally, and Grafana Cloud's Adaptive Metrics doesn't help with ingest cost.
+**TL;DR:** `labeldrop` is a cardinality fix. For DPM-based billing you need pre-aggregation via recording rules — but if you're on Alloy you can't do that locally, and Grafana Cloud's Adaptive Metrics solves the active series problem but trades it for an ingest cost that it doesn't fully eliminate.
