@@ -8,7 +8,7 @@ NFS is common in GPU clusters for shared storage — `/home`, checkpoints, train
 
 ## The Workload Profile
 
-Large model training has two distinct I/O phases:
+Large model training has three distinct I/O phases:
 
 **Steady-state (between checkpoints)**
 - Mostly reads: training data, tokenized datasets
@@ -22,15 +22,31 @@ Large model training has two distinct I/O phases:
 - GPU compute sits idle waiting on I/O — MFU drops from ~43% to ~6%
 - Server iowait spikes, then drops back to near-zero between checkpoints
 
-This asymmetry — mostly reads with periodic synchronized write bursts — should drive all your tuning decisions.
+**In-loop evaluation (periodic, inline)**
+- Some training setups run evaluations in-loop every N steps — training pauses, the same workers read eval data files from NFS, then training resumes
+- Eval reads are independent of checkpoint I/O: eval data files are separate from training data and checkpoint files
+- This adds a periodic read burst pattern on a different dataset, interleaved with the training data reads and checkpoint write bursts
+
+All three phases hit the same NFS server from the same clients — steady training reads, periodic checkpoint write bursts, and periodic eval read bursts. This asymmetry should drive all your tuning decisions.
 
 ## Challenges
 
 - **Fan-in writes**: 100+ nodes checkpointing at the same step means the server gets hit simultaneously. Without coalescing, each node's write becomes a separate fsync under `sync` semantics — hundreds of sequential disk flushes.
-- **Single TCP connection per mount**: default NFS uses one connection per client. At high concurrency each node serializes its own RPCs even if the server has headroom.
-- **Reconnect overhead**: idle connections expire between steps. For training data reads, reconnect latency shows up as microstalls before each step.
-- **Readdir round-trips**: loading training datasets involves many directory listings. Without prefetching file attributes, each entry requires a follow-up GETATTR call.
+- **Single TCP connection per mount**: default NFS uses one connection per client. At high concurrency each node serializes its own RPCs even if the server has headroom. This is most acute during checkpoint write bursts, but also limits aggregate read throughput when training and eval reads compete.
+- **Reconnect overhead**: idle connections expire between active periods. Training data mounts can see microstalls before each step; eval data mounts idle between eval phases and pay reconnect cost at the start of each eval run.
+- **Readdir round-trips**: loading datasets — both training data and eval data — involves many directory listings. Without prefetching file attributes, each entry requires a follow-up GETATTR call.
+- **Coinciding write and read bursts**: checkpoint saves and in-loop evals don't run at the same step, but their timing isn't coordinated to avoid overlap. When a checkpoint write burst and an eval read burst land close together, the server handles peak write pressure and elevated read IOPS simultaneously — the worst-case load point.
 - **Disk space**: checkpoints accumulate fast. An 82% full server is a ticking clock; NFS writes will start failing when it fills.
+
+## Separating Mounts by Access Pattern
+
+Not all training data has the same access pattern. A useful architectural split:
+
+**Bulk sequential reads** — pre-tokenized datasets consumed in order, large files. Throughput-bound. Optimize for high sustained bandwidth: large `rsize` (512K–1M), high `nconnect`, potentially a server or network path with higher aggregate bandwidth.
+
+**Random access reads** — dynamic data mixing, where the sampler draws from many different datasets with weights that can change during training. Access is random across a large corpus: many small reads spread across files and directories. Throughput numbers look lower, but the bottleneck is IOPS and latency, not bandwidth. Oversizing `rsize` here wastes bandwidth and adds latency — smaller block sizes and `forcerdirplus` matter more.
+
+If you have two NFS servers (or two export paths on the same server), dedicating one to each pattern lets you tune mount options independently and avoids bulk reads starving the random-access path during checkpoint bursts. The random-access mount doesn't need high `wsize` at all — writes there (if any) are incidental.
 
 ## Mount Options Worth Tuning
 
@@ -44,7 +60,7 @@ This asymmetry — mostly reads with periodic synchronized write bursts — shou
 
 **`timeo` / `retrans`** — tune retry behavior. High `timeo` (e.g. 600 × 0.1s = 60s) avoids premature timeouts during checkpoint bursts.
 
-**`noidlexprt`** — keeps server-side connection state alive even when idle. Avoids reconnect overhead between training steps on data mounts.
+**`noidlexprt`** — keeps server-side connection state alive even when idle. Avoids reconnect overhead between training steps on training data mounts, and between eval phases on eval data mounts.
 
 **`forcerdirplus`** — fetches file attributes alongside directory entries. Reduces round trips for readdir-heavy access patterns (loading many small files from a directory).
 
@@ -81,7 +97,7 @@ nfsstat -c
 cat /proc/net/rpc/nfsd
 nfsstat -s
 
-# Disk iowait — should spike during checkpoints, not during steady state
+# Disk iowait — periodic spikes expected during checkpoints and eval bursts; sustained high iowait means bottleneck
 iostat -x 2
 
 # Disk space — checkpoints accumulate
@@ -113,6 +129,6 @@ Key things to watch:
 1. `wdelay` on server export — addresses the core fan-in problem
 2. `nconnect=8+` on client — removes per-node TCP bottleneck
 3. `hard` mount for checkpoints — correctness, not performance
-4. `rsize`/`wsize=1M` — straightforward throughput for bulk I/O
+4. `rsize`/`wsize=1M` — for bulk sequential I/O (checkpoints, large dataset reads); use smaller values for random-access mounts
 5. `noatime` — eliminates spurious writes, minor but free
 6. NFS thread count — only matters once threads are saturated
