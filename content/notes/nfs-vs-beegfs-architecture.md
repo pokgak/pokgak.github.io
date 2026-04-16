@@ -4,15 +4,14 @@ date: 2026-04-16T16:57:45+0800
 tags: [infra, storage, nfs, beegfs, ml-training]
 ---
 
-NFS and BeeGFS are both common shared filesystems in GPU clusters, but their architectural differences create dramatically different performance profiles depending on the workload. This isn't about which is "better" — it's about understanding where each one wins and why.
+NFS and BeeGFS are both common shared filesystems in GPU clusters. Their architectural differences create dramatically different performance profiles depending on the workload.
 
 ## Architecture Overview
 
-**NFS** is a client-server model. One server exports a filesystem, clients mount it over the network. All metadata and data flows through a single server. Simple to operate, but the single server is both a scaling ceiling and a single point of failure.
+- **NFS** — client-server model. Single server exports a filesystem. Simple to operate, but the single server is both a scaling ceiling and a single point of failure.
+- **BeeGFS** — parallel filesystem. Separate metadata and data services, data striped across multiple storage targets. Clients talk directly to whichever storage server holds their data. Higher aggregate throughput, more moving parts, different caching semantics.
 
-**BeeGFS** is a parallel filesystem. Metadata and data are served by separate services, and data is striped across multiple storage targets. Clients talk directly to whichever storage server holds the data they need. This gives higher aggregate throughput but introduces more moving parts and different caching semantics.
-
-The key architectural difference that matters most in practice: **how they handle the kernel page cache**.
+The key difference that matters most in practice: **how they handle the kernel page cache**.
 
 ## Page Cache Behaviour
 
@@ -34,22 +33,18 @@ This is where the two filesystems diverge sharply.
 
 **BeeGFS** calls `invalidate_inode_pages2_range()` unconditionally on every `mmap()` — no version check, no conditional logic. Every time a file is memory-mapped, all cached pages for that file are evicted, regardless of whether the file changed.
 
-This is a deliberate design choice. BeeGFS targets HPC multi-writer workloads where multiple nodes can write the same file concurrently. Always-invalidate guarantees coherence without per-file server-side change tracking. NFS achieves the same guarantee selectively via the `change` attribute, which lets read-only files stay cached.
+Why BeeGFS is unconditional: it targets HPC multi-writer workloads where multiple nodes write the same file concurrently. Always-invalidate guarantees coherence without per-file change tracking. NFS achieves the same selectively via the `change` attribute.
 
 ### Multi-process mmap on the same node — where it really hurts
 
-This is where the unconditional invalidation goes from "slower warm loads" to "catastrophic I/O amplification."
+`invalidate_inode_pages2_range()` operates on the inode's `address_space`, **shared across all processes on the same node**. Process B's `mmap()` evicts all pages process A just loaded — same machine, same kernel, same unchanged file.
 
-`invalidate_inode_pages2_range()` operates on the inode's `address_space`, which is **shared across all processes on the same node**. If process A populates the page cache by mmapping a file, then process B mmaps the same unchanged file, B's `mmap()` evicts all of A's pages — even though they're on the same machine, in the same kernel, reading the same bytes.
+With N processes per node, the same file gets fetched N times instead of once. For a 61 GB model with TP=8:
 
-On NFS, process B finds A's pages still in cache (file unchanged → no invalidation) and reads at memory speed (~200 GB/s).
+- **NFS:** 61 GB fetched once, 7 remaining processes read from RAM. Total: **61 GB per node.**
+- **BeeGFS:** 61 GB fetched 8 times. Total: **488 GB per node.** All 8 contend for the same bandwidth.
 
-On BeeGFS, every process pays the full network read cost. With N processes per node, the same file gets fetched N times instead of once. For a 61 GB model with 8 processes (e.g., tensor parallelism TP=8):
-
-- **NFS:** 61 GB fetched once from server, 7 remaining processes read from RAM. Total I/O: **61 GB per node.**
-- **BeeGFS:** 61 GB fetched 8 times from storage. Total I/O: **488 GB per node.** All 8 processes contend for the same network bandwidth.
-
-That's an **8x I/O amplification per node** from a single `mmap()` implementation detail.
+**8x I/O amplification per node** from a single `mmap()` implementation detail.
 
 ### Summary table
 
@@ -88,12 +83,7 @@ Single-node benchmarks from a production cluster. BeeGFS with 1 metadata server 
 | NFS | 11.2s | 6.7s |
 | BeeGFS | 24.1s | 9.3s |
 
-Cold is similar everywhere — dominated by actual file I/O. Warm diverges because:
-
-- **NFS:** `open()` is local once the path is resolved. No per-file metadata RPC after the initial lookup is cached.
-- **BeeGFS:** Every `open()` requires a metadata RPC to the server when no other process has the file open. With 23k files imported sequentially, each one pays this RPC cost.
-
-The metadata RPC overhead interacts badly with Python's import lock — one slow file read holds the per-module lock, causing hundreds of threads to pile up on `futex` waits.
+Cold is similar — dominated by actual file I/O. Warm diverges: NFS caches `open()` lookups locally, while BeeGFS requires a metadata RPC per `open()` when no other process has the file open. With 23k files imported sequentially, each one pays this cost.
 
 ## Workload Analysis
 
@@ -107,42 +97,31 @@ Training loads the model once at job start, then the hot path is compute-bound w
 
 **Winner: NFS — 30x faster on warm loads.**
 
-Inference workloads that reload models frequently (e.g., swapping between models, restarting workers) benefit enormously from NFS's page cache retention. A 61 GB model loads in 0.3s warm on NFS vs 8.5s on BeeGFS — because on BeeGFS, every reload is effectively a cold load. There is no warm path.
-
-Add tensor parallelism and the gap widens further: with TP=8, NFS reads the model once and serves 7 workers from page cache. BeeGFS re-fetches it 8 times.
+0.3s warm on NFS vs 8.5s on BeeGFS. On BeeGFS every reload is effectively cold. With TP=8, the 8x I/O amplification stacks on top.
 
 ### RL Training with Weight Broadcasting
 
-**Winner: NFS, by a wide margin.** This is the workload where the mmap invalidation hurts most.
+**Winner: NFS, by a wide margin.** This is where the mmap invalidation hurts most.
 
-In reinforcement learning, a common pattern is: the trainer writes updated weights to shared storage, then multiple inference workers on each node load the same files. With tensor parallelism (e.g., TP=8), that's 8 processes per node mmapping the same model — every training step.
-
-This is the multi-process mmap problem from above, repeated on every weight update:
+Pattern: trainer writes updated weights to shared storage, multiple inference workers per node (TP=8) mmap the same files — every training step. This is the multi-process mmap problem repeated on every weight update:
 
 | | NFS | BeeGFS |
 | --- | --- | --- |
 | First worker | ~18s (cold) | ~10s (cold) |
 | Remaining 7 workers | ~0.3s each (page cache) | ~10s each (re-fetch) |
 | Total node I/O | 1x model size (61 GB) | **8x model size (488 GB)** |
-| Wall time (parallel) | ~18s (worker 0 dominates) | ~10s per worker, bandwidth-contended |
 
-On NFS, the model is read once per node — 7 of 8 workers get it from RAM at 200+ GB/s. On BeeGFS, every worker re-fetches the entire model from storage. Multiply this across every node in the cluster, and the storage fabric is handling 8x the total I/O for the same logical operation — on every single training step.
-
-This isn't a one-time cost at job startup. It's per-step overhead that compounds across the entire training run.
+Not a one-time cost at job startup — it's per-step overhead across the entire training run.
 
 ### Dataset Loading (Arrow/mmap)
 
-**Advantage: NFS for repeated epochs.**
-
-HuggingFace datasets use Arrow format with mmap. Same invalidation rules apply — BeeGFS re-fetches every epoch, NFS retains pages if the dataset hasn't changed.
+**NFS for repeated epochs.** HuggingFace datasets use Arrow format with mmap — same invalidation rules apply.
 
 ### Python Virtual Environments
 
-**Winner: Local NVMe, then NFS.**
+**Local NVMe, then NFS.** BeeGFS's per-file `open()` RPCs across 23k files make imports noticeably slower.
 
-Heavy Python imports generate thousands of metadata lookups. BeeGFS's per-file open() RPCs make this noticeably slower. Best practice: keep virtualenvs on local NVMe (`/scratch`). If shared is required, NFS is significantly faster for this pattern.
-
-## Workload Recommendation Summary
+## Recommendation Summary
 
 | Workload | Best Choice | Reason |
 | --- | --- | --- |
@@ -151,12 +130,6 @@ Heavy Python imports generate thousands of metadata lookups. BeeGFS's per-file o
 | Weight broadcast (multi-process) | NFS | Page cache shared across workers |
 | Checkpoints (write-once, read-once) | BeeGFS | High throughput, warm cache not needed |
 | Dataset reads (repeated epochs) | NFS | Pages survive between epochs |
-| Python imports / virtualenvs | Local NVMe > NFS | BeeGFS metadata RPCs amplify lock contention |
+| Python imports / virtualenvs | Local NVMe > NFS | BeeGFS metadata RPCs per open() |
 
-## The Takeaway
-
-The choice isn't NFS vs BeeGFS — it's understanding which I/O paths in your workload use `mmap()` vs `read()`, how often files are re-opened, and whether multiple processes on the same node read the same data.
-
-BeeGFS wins on raw parallel throughput for cold reads. NFS wins on anything that benefits from warm cache, which turns out to be a lot of ML workloads — especially inference and RL training patterns where the same large files are read repeatedly or by multiple processes.
-
-If your cluster runs both workload types, the practical answer is often "both" — BeeGFS for checkpoints and cold-start training data, NFS (or local NVMe) for model serving, virtual environments, and any path that benefits from page cache retention.
+BeeGFS wins on raw parallel cold throughput. NFS wins on anything that benefits from warm cache — which turns out to be most ML workloads. If your cluster runs both workload types, the answer is often "both."
