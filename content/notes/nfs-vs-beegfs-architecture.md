@@ -36,11 +36,20 @@ This is where the two filesystems diverge sharply.
 
 This is a deliberate design choice. BeeGFS targets HPC multi-writer workloads where multiple nodes can write the same file concurrently. Always-invalidate guarantees coherence without per-file server-side change tracking. NFS achieves the same guarantee selectively via the `change` attribute, which lets read-only files stay cached.
 
-### Multi-process impact on the same node
+### Multi-process mmap on the same node — where it really hurts
 
-The unconditional invalidation in BeeGFS operates on the inode's `address_space`, which is shared across all processes on the same node. If process A populates the page cache by mmapping a file, then process B mmaps the same file, B's `mmap()` evicts all pages A just loaded — even though they're on the same machine reading the same unchanged file.
+This is where the unconditional invalidation goes from "slower warm loads" to "catastrophic I/O amplification."
 
-On NFS, process B would find A's pages still in cache (file unchanged → no invalidation) and read at memory speed.
+`invalidate_inode_pages2_range()` operates on the inode's `address_space`, which is **shared across all processes on the same node**. If process A populates the page cache by mmapping a file, then process B mmaps the same unchanged file, B's `mmap()` evicts all of A's pages — even though they're on the same machine, in the same kernel, reading the same bytes.
+
+On NFS, process B finds A's pages still in cache (file unchanged → no invalidation) and reads at memory speed (~200 GB/s).
+
+On BeeGFS, every process pays the full network read cost. With N processes per node, the same file gets fetched N times instead of once. For a 61 GB model with 8 processes (e.g., tensor parallelism TP=8):
+
+- **NFS:** 61 GB fetched once from server, 7 remaining processes read from RAM. Total I/O: **61 GB per node.**
+- **BeeGFS:** 61 GB fetched 8 times from storage. Total I/O: **488 GB per node.** All 8 processes contend for the same network bandwidth.
+
+That's an **8x I/O amplification per node** from a single `mmap()` implementation detail. On a multi-node cluster, this multiplies further — every node independently re-fetches N times instead of once.
 
 ### Summary table
 
@@ -55,7 +64,7 @@ On NFS, process B would find A's pages still in cache (file unchanged → no inv
 
 ## Real Benchmark Numbers
 
-Benchmarks from a production cluster: 64 compute nodes, BeeGFS across 4 storage targets with RDMA, NFS over TCP to a single server, local NVMe as baseline.
+Single-node benchmarks from a production cluster (64 nodes total). BeeGFS across 4 storage targets with RDMA, NFS over TCP to a single server, local NVMe as baseline. Numbers reflect one node reading — real-world aggregate load from many nodes would increase contention on both filesystems.
 
 ### Large model loading (61 GB, safetensors/mmap)
 
@@ -96,25 +105,30 @@ Training loads the model once at job start, then the hot path is compute-bound w
 
 ### Inference with Model Reloads
 
-**Winner: NFS, dramatically.**
+**Winner: NFS — 30x faster on warm loads.**
 
-Inference workloads that reload models frequently (e.g., swapping between models, restarting workers) benefit enormously from NFS's page cache retention. A model that takes 18s cold loads in 0.3s warm on NFS. On BeeGFS, every reload is a cold load.
+Inference workloads that reload models frequently (e.g., swapping between models, restarting workers) benefit enormously from NFS's page cache retention. A 61 GB model loads in 0.3s warm on NFS vs 8.5s on BeeGFS — because on BeeGFS, every reload is effectively a cold load. There is no warm path.
+
+Add tensor parallelism and the gap widens further: with TP=8, NFS reads the model once and serves 7 workers from page cache. BeeGFS re-fetches it 8 times.
 
 ### RL Training with Weight Broadcasting
 
-**Winner: NFS.**
+**Winner: NFS, by a wide margin.** This is the workload where the mmap invalidation hurts most.
 
-In reinforcement learning, a common pattern is: the trainer writes updated weights to shared storage, then multiple inference workers on each node load the same files. With tensor parallelism (e.g., TP=8), that's 8 processes per node reading the same model.
+In reinforcement learning, a common pattern is: the trainer writes updated weights to shared storage, then multiple inference workers on each node load the same files. With tensor parallelism (e.g., TP=8), that's 8 processes per node mmapping the same model — every training step.
 
-On NFS, the first worker pays the cold read cost, and the remaining 7 hit the page cache at RAM speed. Total I/O per node: 1x the model size.
-
-On BeeGFS, each worker's `mmap()` evicts the pages the previous worker just loaded. Total I/O per node: 8x the model size, all contending for the same storage bandwidth.
+This is the multi-process mmap problem from above, repeated on every weight update:
 
 | | NFS | BeeGFS |
 | --- | --- | --- |
 | First worker | ~18s (cold) | ~10s (cold) |
 | Remaining 7 workers | ~0.3s each (page cache) | ~10s each (re-fetch) |
-| Total node I/O | 1x model size | 8x model size |
+| Total node I/O | 1x model size (61 GB) | **8x model size (488 GB)** |
+| Wall time (parallel) | ~18s (worker 0 dominates) | ~10s per worker, bandwidth-contended |
+
+On NFS, the model is read once per node — 7 of 8 workers get it from RAM at 200+ GB/s. On BeeGFS, every worker re-fetches the entire model from storage. Multiply this across every node in the cluster, and the storage fabric is handling 8x the total I/O for the same logical operation — on every single training step.
+
+This isn't a one-time cost at job startup. It's per-step overhead that compounds across the entire training run.
 
 ### Dataset Loading (Arrow/mmap)
 
