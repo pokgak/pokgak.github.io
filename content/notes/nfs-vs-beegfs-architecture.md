@@ -49,7 +49,7 @@ On BeeGFS, every process pays the full network read cost. With N processes per n
 - **NFS:** 61 GB fetched once from server, 7 remaining processes read from RAM. Total I/O: **61 GB per node.**
 - **BeeGFS:** 61 GB fetched 8 times from storage. Total I/O: **488 GB per node.** All 8 processes contend for the same network bandwidth.
 
-That's an **8x I/O amplification per node** from a single `mmap()` implementation detail. On a multi-node cluster, this multiplies further — every node independently re-fetches N times instead of once.
+That's an **8x I/O amplification per node** from a single `mmap()` implementation detail.
 
 ### Summary table
 
@@ -64,7 +64,7 @@ That's an **8x I/O amplification per node** from a single `mmap()` implementatio
 
 ## Real Benchmark Numbers
 
-Single-node benchmarks from a production cluster (64 nodes total). BeeGFS across 4 storage targets with RDMA, NFS over TCP to a single server, local NVMe as baseline. Numbers reflect one node reading — real-world aggregate load from many nodes would increase contention on both filesystems.
+Single-node benchmarks from a production cluster. BeeGFS with 1 metadata server and 4 storage targets (OSTs) over RDMA, NFS over TCP to a single server, local NVMe as baseline.
 
 ### Large model loading (61 GB, safetensors/mmap)
 
