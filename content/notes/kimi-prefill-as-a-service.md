@@ -18,14 +18,9 @@ Two mechanisms combined:
 
 MLA is still full attention — every token attends to every previous token. The compression is in storage only, not the computation graph. KV cache still grows with sequence length.
 
-**KDA (Kimi Delta Attention)** — a linear attention variant. Replaces softmax with a kernel approximation that allows the attention computation to be expressed as a recurrent state update:
+**KDA (Kimi Delta Attention)** — a linear attention variant. Instead of storing per-token K/V vectors, it maintains a single fixed-size summary matrix `S` that gets updated as each new token arrives. Processing a new token means: fold that token's information into `S`, then read out from `S` to produce the output. The matrix size never changes no matter how many tokens you've seen.
 
-```
-S_t = S_{t-1} + φ(k_t)ᵀ · v_t   ← fixed-size state, O(1) update
-output_t = φ(q_t) · S_t
-```
-
-What gets cached: a single fixed-size state matrix `S`, regardless of sequence length. No per-token storage at all.
+What gets cached: just `S` — one fixed matrix, regardless of sequence length. No per-token storage at all.
 
 The tradeoff: the recurrent state is lossy — it compresses all past tokens into a fixed-size matrix, so precise recall of specific tokens degrades over long contexts.
 
@@ -53,14 +48,9 @@ Short requests stay local. Only requests above a length threshold `t` get offloa
 
 ## How is the threshold `t` determined?
 
-Grid search over two equilibrium conditions:
+The goal is to find the `t` where no stage is idle while another is saturated — PrfaaS, local prefill, and decode all hit their ceiling at the same time. Too low a threshold and you flood PrfaaS with short requests it doesn't need to handle. Too high and PrfaaS sits underutilised while local prefill is the bottleneck.
 
-```
-Θ_prfaas / p  =  Θ_pd-p / (1-p)      # PrfaaS and local prefill balanced
-Θ_prfaas + Θ_pd-p  =  Θ_pd-d         # total prefill balanced against decode
-```
-
-`p = P(L > t)` is the fraction of requests that exceed the threshold. The optimum is where all three pipeline stages (PrfaaS, local prefill, decode) hit their ceiling simultaneously. In the paper's case study: **t = 19.4K tokens**, routing ~50% of requests to PrfaaS.
+They grid-search over `t` (and the prefill/decode node split) until the throughput of each stage matches up. In the paper's case study: **t = 19.4K tokens**, routing ~50% of requests to PrfaaS.
 
 ## What does a naive approach get wrong?
 
@@ -74,23 +64,15 @@ Yes, and this is bandwidth-dependent.
 
 The threshold applies to **incremental prefill length** (uncached tokens only), not total length. If a prefix is cached somewhere, you only prefill what's new.
 
-Cache can exist at two places: local PD cluster (`l_pd`) or PrfaaS cluster (`l_prfaas`).
+Cache can exist at two places: local PD cluster or PrfaaS cluster.
 
-**When bandwidth is scarce** — only look at local cache:
-```
-if l_total - l_pd ≤ t  →  serve locally
-else                   →  offload to PrfaaS
-```
+**When bandwidth is scarce** — only look at local cache. Subtract whatever is cached locally from the total, check if the remaining work fits under `t`.
 
-**When bandwidth is abundant** — shop across both:
-```
-if l_total - max(l_prfaas, l_pd) ≤ t  →  serve locally, transfer PrfaaS cache if bigger
-else                                   →  offload to PrfaaS
-```
+**When bandwidth is abundant** — look at whichever cache (local or PrfaaS) has more tokens cached. Use that as your starting point, subtract from total, check against `t`. If the PrfaaS cache was bigger, transfer it over the WAN and prefill the remainder locally.
 
-Example: 30K token request, `t = 19.4K`, local cache = 10K, PrfaaS cache = 25K.  
-- Scarce: `30K - 10K = 20K > t` → offload. PrfaaS uses its 25K cache, prefills 5K.  
-- Abundant: `30K - 25K = 5K ≤ t` → serve locally. Transfer PrfaaS 25K cache over WAN, prefill 5K locally.
+Example: 30K token request, `t = 19.4K`, local cache = 10K, PrfaaS cache = 25K.
+- Scarce: remaining work = 30K - 10K = 20K, which is over `t` → offload. PrfaaS uses its own 25K cache, only prefills 5K new tokens.
+- Abundant: best cache = 25K (PrfaaS wins), remaining work = 30K - 25K = 5K, under `t` → serve locally. Transfer the 25K PrfaaS cache over WAN, prefill 5K locally.
 
 The scheduler monitors PrfaaS egress utilization and adjusts `t` upward when the link is congested.
 
@@ -101,7 +83,7 @@ MLA and KDA layers have fundamentally different cache shapes:
 - **MLA** — per-token latent vectors, grows with length, supports partial prefix matching at block granularity (radix tree lookup on token hash)
 - **KDA** — single fixed-size recurrent state matrix `S`, size independent of length, exact-match only
 
-KDA can't support partial hits because `S_t` is a lossy compression of tokens 1..t — there's no way to reconstruct `S_40K` from `S_45K`. The state is non-invertible.
+KDA can't support partial hits because the summary matrix is lossy — folding in 45K tokens produces a different matrix than folding in 40K, and there's no way to "undo" the last 5K tokens to recover the earlier state. So a cache hit only works if the cached prefix is exactly the same length.
 
 **Solution:** separate KVCache groups (one per layer type) but a single shared physical pool with aligned block sizes. One allocator, one free list, no fragmentation from size class differences. Reuse lookup logic is per-group.
 
