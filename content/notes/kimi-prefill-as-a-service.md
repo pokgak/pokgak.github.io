@@ -1,7 +1,7 @@
 ---
 title: "Kimi Prefill-as-a-Service: Cross-Datacenter KV Cache"
 date: 2026-04-26T23:54:38+0800
-tags: [llm, inference, kv-cache, distributed-systems, attention]
+tags: [llm, inference, kv-cache, distributed-systems, attention, papers]
 ---
 
 Reading through the Kimi paper "Prefill-as-a-Service: KVCache of Next-Generation Models Could Go Cross-Datacenter." The core claim: you can split prefill and decode across geographically separate datacenters if the model is architected to make KV cache small enough to transfer over Ethernet. Working through the architecture and scheduling from first principles.
