@@ -8,7 +8,7 @@ tags: [tla+, distributed-systems, databases, formal-methods]
 
 ---
 
-The context: I've been looking at [NodeDB](https://github.com/nodeDB-Lab/nodedb), a distributed database with a Rust implementation. All analysis is based on a snapshot of the codebase at commit [`44ff3d68`](https://github.com/nodeDB-Lab/nodedb/commit/44ff3d68e86d2994eed7f22be441bdfb33ffa77e) (2026-04-30). The TLA+ specs are on the [`tlaplus/correctness-specs`](https://github.com/pokgak/nodedb/tree/tlaplus/correctness-specs/tlaplus) branch of my fork. Reading the code, I found a few places where the implementation seemed to diverge from what the comments described. Instead of just writing it up as prose bugs, I wanted to try TLA+ to make the case more formally.
+The context: I've been looking at [NodeDB](https://github.com/nodeDB-Lab/nodedb), a distributed database with a Rust implementation. Initial analysis was based on commit [`44ff3d68`](https://github.com/nodeDB-Lab/nodedb/commit/44ff3d68e86d2994eed7f22be441bdfb33ffa77e) (2026-04-30); re-inspected against upstream [`6bfcbe93`](https://github.com/nodeDB-Lab/nodedb/commit/6bfcbe93) (2026-05-03) after the author indicated recent commits addressed some issues. The TLA+ specs are on the [`tlaplus/correctness-specs`](https://github.com/pokgak/nodedb/tree/tlaplus/correctness-specs/tlaplus) branch of my fork. Reading the code, I found a few places where the implementation seemed to diverge from what the comments described. Instead of just writing it up as prose bugs, I wanted to try TLA+ to make the case more formally.
 
 This is **not** spec-first design (the AWS/FoundationDB approach where you write TLA+ before writing code). It's closer to a formal post-mortem: read the code, form hypotheses, encode them as specs, and let TLC produce counterexample traces that are harder to argue with than prose.
 
@@ -96,11 +96,8 @@ ConflictDetected(t) ==
 
 ## Bug 2: Cross-coordinator ordering
 
-> **Caveat discovered after publication:** The `TransactionCoordinator` struct modeled below (`nodedb-cluster/src/cross_shard_txn.rs`) is exported but never instantiated in production code — only in unit tests. No feature flag, no binary entry point, no production call site.
->
-> We initially believed production cross-shard transactions flowed through `nodedb/src/event/cross_shard/` — a `CrossShardDispatcher`/`CrossShardReceiver` pattern with per-target-node QUIC queues and a persistent DLQ. On further investigation, that subsystem is **also not wired up**: `cross_shard_dispatcher` is initialized to `None` in both server init paths (`control/state/init.rs:254, 567`), and the dispatcher task is gated behind a `Some` check that never fires. `dispatcher.enqueue()` has no production callers outside tests.
->
-> We haven't yet traced what actually handles cross-shard writes in production (a candidate is `coordinate_cross_shard_hop` in `control/scatter_gather.rs`, used by the graph BFS path). The cross-shard correctness claims in this section are unverified against any running code path. This is a concrete instance of the model-fidelity gap discussed at the bottom of the note, observed twice over.
+> **Updated after re-inspection at upstream `6bfcbe93` (2026-05-03):**
+> The `TransactionCoordinator` modeled below remains dead code. Upstream added a new `CrossShardForward` WAL variant with a receive-side apply path (`distributed_applier/apply_loop.rs`) — the intended production mechanism. The coordinator-side send path is not yet implemented. We wrote `CrossShardForward_Impl.tla` modeling the new mechanism: the ordering bug persists because entries from different coordinators still arrive at target shards as independent Raft proposals with no global sequencer. TLC found the same violation in 814 states.
 
 ### The invariant and where it comes from
 
@@ -149,7 +146,8 @@ The code comments claim "Calvin protocol" — real Calvin requires a single glob
 
 ## Bug 3: Coordinator crash recovery
 
-> **Same caveat as Bug 2:** `TransactionCoordinator` is dead code. The `CrossShardDispatcher` path we initially thought was the live replacement turns out to also be unwired — `cross_shard_dispatcher` is always `None` at startup. What actually handles cross-shard writes in production is an open question we haven't answered. The crash scenario below applies to the undeployed coordinator code only.
+> **Updated after re-inspection at upstream `6bfcbe93` (2026-05-03):**
+> `TransactionCoordinator` remains dead code. The new `CrossShardForward` receive path (`apply_cross_shard_forward`) has no idempotency check — on Raft log replay after a shard crash, the same entry re-executes. We wrote `CrossShardForwardCrash_Impl.tla` modeling this: shard applies entry, crashes, restarts, applies again — `apply_count = 2`. TLC found the violation in 16 states. The send path is not yet implemented, so this applies to the intended mechanism, not current behavior.
 
 ### The invariant and where it comes from
 
