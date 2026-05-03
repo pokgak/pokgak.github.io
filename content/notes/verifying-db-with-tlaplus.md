@@ -8,7 +8,7 @@ tags: [tla+, distributed-systems, databases, formal-methods]
 
 ---
 
-The context: I've been looking at [NodeDB](https://github.com/nodeDB-Lab/nodedb), a distributed database with a Rust implementation. All analysis is based on commit [`44ff3d68`](https://github.com/pokgak/nodedb/commit/44ff3d68e86d2994eed7f22be441bdfb33ffa77e) (2026-04-30). The TLA+ specs are on the [`tlaplus/correctness-specs`](https://github.com/pokgak/nodedb/tree/tlaplus/correctness-specs/tlaplus) branch. Reading the code, I found a few places where the implementation seemed to diverge from what the comments described. Instead of just writing it up as prose bugs, I wanted to try TLA+ to make the case more formally.
+The context: I've been looking at [NodeDB](https://github.com/nodeDB-Lab/nodedb), a distributed database with a Rust implementation. All analysis is based on commit [`44ff3d68`](https://github.com/nodeDB-Lab/nodedb/commit/44ff3d68e86d2994eed7f22be441bdfb33ffa77e) (2026-04-30). The TLA+ specs are on the [`tlaplus/correctness-specs`](https://github.com/pokgak/nodedb/tree/tlaplus/correctness-specs/tlaplus) branch of my fork. Reading the code, I found a few places where the implementation seemed to diverge from what the comments described. Instead of just writing it up as prose bugs, I wanted to try TLA+ to make the case more formally.
 
 This is **not** spec-first design (the AWS/FoundationDB approach where you write TLA+ before writing code). It's closer to a formal post-mortem: read the code, form hypotheses, encode them as specs, and let TLC produce counterexample traces that are harder to argue with than prose.
 
