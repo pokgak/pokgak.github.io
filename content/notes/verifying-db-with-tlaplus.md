@@ -80,7 +80,7 @@ for (_collection, _doc_id, read_lsn) in &read_set {
 }
 ```
 
-`_collection` and `_doc_id` are ignored. The condition checks: "has the global WAL LSN advanced past this read?" — a global write fence. In the trace above, T2's commit advanced `current` (global `wal_lsn`) from 0 to 1. When T1 evaluates `current (1) > read_lsn (0)`, it fires — even though `d1` was never touched.
+`_collection` and `_doc_id` are ignored. The condition checks: "has the node's WAL LSN advanced past this read?" — a node-local write fence. `self.state.wal.next_lsn()` is the WAL for this specific node, not the whole cluster. In a distributed deployment, writes landing on other nodes don't advance this WAL. The false abort is therefore scoped to **intra-node concurrent transactions**: any two transactions on the same node touching unrelated documents will abort each other. Cross-node writes are dispatched through a separate event-plane path and don't contribute to this WAL position. In the trace above, T2's commit advanced `current` (global `wal_lsn`) from 0 to 1. When T1 evaluates `current (1) > read_lsn (0)`, it fires — even though `d1` was never touched.
 
 The impl spec encodes this faithfully:
 
@@ -95,6 +95,12 @@ ConflictDetected(t) ==
 ---
 
 ## Bug 2: Cross-coordinator ordering
+
+> **Caveat discovered after publication:** The `TransactionCoordinator` struct modeled below (`nodedb-cluster/src/cross_shard_txn.rs`) is exported but never instantiated in production code — only in unit tests. No feature flag, no binary entry point, no production call site.
+>
+> We initially believed production cross-shard transactions flowed through `nodedb/src/event/cross_shard/` — a `CrossShardDispatcher`/`CrossShardReceiver` pattern with per-target-node QUIC queues and a persistent DLQ. On further investigation, that subsystem is **also not wired up**: `cross_shard_dispatcher` is initialized to `None` in both server init paths (`control/state/init.rs:254, 567`), and the dispatcher task is gated behind a `Some` check that never fires. `dispatcher.enqueue()` has no production callers outside tests.
+>
+> We haven't yet traced what actually handles cross-shard writes in production (a candidate is `coordinate_cross_shard_hop` in `control/scatter_gather.rs`, used by the graph BFS path). The cross-shard correctness claims in this section are unverified against any running code path. This is a concrete instance of the model-fidelity gap discussed at the bottom of the note, observed twice over.
 
 ### The invariant and where it comes from
 
@@ -142,6 +148,8 @@ The code comments claim "Calvin protocol" — real Calvin requires a single glob
 ---
 
 ## Bug 3: Coordinator crash recovery
+
+> **Same caveat as Bug 2:** `TransactionCoordinator` is dead code. The `CrossShardDispatcher` path we initially thought was the live replacement turns out to also be unwired — `cross_shard_dispatcher` is always `None` at startup. What actually handles cross-shard writes in production is an open question we haven't answered. The crash scenario below applies to the undeployed coordinator code only.
 
 ### The invariant and where it comes from
 
