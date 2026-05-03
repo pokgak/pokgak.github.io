@@ -32,19 +32,43 @@ For a learning exercise on a codebase I didn't design, post-hoc made sense. For 
 
 Rather than one monolithic spec, I used three layers per subsystem:
 
-1. **Reference spec** — what does "correct" look like? Define invariants independently of any implementation.
-2. **Protocol spec** — what does the code *intend* to do? Model the design as described in comments and docs. Verify it satisfies the reference invariants.
-3. **Implementation spec** — what does the code *actually* do? One targeted change per spec. Verify TLC finds the expected violation.
+1. **Reference spec** — defines what "correct" looks like. This is where invariants live — derived from first principles (database theory, distributed systems literature), not from reading the code. Both the protocol spec and impl spec are checked against these invariants.
+2. **Protocol spec** — models what the code *intends* to do, as described in comments and docs. Verified it satisfies the reference invariants.
+3. **Implementation spec** — models what the code *actually* does. One targeted change per spec. Verified TLC finds the expected violation.
 
-**Why three layers instead of two?** You could skip the protocol spec and go straight from reference to impl. But if the impl spec violates an invariant, you don't know if the *design* is broken or the *code* just drifted from a sound design. The protocol spec answers that. For all three bugs here, the protocol spec passed — meaning the designs are internally sound and the violations are pure implementation drift. That's a more precise diagnosis.
-
-If the protocol spec had *also* violated an invariant, the bug would be in the design itself, not just the code. A different kind of fix is required.
+**Why three layers instead of two?** If the impl spec violates an invariant, you don't know if the *design* is broken or the *code* just drifted from a sound design. The protocol spec answers that. For all three bugs here, the protocol spec passed — meaning the designs are sound and the violations are pure implementation drift. If the protocol spec had also failed, the bug would be in the design, requiring a different kind of fix.
 
 ---
 
 ## Bug 1: False aborts in Snapshot Isolation
 
-**The hypothesis**: The conflict detection ignores which document was modified. It aborts any transaction if *any* write happened globally since the snapshot — even writes to unrelated documents by different tenants.
+### The invariant and where it comes from
+
+Snapshot Isolation is a well-defined isolation level from the database literature. Its core guarantee: **a transaction aborts only if there is a genuine write-write conflict** — another committed transaction modified a key that this transaction also read or wrote. Unrelated writes by other transactions must never cause an abort.
+
+This gives us `NoFalseAborts` directly — it's not derived from the code, it's the SI definition stated formally:
+
+```tla
+NoFalseAborts ==
+    \A t \in TxnIds :
+        tx_state[t] = "aborted"
+        =>
+        \E entry \in tx_read_set[t] :
+            doc_lsn[entry.doc] > entry.read_lsn
+```
+
+"If a transaction aborted, there must exist a document it read whose LSN actually increased — meaning someone else committed a write to that exact document."
+
+### The violation trace
+
+1. T1 reads `d1` at `doc_lsn["d1"] = 0`, records `read_lsn = 0`
+2. T2 writes `d2` only (a different document, no reads), commits — `wal_lsn` advances to 1, `doc_lsn["d2"] = 1`, `doc_lsn["d1"]` stays 0
+3. T1 tries to commit — the implementation checks the condition, aborts T1
+4. TLC checks `NoFalseAborts` for T1: `tx_state[T1] = "aborted"` is true, so it looks for a document T1 read whose LSN increased. T1 only read `d1`, and `doc_lsn["d1"] = 0 = entry.read_lsn`. **No such document exists — invariant violated.**
+
+T2 having no reads is important: if T2 also read a document, it could have been aborted under this implementation too. Making T2 write-only ensures it commits cleanly and advances `wal_lsn`, which is the exact setup needed to trigger T1's false abort.
+
+### How the implementation produces this trace
 
 The code in `transaction_cmds.rs`:
 
@@ -56,19 +80,9 @@ for (_collection, _doc_id, read_lsn) in &read_set {
 }
 ```
 
-`_collection` and `_doc_id` are both ignored (underscore prefix). The check is: "has the global WAL LSN advanced past this read?" That's a global write fence, not per-document conflict detection.
+`_collection` and `_doc_id` are ignored. The condition checks: "has the global WAL LSN advanced past this read?" — a global write fence. In the trace above, T2's commit advanced `current` (global `wal_lsn`) from 0 to 1. When T1 evaluates `current (1) > read_lsn (0)`, it fires — even though `d1` was never touched.
 
-**Encoding the intended protocol** (`SIProtocol.tla`):
-
-```tla
-ConflictDetected(t) ==
-    \E entry \in tx_read_set[t] :
-        doc_lsn[entry.doc] > entry.read_lsn
-```
-
-Abort only when the specific document a transaction read has a newer LSN — meaning someone else committed a write to that exact document.
-
-**Encoding the actual implementation** (`SIProtocol_Impl.tla`):
+The impl spec encodes this faithfully:
 
 ```tla
 ConflictDetected(t) ==
@@ -76,30 +90,40 @@ ConflictDetected(t) ==
         wal_lsn > entry.read_lsn /\ wal_lsn > tx_snap[t]
 ```
 
-The key change: `doc_lsn[entry.doc]` replaced by `wal_lsn`. Both conjuncts mirror the Rust exactly. The second conjunct (`wal_lsn > tx_snap[t]`) is technically redundant — since `read_lsn >= snapshot_lsn` always holds, `wal_lsn > read_lsn` implies `wal_lsn > snapshot_lsn` — but it's in the Rust and keeping it in the spec is a deliberate fidelity choice. If we dropped it, we'd be checking a slightly different predicate than what the code does.
-
-**The invariant** (`NoFalseAborts`):
-
-```tla
-NoFalseAborts ==
-    \A t \in TxnIds :
-        tx_state[t] = "aborted"
-        =>
-        \E entry \in tx_read_set[t] :
-            doc_lsn[entry.doc] > entry.read_lsn
-```
-
-"If a transaction aborted, there must exist a document it read that was actually modified by someone else."
-
-TLC found a violation in 1,116 states. The counterexample: T1 reads `d1`, T2 writes `d2` only (no reads, so T2's own `ConflictDetected` won't fire), T2 commits first (advancing `wal_lsn` from 0 to 1), T1 then tries to commit — `wal_lsn (1) > read_lsn (0)` is true, so T1 aborts. But `doc_lsn["d1"]` is still 0 — `d1` was never touched.
-
-The reason T2 having no reads matters: if T2 had also read some document, it could have aborted too under this implementation. Making T2 a write-only transaction ensures it commits cleanly and advances `wal_lsn`, which is exactly the setup needed to trigger T1's false abort.
+`wal_lsn` → `current`, `entry.read_lsn` → `*read_lsn`, `tx_snap[t]` → `snapshot_lsn`. The second conjunct is technically redundant (since `read_lsn >= snapshot_lsn` always, `wal_lsn > read_lsn` implies `wal_lsn > snapshot_lsn`) but kept to mirror the Rust exactly. TLC found the violation in 1,116 states.
 
 ---
 
 ## Bug 2: Cross-coordinator ordering
 
-The code uses per-node monotonic counters for transaction IDs. Two coordinators assign IDs from independent sequences. Shards receive `ForwardEntry` messages and apply them, but there's no global sequencer to agree on a total order across coordinators.
+### The invariant and where it comes from
+
+Distributed database correctness requires that all replicas agree on the order in which transactions are applied. If two shards apply the same two transactions in different orders, they will diverge. This is the replica agreement principle — a fundamental requirement for any system claiming consistent cross-shard transactions.
+
+```tla
+CrossCoordOrderHolds ==
+    \A t1, t2 \in Txns :
+        /\ t1 # t2
+        /\ txn_coord[t1] # txn_coord[t2]   \* different coordinators
+        /\ \A s \in Shards : AppliedOn(t1, s) /\ AppliedOn(t2, s)
+        =>
+        \* All shards agree on the relative order of t1 and t2.
+        \/ \A s \in Shards : PosInShardLog(t1, s) < PosInShardLog(t2, s)
+        \/ \A s \in Shards : PosInShardLog(t2, s) < PosInShardLog(t1, s)
+```
+
+"For any two transactions from different coordinators that both shards applied, all shards must have applied them in the same relative order."
+
+### The violation trace
+
+1. Coordinator `c1` proposes `txn_A`, coordinator `c2` proposes `txn_B` — simultaneously, with no global ordering
+2. Shard `s1` receives `txn_A` first, applies `[txn_A, txn_B]`
+3. Shard `s2` receives `txn_B` first, applies `[txn_B, txn_A]`
+4. `CrossCoordOrderHolds` checks: `PosInShardLog(txn_A, s1) = 1 < PosInShardLog(txn_A, s2) = 2` but `PosInShardLog(txn_B, s1) = 2 > PosInShardLog(txn_B, s2) = 1`. Neither ordering holds globally — **invariant violated.**
+
+### How the implementation produces this trace
+
+The code uses per-node monotonic counters with no global sequencer:
 
 ```rust
 pub struct TransactionCoordinator {
@@ -109,31 +133,53 @@ pub struct TransactionCoordinator {
 }
 ```
 
-The protocol spec models the *intended* behavior (global order), passes TLC. The impl spec models two independent coordinators with no ordering mechanism. TLC found a violation in 814 states: shard `s1` applies `[txn_A, txn_B]` while shard `s2` applies `[txn_B, txn_A]`.
+Two coordinators assign IDs from independent sequences. `ForwardEntry` messages arrive at shards in non-deterministic order. Nothing enforces a consistent global order across coordinators — shards apply in arrival order. The impl spec models this: two coordinators each with their own counter, shards with a non-deterministic inbox. TLC found the violation in 814 states.
 
-**A gotcha that made the spec pass vacuously**: if `Coordinators = {1,2}` and `Shards = {1,2}`, the process ID sets overlap. TLC builds a unified `ProcSet` and assigns initial `pc` state based on the first matching clause in the `CASE` statement. Since coordinators come first, shard processes also start at the coordinator label and never reach the `Apply` step. The spec "passed" in 26 states with no shard log entries ever written.
+The code comments claim "Calvin protocol" — real Calvin requires a single global sequencer that imposes a total order before execution. That global sequencer doesn't exist here.
 
-**Why this is dangerous**: a spec that passes vacuously looks like a passing spec. The signal was the suspiciously low state count (26 states) and an empty shard log. After switching to disjoint string IDs (`Coordinators = {"c1","c2"}`, `Shards = {"s1","s2"}`), TLC immediately found the `CrossCoordOrderHolds` violation in 814 states.
-
-**Rule of thumb**: after a spec passes faster than expected, check whether the interesting processes actually ran. Look at the state count vs. what you'd expect, and inspect key variables (shard logs, message queues) to confirm they have entries.
+**A gotcha that made the spec pass vacuously**: with `Coordinators = {1,2}` and `Shards = {1,2}`, the process ID sets overlap and shard processes never run. The spec "passed" in 26 states with an empty shard log. Switching to disjoint string IDs (`{"c1","c2"}` and `{"s1","s2"}`) immediately produced the real violation. After any unexpected fast pass: check that the interesting processes actually ran and that key variables have entries.
 
 ---
 
 ## Bug 3: Coordinator crash recovery
 
-The `pending` map (in-flight transactions) lives only in process memory. If the coordinator crashes after proposing a transaction to its local Raft log but before forwarding to all target shards, there's no recovery path — `pending` is gone on restart, and no code replays the Raft log.
+### The invariant and where it comes from
 
-```rust
-// On crash: pending (HashMap) is lost.
-// On restart: fresh TransactionCoordinator::new() — pending = {}.
-// No Raft log replay path exists.
+Crash safety requires that durable state survives process restarts. If a transaction was durably committed to the Raft log, it must eventually be applied on all its target shards — even if the coordinator crashes mid-way through forwarding. This is the standard crash-recovery principle that 2PC was designed to guarantee.
+
+From the reference spec (`CoordinatorRecovery.tla`):
+
+```tla
+NoOrphanedApply ==
+    \A t \in TxnIds :
+        DurablelyProposed(t) /\ txn_state[t] = "committed"
+        =>
+        \A s \in raft_log[entry].shards : t \in shard_applied[s]
 ```
 
-The reference spec (`CoordinatorRecovery.tla`) models correct recovery: on restart, replay the Raft log and re-forward any durably proposed transactions. The impl spec wipes `pending` on restart and does nothing else. TLC violation (`NoOrphanedApply`): shard `s1` applied the transaction, coordinator crashed, shard `s2` never received the forward.
+"Every durably proposed, committed transaction must be applied on all its target shards."
 
-**A subtle invariant design problem**: `PendingFor(t) = {}` is true in two distinct situations — (1) before the transaction is proposed (it doesn't exist yet), and (2) after crash+restart (it was wiped). If the invariant just checks `PendingFor(t) = {}`, it fires on every initial state, which is wrong.
+### The violation trace
 
-The fix is an asymmetric trigger:
+1. Coordinator proposes transaction `t1` to its local Raft log — durably committed
+2. Coordinator forwards `ForwardEntry` to shard `s1` — `s1` applies `t1`
+3. Coordinator crashes before forwarding to `s2` — `pending` (in-memory HashMap) is wiped
+4. Coordinator restarts with empty `pending` — no replay path, `t2` is forgotten
+5. `NoOrphanedApply` checks: `t1` is durably in the Raft log and `s1` applied it, but `s2` never received the forward. **Invariant violated.**
+
+### How the implementation produces this trace
+
+```rust
+pub struct TransactionCoordinator {
+    next_txn_id: u64,
+    pending: HashMap<u64, TxnState>,  // in-memory only — lost on crash
+    node_id: u64,
+}
+```
+
+`pending` is not persisted. On restart, `TransactionCoordinator::new()` starts with empty `pending`. No code replays the Raft log to reconstruct in-flight transactions. The impl spec models this: `Crash()` wipes `pending`, `Restart()` starts with `pending = {}`. TLC found the violation in 588 states.
+
+**A subtle invariant design problem**: `PendingFor(t) = {}` is true in two situations — before proposal (the transaction doesn't exist yet) and after crash+restart (it was wiped). The invariant needs a guard to fire only in the crash case:
 
 ```tla
 NoOrphanedApply ==
@@ -145,48 +191,44 @@ NoOrphanedApply ==
         => FullyApplied(t)
 ```
 
-This fires only when `t` is durably in the Raft log AND some shard applied `t` AND the coordinator is alive but has no pending entry. That combination is impossible in normal operation — in the normal path, even after all shards are forwarded, the coordinator keeps the entry in `pending` with an empty `waiting` set. `PendingFor(t) = {}` only becomes true after crash+restart wiped the map entirely. The asymmetry is deliberate and is what makes the invariant precise.
-
-**The design lesson**: when writing a safety invariant for "a state that should never be stable," sketch all three cases: (1) before the operation, (2) during normal completion, (3) after the bug scenario. The trigger condition must be false for (1) and (2) but true only for (3).
+In normal operation, even after all shards are forwarded, the coordinator keeps the entry in `pending` with an empty `waiting` set — so `PendingFor(t) = {}` is false. Only after crash+restart is `pending` wiped entirely. This asymmetry is deliberate: it makes the invariant fire precisely in the bug case and nowhere else. Sketch the three cases when designing any safety invariant — before the operation, during normal completion, and after the bug scenario — and verify the trigger is false for the first two.
 
 ---
 
 ## Gap 4: HLC not applied to data transactions (skipped)
 
-There's a fourth gap identified in the analysis: NodeDB's Hybrid Logical Clock (HLC) is applied to metadata operations (DDL, descriptor leases) but not to regular data transactions. Data transactions use WAL LSN, which is local per-node — meaning cross-node data reads can observe different orderings depending on which node serves the read.
+There's a fourth gap: NodeDB's Hybrid Logical Clock is applied to metadata operations (DDL, descriptor leases) but not to regular data transactions. Data transactions use WAL LSN, which is local per-node — cross-node data reads can observe different orderings depending on which node serves the read.
 
-**Why no impl spec for this one**: it's an architectural choice spread across multiple files rather than a single code path, and it was flagged as lower-priority. Writing a meaningful spec would require modelling the full distributed read path, not just one targeted change. The tradeoff of omitting it: this is the one gap with no formal counterexample. The claim rests on prose analysis only.
+No impl spec was written for this. It's an architectural choice spread across multiple files, lower-priority, and would require modelling the full distributed read path. The tradeoff: this is the one gap with no formal counterexample — the claim rests on prose analysis only.
 
 ---
 
 ## What I learned about TLA+ itself
 
-Things that tripped me up:
+**Invariants are checked on every reachable state**, not just at the moment you care about. The first attempt at `ConsistentSnapshot` violated this: after T1 committed cleanly, T2 wrote to the same document, and TLC flagged T1 as having seen an inconsistent snapshot — even though T1 was already done. The fix: save the relevant state in an auxiliary variable (`tx_doc_lsn_at_commit`) at the exact moment of commit, and check against that, not against mutable global state.
 
-**Invariants are checked on every reachable state**, not just at the moment you care about. If you want "at commit time, T saw a consistent snapshot," you need to save the relevant state in an auxiliary variable at commit time — not compare against mutable global state later. The first attempt at `ConsistentSnapshot` violated this: after T1 committed cleanly, T2 wrote to the same document, and TLC flagged T1 as having seen an inconsistent snapshot. T1 was already done; T2's write was correct. The fix was adding `tx_doc_lsn_at_commit` — a snapshot of `doc_lsn` saved at the exact moment each transaction commits, before its own writes are applied.
+**Bound every loop.** An unbounded `goto` loop produces a state space TLC can never finish. Two transactions, two documents, two shards is enough to reproduce all three bugs — adding a third only multiplies the state space without finding new violation paths.
 
-**Bound every loop.** An unbounded `goto` loop produces a state space TLC can never finish. At one point, TLC ran for 15+ minutes generating 300M+ states with no end. The fix: replace `goto` loops with a fixed sequence of labeled steps (one read, one write, one commit per transaction). Two transactions, two documents, two shards is enough to reproduce all three bugs — adding a third only multiplies the state space without finding anything new.
+**Why 2 of each?** One of anything can't exhibit concurrency bugs by definition. Two is the minimum for interleaving. More than two grows the state space exponentially without contributing new counterexample shapes.
 
-**Why 2 of each?** Any single-entity model (one transaction, one shard) can't exhibit concurrency bugs by definition. Two is the minimum that allows interleaving. More than two grows the state space exponentially and usually doesn't add new violation paths for these kinds of bugs.
+**PlusCal reserved labels**: `Done` and `Error` can't be used as step labels. Rename to `Finish`, `CoordDone`, etc.
 
-**PlusCal reserved labels**: `Done` and `Error` can't be used as step labels in processes — the translator rejects them. Rename to `Finish`, `CoordDone`, etc.
+**`pcal.trans` overwrites the cfg file** on every run, stripping all invariants. Always restore the cfg before running TLC.
 
-**`pcal.trans` overwrites the cfg file** on every run, stripping all invariants and leaving only the `SPECIFICATION Spec` line. Always restore the cfg immediately after translation before running TLC.
+**Mixed process ID types cause fingerprint errors.** All process IDs across all process sets must be the same type — all strings or all integers.
 
-**Mixed process ID types cause fingerprint errors.** All process IDs across all process sets must be the same type. If you have `process Clock = "clock"` (string) and `process Committer \in Groups` where `Groups = {1}` (integer), TLC errors when building `ProcSet`. Keep everything strings or everything integers.
+**`CONSTANT` declarations belong in the TLA+ header**, outside the `(*--algorithm ... *)` block.
 
-**`CONSTANT` declarations belong in the TLA+ header**, outside the `(*--algorithm ... *)` block. Putting them inside causes `pcal.trans` to reject with "Expected 'begin' but found 'CONSTANT'."
-
-**`if ... goto ... end if` followed by more statements** requires a new label. An `if` with an internal `goto` must end a labeled block — the translator can't determine the atomic boundary when control flow can either jump away or fall through. Split it into two labeled blocks.
+**`if ... goto ... end if` followed by more statements** requires a new label — the translator can't determine the atomic boundary when control flow can either jump or fall through.
 
 ---
 
 ## Honest limitations
 
-**Post-hoc confirmation, not discovery.** TLC only checks invariants we wrote, derived from gaps we already suspected. We cannot find bugs we didn't think to look for.
+**Post-hoc confirmation, not discovery.** TLC only checks invariants we wrote, derived from gaps we already suspected. It can't find bugs we didn't think to look for.
 
-**Model fidelity is unchecked.** The impl specs are our reading of the Rust code. If we misread, we either invented bugs that don't exist or missed real ones. Production TLA+ usage does *trace replay*: take TLC's counterexample, encode it as an integration test, run it against the real code, confirm behavior matches. That validates the model and produces a regression test simultaneously. We didn't do that here.
+**Model fidelity is unchecked.** The impl specs are our reading of the Rust code. If we misread, we either invented bugs that don't exist or missed real ones. Production TLA+ usage does *trace replay*: take TLC's counterexample, encode it as an integration test, run it against the real code, confirm behavior matches.
 
-**One-shot, not iterative.** Real spec-first work cycles spec ↔ code many times. A refactor next week could fix or worsen these gaps and the specs wouldn't notice. Production teams run TLC in CI and gate merges on it.
+**One-shot, not iterative.** A refactor next week could fix or worsen these gaps and the specs wouldn't notice. Production teams run TLC in CI and gate merges on it.
 
-What the exercise provides: counterexample traces that are harder to dismiss than prose descriptions, and a precise diagnosis of *where* the gap is (implementation drift vs. design flaw). That's a narrower claim than production-grade verification, but it's the right tool for the problem: existing code, suspected bugs, need for rigorous demonstration.
+What the exercise provides: counterexample traces that are harder to dismiss than prose, and a precise diagnosis of whether the gap is implementation drift (code diverged from sound design) or a design flaw (the design itself violates the invariant).
