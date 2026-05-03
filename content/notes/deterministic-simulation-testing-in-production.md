@@ -46,7 +46,7 @@ Tradeoff: lower simulation throughput (closer to wall-clock), proprietary platfo
 
 **RisingWave** — cloud-native streaming SQL database in Rust. Adopted madsim early and runs end-to-end simulation on every PR. External dependencies (object storage, metadata store) replaced with in-memory emulators behind the simulated network.
 
-**S2** — durable stream storage in Rust. Uses turmoil + libc overrides. Runs DST on every PR and in thousands of nightly trials. Found that libc overrides were the missing ingredient — before adding them, CI failures were non-reproducible across platforms. Their [blog post](https://s2.dev/blog/dst) is the most detailed practical guide for Rust async DST.
+**S2** — durable stream storage in Rust. Built [mad-turmoil](https://github.com/s2-streamstore/mad-turmoil), a crate that combines turmoil's network simulation with madsim's libc-level overrides. Runs DST on every PR and in thousands of nightly trials. Found 17 notable bugs spanning concurrency deadlocks, ACID violations, and protocol edge cases. Their [blog post](https://s2.dev/blog/dst) is the most detailed practical guide for Rust async DST.
 
 **CockroachDB** (via Antithesis) — a one-in-a-million race condition first filed in Sentry in 2021. Staging never reproduced it. Antithesis found the precise correlated state transitions causing it.
 
@@ -55,6 +55,40 @@ Tradeoff: lower simulation throughput (closer to wall-clock), proprietary platfo
 **WarpStream** (via Antithesis) — diskless Kafka-compatible platform. Simulated 280 logical hours in 6 real-world hours. Found a bug that triggered roughly once per wall-clock hour in staging but had zero occurrences in normal operation.
 
 **Aiven Inkless** (via Antithesis) — found KAFKA-19880 in upstream Apache Kafka: under an idempotent producer, the first record batch can be delivered out of order. A real correctness violation in vanilla Kafka, undetected for years.
+
+---
+
+## How S2 implemented DST (deep dive)
+
+**What does "deterministic" actually require?**
+
+Four variables must be fully controlled: execution order (single-threaded), entropy (all RNGs seeded), time (no physical clocks), and I/O (no external dependencies — replaced with in-memory emulators over the simulated network).
+
+**Why turmoil alone wasn't enough**
+
+S2's initial attempt kept producing CI failures that couldn't be reproduced locally (or across Linux vs Mac). The culprits:
+- Rust's `HashMap` uses random seeds by default (DOS prevention) — iteration order varies per run
+- Timestamps embedded in HTTP headers created non-determinism at the packet level
+- Third-party dependencies called `getrandom`, `getentropy`, or `clock_gettime` directly via libc, bypassing the runtime
+
+**The libc override solution**
+
+Rather than patch every dependency, S2 overrides at the symbol level:
+- `getrandom` and `getentropy` → route through a statically-initialized seeded RNG via `set_rng()`
+- `CCRandomGenerateBytes` on Mac — same treatment
+- `clock_gettime` → reads from turmoil's simulated clock, scoped with `SimClocksGuard` to prevent teardown races
+
+This catches entropy leaks from any crate in the dependency tree, without needing to know which ones.
+
+**Test structure**
+
+- Networking services use a compile-time feature flag to swap real `TcpListener`/`TcpStream` for turmoil's simulated versions
+- External dependencies (metadata store, object storage) are replaced with in-memory emulators running as separate hosts on the simulated network
+- Assertions live in mainline code, not just tests — Rust keeps `assert!` in release builds by default, so invariants are checked in production too
+
+**Verifying reproducibility**
+
+Each test run takes a single seed. CI runs a "meta-test": execute the same seed twice and compare the full `TRACE`-level logs byte-for-byte. Any divergence means an uncontrolled entropy source is still leaking through.
 
 ---
 
@@ -77,7 +111,7 @@ NodeDB is Rust and uses Tokio for async I/O. The practical path:
 
 **Option A: madsim** — swap Tokio for madsim. The entire server, including multi-coordinator scenarios and the WAL, runs deterministically in a single process. Requires abstracting external dependencies (disk, network connections) so madsim can intercept them. Any coordinator crash can be simulated at any message boundary.
 
-**Option B: turmoil + libc overrides** — narrower scope. Simulate just the network between coordinators and shards; let the rest of the code run normally. Add libc overrides for `clock_gettime`, `getrandom`, `getentropy` to lock down time and entropy. Less coverage than madsim (disk I/O isn't simulated) but lower integration cost.
+**Option B: turmoil + libc overrides (S2's path)** — narrower scope. Simulate just the network between coordinators and shards; let the rest of the code run normally. Add libc overrides for `clock_gettime`, `getrandom`, `getentropy` (and `CCRandomGenerateBytes` on Mac) to lock down time and entropy across the entire dependency tree. Use compile-time feature flags to swap real TCP for turmoil's simulated versions. Replace external dependencies with in-memory emulators running as separate hosts on the simulated network. Less coverage than madsim (disk I/O isn't simulated) but lower integration cost. Add a meta-test that reruns any failing seed and compares TRACE logs byte-for-byte to verify full reproducibility.
 
 Either path would directly target the gap the TLA+ analysis identified: Bug 2 (cross-coordinator ordering) and Bug 3 (coordinator crash recovery) require concurrent multi-node scenarios under fault injection to reproduce — exactly what DST is built for. The TLA+ specs would serve as the property oracle: encode the `CrossCoordOrderHolds` and `NoOrphanedApply` invariants as runtime assertions checked after each simulated step.
 
