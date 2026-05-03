@@ -80,7 +80,7 @@ for (_collection, _doc_id, read_lsn) in &read_set {
 }
 ```
 
-`_collection` and `_doc_id` are ignored. The condition checks: "has the global WAL LSN advanced past this read?" — a global write fence. In the trace above, T2's commit advanced `current` (global `wal_lsn`) from 0 to 1. When T1 evaluates `current (1) > read_lsn (0)`, it fires — even though `d1` was never touched.
+`_collection` and `_doc_id` are ignored. The condition checks: "has the node's WAL LSN advanced past this read?" — a node-local write fence. `self.state.wal.next_lsn()` is the WAL for this specific node, not the whole cluster. In a distributed deployment, writes landing on other nodes don't advance this WAL. The false abort is therefore scoped to **intra-node concurrent transactions**: any two transactions on the same node touching unrelated documents will abort each other. Cross-node writes are dispatched through a separate event-plane path and don't contribute to this WAL position. In the trace above, T2's commit advanced `current` (global `wal_lsn`) from 0 to 1. When T1 evaluates `current (1) > read_lsn (0)`, it fires — even though `d1` was never touched.
 
 The impl spec encodes this faithfully:
 
@@ -95,6 +95,8 @@ ConflictDetected(t) ==
 ---
 
 ## Bug 2: Cross-coordinator ordering
+
+> **Caveat discovered after publication:** The `TransactionCoordinator` struct modeled below (`nodedb-cluster/src/cross_shard_txn.rs`) is exported but never instantiated in production code — only in unit tests. No feature flag, no binary entry point, no production call site. Production cross-shard transactions actually flow through `nodedb/src/event/cross_shard/` — a `CrossShardDispatcher`/`CrossShardReceiver` pattern with per-target-node QUIC queues, FIFO-per-source-vshard ordering, and a persistent DLQ — which we did not model. The bug as described is real for the code we verified; whether the live path has analogous ordering issues is an open question. This is a concrete instance of the model-fidelity gap named in the limitations section: the TLA+ only checks what you model, and you can model code that never runs.
 
 ### The invariant and where it comes from
 
@@ -142,6 +144,8 @@ The code comments claim "Calvin protocol" — real Calvin requires a single glob
 ---
 
 ## Bug 3: Coordinator crash recovery
+
+> **Same caveat as Bug 2:** `TransactionCoordinator` is dead code. The live cross-shard path has a persistent DLQ (backed by redb) and a persistent HWM store — a different recovery story than the one modeled here. The crash scenario below applies to the unwired coordinator, not to production behavior.
 
 ### The invariant and where it comes from
 
