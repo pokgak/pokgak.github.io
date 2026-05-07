@@ -92,6 +92,41 @@ Advantages over full-model A/B testing:
 
 The hard part is the reward signal: you need automated metrics (verifier pass rate, execution success, downstream task completion) that are cheap enough to run on every inference trace.
 
+## Related Work: What Came After S-LoRA
+
+S-LoRA left several problems unsolved. The research since has attacked them in different directions.
+
+**KV cache invalidation on adapter switch** — [aLoRA (Dec 2024)](https://arxiv.org/abs/2512.17910)
+
+S-LoRA ignores the KV cache: every time you switch adapters mid-sequence, the KV cache is invalidated and the full context must be recomputed. Activated LoRA fixes this with cross-model prefix cache reuse via base-aligned block hashing and activation-aware masking. Results: 58× end-to-end latency reduction, 100×+ TTFT improvement. This turns out to be a bigger latency source than memory paging for multi-turn or long-context workloads.
+
+**Cold-start latency via CPU-GPU parallelism** — [CaraServe (Jan 2024)](https://arxiv.org/abs/2401.11240)
+
+While a cold adapter loads from CPU→GPU over PCIe, start running it on CPU for prefilling in parallel. Hand off to GPU when ready. Also adds rank-aware scheduling — grouping requests by adapter rank to reduce heterogeneity overhead in batches. Results: 1.4× latency improvement, 99% SLO attainment.
+
+**Scheduling fairness** — [Chameleon (Nov 2024)](https://arxiv.org/abs/2411.17741)
+
+Focuses on the scheduler rather than memory. Multi-queue non-preemptive scheduling to prevent head-of-line blocking (a slow large-rank adapter request shouldn't stall everything). Evaluated on real production workload traces. Results: 80.7% P99 TTFT reduction, 1.5× throughput.
+
+**Compression to eliminate paging entirely** — [Compress then Serve (Jul 2024)](https://arxiv.org/abs/2407.00066)
+
+Instead of paging cold adapters in/out, compress thousands of adapters into a shared basis + per-adapter scaling matrices. The basis stays in GPU memory; the per-adapter scaling matrices are tiny enough to keep resident. Accepts a small quality loss from compression in exchange for no cold-fetch latency at all. Results: 80% of single-LoRA throughput across 1000 adapters.
+
+**Disaggregating LoRA compute from the base model** — [InfiniLoRA (Apr 2026)](https://arxiv.org/abs/2604.07173)
+
+Moves LoRA computation off the base model GPU entirely to a dedicated shared LoRA server, the same way prefill/decode disaggregation works. Adapter capacity scales independently from base model capacity. Results: 3× increase in serviceable request rate, 54% SLO improvement.
+
+### How the papers map to problems
+
+```
+S-LoRA (2023):          heterogeneous batching + memory paging
+CaraServe (2024):       cold-start latency via CPU prefilling
+Chameleon (2024):       scheduling fairness, head-of-line blocking
+Compress+Serve (2024):  paging eliminated via compression
+aLoRA (2024):           KV cache invalidation on adapter switch
+InfiniLoRA (2026):      LoRA compute disaggregated from base model
+```
+
 ## Use Cases
 
 S-LoRA's original use case is **multi-tenant serving**: one base model, many customers with their own adapters (Replicate, Together AI, fine-tuning API products). The adapter-per-customer model, served simultaneously on shared base weights.
