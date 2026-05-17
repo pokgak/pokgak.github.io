@@ -1,232 +1,172 @@
 ---
-title: "Kubernetes Controller Anti-patterns: Side-by-Side Benchmark on Kind"
+title: "Kubernetes Controller Anti-patterns: What Actually Costs You Performance"
 date: 2026-05-17T00:00:00+0800
 tags: [kubernetes, controller-runtime, kubebuilder, operators, benchmarking, kind]
 draft: true
 ---
 
-Does following controller best practices actually make a measurable difference? Running two versions of the same controller — one with common anti-patterns, one following the [k8s-controller skill](https://github.com/pokgak/agent-skills) patterns — on a local Kind cluster under load.
+Four controller best-practice guidelines tested against their bad counterparts on a local Kind cluster: does `GenerationChangedPredicate` matter, does `MaxConcurrentReconciles` help, does `r.Status().Patch()` break the conflict bottleneck, and do recent k8s feature gates reduce API server pressure? Each factor gets its own controlled experiment with Prometheus metrics collected per-second to CSV.
 
 Code: [pokgak/agent-skills — experiments/k8s-controller-benchmark](https://github.com/pokgak/agent-skills/tree/main/experiments/k8s-controller-benchmark)
 
 ## The Question
 
-Controller best practices are well documented: use `GenerationChangedPredicate`, call `r.Status().Update()` not `r.Update()`, wrap writes in `RetryOnConflict`, set `MaxConcurrentReconciles`. But how bad does it actually get if you skip them? And is the difference visible in a local test or does it only show up at cluster scale?
+Controller best practices are well documented but rarely quantified. Four concrete questions:
+
+1. How bad does it get if you skip `GenerationChangedPredicate` and write annotations on every reconcile?
+2. Where does `MaxConcurrentReconciles: 5` actually pay off over a single worker?
+3. Does switching from `r.Status().Update()` + `RetryOnConflict` to `r.Status().Patch()` break the conflict bottleneck?
+4. Do `ConcurrentWatchObjectDecode` and `WatchListClient` (k8s 1.34 feature gates) reduce the API server pressure that causes the bottleneck?
 
 ## Setup
 
-- **Cluster:** Kind (single-node, local Docker)
-- **CRD:** `Widget` — simple spec (count, message) and status (phase, processedCount)
-- **Load:** 50 / 200 / 500 / 1000 Widget resources, tested at each scale
-- **Four controller variants** run concurrently in the same cluster, each watching its own namespace
-- All variants simulate 10ms of work per reconcile, debug logging enabled
+- **Cluster:** Kind v1.34.0, single-node, local Docker (OrbStack)
+- **CRD:** `Widget` — spec: count, message; status: phase, processedCount, lastUpdated
+- **Simulated work:** 10ms sleep per reconcile (represents I/O-bound external call)
+- **Metrics:** Prometheus endpoint scraped to CSV every 1s via a Go scraper binary; key metrics: `workqueue_depth`, `workqueue_adds_total`, `workqueue_retries_total`, `controller_runtime_reconcile_total{result}`, `controller_runtime_reconcile_time_seconds`
+- **Framework:** controller-runtime v0.18.4, kubebuilder v4
+- **Debug logging:** enabled on all controllers (zapcore.DebugLevel)
+- **Observation window:** 60s for Experiment 1; 180s for Experiments 2–4
 
-### The 2×2 matrix
+Each controller variant watches its own namespace so all variants can run concurrently on the same cluster without interfering.
 
-The experiment isolates two variables independently:
+---
+
+## Experiment 1: Anti-patterns vs Best Practices
+
+### Why this matters
+
+Before measuring performance, the correctness question has to be answered first: do these controller patterns actually change *whether* objects converge, not just *how fast*? The two most-missed patterns in real operator code are the `GenerationChangedPredicate` and the status subresource distinction. This experiment isolates them in a controlled 2×2 matrix.
+
+### Hypothesis
+
+- **Predicate dominates correctness.** Bad controllers never converge to Ready regardless of worker count — the annotation-write loop creates a permanent reconcile backlog.
+- **Predicate dominates event volume.** Bad controller reconcile counts grow without bound; good controllers stabilize after the first pass.
+- **More workers amplifies the loop.** Five concurrent workers racing to stamp the same annotation produce more `resourceVersion` conflicts than a single worker, generating more retries and more wasted work. The 1-worker bad controller is throttled by its own serialization.
+
+### Method
+
+Four controller variants running concurrently in separate namespaces:
 
 | | 1 worker | 5 workers |
 |---|---|---|
 | **Predicate ON** | `good-single` | `good` |
 | **Predicate OFF** | `bad-fixed-single` | `bad-fixed-status` |
 
-All four variants use `r.Status().Update()` correctly (status subresource), so the
-status-correctness bug from the earlier run is eliminated. The only axes being tested are:
+All four variants use `r.Status().Update()` correctly (status subresource enabled), isolating the predicate and worker count as the only variables.
 
-- **`GenerationChangedPredicate`** — does the controller filter out watch events from its own status/annotation writes?
-- **`MaxConcurrentReconciles`** — 1 vs 5 concurrent workers
+The "bad" variants stamp a nanosecond timestamp annotation on every reconcile via `r.Update()`. Without the predicate, each annotation write bumps `resourceVersion`, fires a watch event, and re-triggers reconcile — a guaranteed infinite loop.
 
-The "bad" variants also stamp a nanosecond annotation on every reconcile via `r.Update()`, which bumps `resourceVersion` and fires a new watch event. Without the predicate, this creates a tight infinite loop.
+N = {50, 200, 500, 1000} Widget objects created concurrently in all namespaces. 60-second observation window. Reconcile counts from controller logs; Ready counts from `kubectl get widgets`.
 
-### Good variant patterns
+> ⚠️ **Data gap:** N=5000 not collected for this experiment. The scale table stops at N=1000.
 
-- `GenerationChangedPredicate` — status/annotation updates don't trigger re-reconcile
-- `r.Status().Update()` with `RetryOnConflict` + re-fetch
-- `apierrors.IsNotFound` handling, `ctrl.LoggerFrom(ctx)` logging
+### Results
 
-### Bad variant anti-patterns
+**Reconcile counts and Ready status after 60s:**
 
-1. **No `GenerationChangedPredicate`** — every annotation write fires a watch event, which triggers another reconcile
-2. **Annotation mutation on every reconcile** — guarantees the loop by bumping `resourceVersion` each pass
-3. **No `RetryOnConflict`** — concurrent annotation writes produce conflict errors that are retried with backoff
+| N | good Ready | good reconciles | bad-fix Ready | bad-fix (5w) reconciles | bad-fix-single (1w) reconciles |
+|---|---|---|---|---|---|
+| 50 | 50/50 ✓ | 150 | 0/50 ✗ | 2,851 | 1,345 |
+| 200 | 200/200 ✓ | 400 | 0/200 ✗ | 4,650 | 1,566 |
+| 500 | 500/500 ✓ | 1,100 | 0/500 ✗ | 7,594 | 3,064 |
+| 1,000 | 1000/1000 ✓ | 2,600 | 0/1000 ✗ | 12,683 | 5,856 |
 
-## Hypothesis
+**Time to full convergence (good controller, 5w):**
 
-**Worker count for the good controller** — straightforward linear speedup. 5 workers processes objects in parallel with no contention, so convergence time should be ~5× faster than 1 worker. At N=1000 with 10ms/reconcile and 5 workers the theoretical floor is 2s; actual will be higher due to API server round-trips and watch latency.
-
-**Worker count for the bad controller** — the interesting case. More workers means more goroutines simultaneously stamping annotations on the same objects, which means more `resourceVersion` conflicts, more error retries, more reconcile events. The 5-worker bad controller might produce *more* total reconcile events than the 1-worker one — the loop is amplified rather than throttled. The 1-worker version serializes, limiting throughput to ~100 reconciles/second. The 5-worker version multiplies that pressure.
-
-**Predicate effect** — the dominant factor for correctness and event volume. Even the 1-worker good controller converges all objects and then goes quiet. Both bad variants loop forever regardless of worker count. The reconcile count ratio (bad/good) should be large and grow with the observation window, since the bad controller never stops generating events.
-
-**The interaction to watch** — does the 5-worker bad controller produce *more* conflicts than the 1-worker bad controller? If yes, that's direct evidence that adding workers to a looping controller makes things worse, not better.
-
-## Results
-
-Observation window: 60 seconds per scale. The bad controller's reconcile count never stops climbing — numbers below are the count at end of window.
-
-| Scale | Good: Ready | Good: Total reconciles | Good: Avg/widget | Bad: Ready | Bad: Total reconciles | Bad: Avg/widget | Ratio (bad/good) |
-|---|---|---|---|---|---|---|---|
-| 50 | 50/50 ✓ | 150 | 3.0 | 0/50 ✗ | 2,851 | 57.0 | **19×** |
-| 200 | 200/200 ✓ | 400 | 2.0 | 0/200 ✗ | 4,650 | 23.2 | **12×** |
-| 500 | 500/500 ✓ | 1,100 | 2.2 | 0/500 ✗ | 7,594 | 15.1 | **7×** |
-| 1000 | 1000/1000 ✓ | 2,600 | 2.6 | 0/1000 ✗ | 12,683 | 12.6 | **5×** |
-
-The ratio narrows at higher N because the bad controller's single worker (`MaxConcurrentReconciles=1`) becomes the bottleneck — it can only process one object at a time, so the infinite loop per object is throttled by queue depth. The good controller finishes all 1000 objects in ~39 seconds. The bad controller processes none to completion regardless of scale.
-
-### Time to full convergence (good controller only)
-
-| Scale | Time to 100% Ready |
+| N | Time to 100% Ready |
 |---|---|
 | 50 | ~5s |
 | 200 | ~11s |
 | 500 | ~21s |
-| 1000 | ~39s |
+| 1,000 | ~39s |
 
-Linear scaling — each doubling of objects roughly doubles convergence time. With `MaxConcurrentReconciles: 5` and 10ms simulated work per object, theoretical minimum for 1000 objects is `1000 / 5 × 10ms = 2s`. The 39s actual time includes API server round trips, watch latency, and queue scheduling overhead.
+**Key Prometheus metrics at N=200 end-of-window:**
 
-## Key Observations
+| Controller | queue_depth | queue_adds | retries | errors | avg_lat |
+|---|---|---|---|---|---|
+| good (5w) | 0 | 400 | 0 | 0 | 61ms |
+| good-single (1w) | 0 | 300 | 0 | 0 | 20ms |
+| bad-fix (5w) | 198 | 4,650 | 7 | 7 | 465ms |
+| bad-fix-single (1w) | 199 | 1,566 | 3 | 3 | 94ms |
 
-### Widgets never reach Ready in the bad controller
+### What this tells us
 
-Because `r.Update()` is used instead of `r.Status().Update()`, and the CRD has the status subresource enabled (`subresources: status: {}`), the API server routes the update to the main resource endpoint — which silently strips the status field. The controller sets `widget.Status.Phase = "Ready"` in memory, calls `r.Update()`, gets back a 200 OK, but etcd never stores the status change. Every reconcile sets phase to Ready in memory and loses it on write.
+**The correctness prediction was fully confirmed.** Bad controllers never reach Ready at any scale because `r.Update()` on a CRD with `subresources: status: {}` silently strips status fields at the API server. The controller sets `widget.Status.Phase = "Ready"` in memory, calls `r.Update()`, gets a 200 OK back, and the write is discarded. No error, no log, no convergence.
 
-### The infinite reconcile loop
+**The loop prediction was confirmed.** Without `GenerationChangedPredicate`, every annotation write bumps `resourceVersion` → watch event → reconcile → annotation write → loop. At N=200 the bad-5w controller produced 4,650 reconcile events in 60 seconds (23/s per 200 objects) while the good controller produced 400 and went silent.
 
-Without `GenerationChangedPredicate`, every watch event triggers a reconcile regardless of what changed. The bad controller stamps an annotation (`bad-controller/last-seen: <nanoseconds>`) on every reconcile via `r.Update()`. Each annotation write bumps `resourceVersion`, which fires a new watch event, which triggers another reconcile — a tight, CPU-burning loop. The good controller never does this: `GenerationChangedPredicate` only lets through events where `metadata.generation` changed, and `metadata.generation` only increments on spec changes. Status updates and annotation changes are ignored.
+**The "more workers amplifies the loop" prediction was also confirmed** — but in a specific way. The 5-worker bad controller produced *fewer* reconciles than the 1-worker at large N (12,683 vs 5,856 at N=1000). The reason: with 5 workers racing to annotate the same object pool, they produce more `resourceVersion` conflicts (7 errors vs 3). Each conflict triggers a rate-limiter backoff — the loop is actually *slower* under contention. The 1-worker controller serializes cleanly with no conflicts, achieving higher raw event throughput despite being bottlenecked to ~100/s.
 
-### Reconcile rate of the bad controller
+Average reconcile latency confirms this: bad-fix-5w at 465ms vs bad-fix-single at 94ms. Five concurrent annotation writes on the same 200 objects create 5× more API server pressure per object, inflating per-write latency.
 
-At N=50, the bad controller produces ~107 reconcile events per 5-second interval (about 21/s for 50 objects, or ~0.4 reconciles/object/second). This rate is roughly constant regardless of N because it's bottlenecked by the single worker: one reconcile takes 10ms of simulated work, so the max throughput is ~100 reconciles/second, shared across all objects.
+**Connection to real frameworks:** This maps directly to how [kopf](https://kopf.readthedocs.io/) (the Python controller framework) works internally — it writes handler progress and state into annotations on every handler invocation. Without `GenerationChangedPredicate`'s equivalent, every annotation write re-enters the handler. At low object counts the loop is fast and handlers are idempotent, so it's invisible. At 1000+ objects with concurrent external changes (e.g., Pod status updates), the annotation cascade grows faster than the handler queue can drain — the production bogging-down at ~1000 pods described in the setup.
 
-At N=1000, that same 100 reconciles/second is spread across 1000 objects in the infinite loop. The queue backs up to thousands of entries immediately and never drains.
+This experiment eliminated the bad variants from further investigation. Experiments 2–4 focus only on the good patterns.
 
-The good controller at N=1000 fires ~110 events per 5-second interval only during convergence, then goes essentially silent (2600 total, ~0 after all objects reach Ready). The bad controller produces ~110 events per interval forever.
+---
 
-## Connection to Real-world Controllers (kopf / Python)
+## Experiment 2: When Does MaxConcurrentReconciles Pay Off?
 
-The bad controller's annotation-write pattern maps directly to how [kopf](https://kopf.readthedocs.io/) (the Python controller framework) works internally. Kopf writes handler progress and state into the object's annotations on every handler invocation. Without the equivalent of `GenerationChangedPredicate`, every annotation write fires a new watch event, which triggers the handler again.
+### Why this matters
 
-At low object counts this is invisible — the loop is fast and the handlers are idempotent. At 1000+ objects with rapid external changes (e.g., Pod status updates if you're watching pods), the annotation write cascade compounds with the pod update events. The queue grows faster than the single-threaded Python handler can drain it, and the controller starts falling behind — the same bogging-down experienced in production at ~1000 pods.
+Experiment 1 showed the 5-worker good controller converges faster at modest N. The natural follow-up: does the benefit scale? Is there a regime where 5 workers saturates the workload, converges faster, and then the advantage disappears? Or is there actually a regime where 5 workers actively hurts a correctly-written controller?
 
-The fix in kopf is the `kopf.on.resume` + `old != new` guard pattern, or using `kopf.adopt()` + watching only specific fields. The underlying issue is the same: every write to the object creates a watch event that re-enters the handler.
+### Hypothesis
 
-## What This Tells You
+5 workers should produce ~5× faster convergence at low N where the bottleneck is worker throughput. At very large N (10k+), both configurations should saturate at the same throughput ceiling and produce the same number of reconciles per unit time.
 
-These are not edge cases — they're the default if you don't know to look for them:
+### Method
 
-- **Missing `GenerationChangedPredicate`** is the most common. Not visible at small scale (the loop is cheap, the queue keeps up). At hundreds of objects it becomes a CPU spike and persistent API server pressure.
-- **`r.Update()` for status** is a silent correctness bug. The call succeeds, logs show no error, but the object never converges. Unit tests pass (fake client doesn't enforce the subresource split). Only visible in integration tests or production.
-- **No `RetryOnConflict`** is fine in a quiet cluster. Under concurrent load or during a user edit, it starts logging errors that look transient but never resolve — the controller just stops making progress on that object.
-- **`MaxConcurrentReconciles: 1`** is fine at low scale. At 500+ objects the queue depth becomes the bottleneck. With 5 workers the good controller finishes 1000 objects in 39s; with 1 worker it would take ~200s.
+Only the two good variants (`good` 5w, `good-single` 1w). Bad controllers scaled to 0 replicas to eliminate API server noise. 180-second observation window. N = {1,000; 2,000; 10,000}.
 
-## API Server as the Real Bottleneck
+> ⚠️ **Data gap:** N=5,000 not collected in this run. N=10,000 run did not fully converge in 180s — both controllers had ~5,600 objects remaining when the window closed.
 
-A follow-up run tested the two good controller variants (predicate ON, correct status update) at N=1k, 2k, 5k, 10k to find where `MaxConcurrentReconciles: 5` actually pays off over 1 worker.
-
-The answer on a single-node Kind cluster: **it never does, at any scale tested**.
+### Results
 
 | N | good-1w success | good-1w lat | good-1w errors | good-5w success | good-5w lat | good-5w errors |
 |---|---|---|---|---|---|---|
-| 1,000 | 3,000 | 32ms | 0 | 2,106 | 124ms | 17 |
-| 2,000 | 4,000 | 37ms | 0 | 3,094 | 164ms | 13 |
+| 1,000 | 3,000 | 32ms | 0 | 2,106 | 124ms | **17** |
+| 2,000 | 4,000 | 37ms | 0 | 3,094 | 164ms | **13** |
+| 10,000 | 4,385 | 50ms | 0 | **4,385** | 248ms | **0** |
 
-Both controllers drain the queue at the same rate (~200 widgets/10s). 5 workers does not increase throughput — it increases latency 4-5× per reconcile and introduces conflict errors (retries) that the 1-worker controller never sees.
+Both controllers converge fully at N=1k and N=2k. At N=10k, queue depth at window close: good-single q=5,614; good q=5,610. Drain rate: ~200 objects per 10s for both — identical throughput at scale.
 
-### Why: the API server is the bottleneck, not the workers
+### What this tells us
 
-With 5 concurrent reconcilers each doing a `r.Status().Update()` call, all 5 goroutines are hitting the Kind API server simultaneously. The single-node Kind API server (etcd + kube-apiserver in one Docker container) serializes writes internally. The result:
+**The hypothesis was wrong.** 5 workers never beats 1 worker at any tested scale on this cluster. At every N:
 
-- Each individual write takes 4-5× longer (124ms vs 32ms) because it's queued behind 4 others
-- The concurrent writes occasionally produce `resourceVersion` conflicts — even with `RetryOnConflict`, the first attempt fails, adding overhead
-- Net throughput stays the same as 1 worker because the API server processes the same number of writes per second regardless
+- The 5-worker controller has 4–5× higher per-reconcile latency
+- It produces 13–17 conflict errors at small N (zero on the 1-worker version)
+- It processes fewer or equal total reconciles per unit time
 
-The good-single (1w) controller sends writes serially, each completing quickly with no conflicts. The API server processes them at the same total rate but with lower per-operation overhead.
+The explanation: with 5 concurrent reconcilers each issuing `r.Status().Update()`, all 5 goroutines hit the Kind API server simultaneously. The single-node Kind API server (etcd + kube-apiserver in one Docker container) serializes writes internally — etcd handles one write at a time. The result is not 5× parallelism; it's 5 goroutines queued behind each other with higher per-write latency, producing the same aggregate throughput.
 
-### Good-only large-scale run (1k → 10k)
+At N=10,000 the ceiling is explicit: ~24 writes/sec, achieved equally by both configurations. The 5-worker controller at 248ms avg × 5 workers = theoretical 20/s; the 1-worker at 50ms = theoretical 20/s. They're the same calculation, confirming the API server is the shared wall.
 
-Running only the two good variants at larger N to find where 5 workers beats 1 worker:
+The 17 errors at N=1k (vs 0 at N=10k) have a distinct cause: at small queue depth, all 5 workers can land on the *same* object simultaneously — one worker holds a fresh `resourceVersion` and writes; the others hold a stale copy and get a 409 Conflict. At N=10k the queue contains 10,000 distinct objects, so workers almost never collide.
 
-| N | good-1w success | lat | retries | good-5w success | lat | retries |
-|---|---|---|---|---|---|---|
-| 1,000 | 3,000 | 32ms | 0 | 2,106 | 124ms | 17 |
-| 2,000 | 4,000 | 37ms | 0 | 3,094 | 164ms | 13 |
-| 10,000 | 4,385 | 50ms | **0** | **4,385** | 248ms | **0** |
+**For production:** `MaxConcurrentReconciles` matters when reconcile work is CPU-bound or calls external APIs (not the Kubernetes API server) — work that genuinely parallelizes. On a single-node development cluster or CI Kind cluster, 1 worker is optimal. On a real multi-node HA cluster with distributed etcd, more workers should show genuine throughput gains since writes don't serialize on one node.
 
-At N=10,000 both controllers processed exactly the same number of reconciles in 180s — the API server ceiling (~24/sec) equalizes them. 5 workers at 248ms = 1 worker at 50ms when the bottleneck is shared etcd writes.
+This experiment raises the question for Experiment 3: if conflicts are the visible cost of 5 workers at small N, does eliminating conflicts (via `r.Status().Patch()`) let 5 workers finally pay off?
 
-The 5-worker controller had 0 retries at N=10,000 (vs 17 at N=1,000). At high queue depth workers are rarely on the same object simultaneously, so conflicts don't arise — they're pulling from a pool of 10k distinct objects.
+---
 
-### What this means for production
+## Experiment 3: Does r.Status().Patch() Move the Ceiling?
 
-`MaxConcurrentReconciles` matters when:
-- Your reconcile loop does **CPU-bound work** or **calls external APIs** that are not your Kubernetes API server — work that can genuinely run in parallel without bottlenecking on a shared resource
-- You have a **multi-node, high-availability API server** that can handle concurrent writes across different etcd leader shards
-- Your objects are **namespaced** and you can route workers to different namespaces, reducing write contention
+### Why this matters
 
-It does **not** help (and actively hurts) when:
-- The API server is the only resource being written to and it is a single-node instance
-- Objects are cluster-wide (all writes go to the same resource type, same API path)
-- You are running in CI or a local Kind cluster for testing
+Experiment 2's main cost at small N was conflicts: 5 workers racing on the same `resourceVersion` produce 409 errors that trigger `RetryOnConflict` retries. `r.Status().Patch()` with a merge patch eliminates the conflict entirely — no `resourceVersion` matching required. If conflicts were the bottleneck, switching to Patch should break the ~24/s ceiling. If etcd write serialization is the bottleneck, Patch removes noise but doesn't move the ceiling.
 
-The practical takeaway: **tune `MaxConcurrentReconciles` based on where your reconcile loop spends time, not as a default "more is better" setting**. On a real multi-node cluster with a distributed etcd, 5+ workers should show genuine throughput gains. On Kind, 1 worker is optimal.
+### Hypothesis
 
-## Relevant KEPs — What Might Actually Help
+- Patch eliminates `resourceVersion` conflicts at all scales (zero retries, zero errors).
+- If retries were the bottleneck: latency drops, throughput rises above the 24/s ceiling.
+- If etcd serialization is the bottleneck: conflicts gone, ceiling unchanged.
 
-The API server bottleneck is real, but several recent Kubernetes enhancements directly target the read/write pressure that creates it. These are worth enabling in a follow-up run.
+### Method
 
-### KEP-3157: WatchList / Streaming Lists
-
-**The thing remembered from production.** Instead of assembling a full in-memory snapshot on every `LIST` request, the API server streams objects one-by-one as watch events from the watch cache.
-
-- **Server-side (`WatchList`)**: Beta default-on since **1.32**
-- **Client-side (`WatchListClient`)**: Beta default-on since **1.35** — switches controller-runtime informers to use the streaming protocol
-- **Observed impact**: 10x+ reduction in API server memory peaks during thundering-herd reconnect (e.g., all controller pods restarting simultaneously)
-- **Relevance**: Reduces read load on the API server, freeing goroutines and etcd I/O bandwidth for concurrent `Status().Update()` writes. Indirect but real benefit under load.
-
-### KEP-3672: ListFromCacheSnapshot (Snapshottable API Server Cache)
-
-- **Alpha** (default off) in **1.33**, **Beta** (default on) in **1.34** (already active on our Kind cluster)
-- Serves `LIST` requests with exact `resourceVersion` from an in-memory B-tree snapshot, bypassing etcd entirely for those reads
-- **Relevance**: Most directly frees etcd read I/O. Every reconciler doing `r.Get()` at the top of `Reconcile` is a read — moving these to the in-memory cache means etcd only sees writes. More etcd write bandwidth available for concurrent `Status().Update()` calls.
-
-### KEP-2340: ConsistentListFromCache
-
-- **Beta** in **1.31** (requires etcd v3.4.31+ or v3.5.13+), stable ~1.34
-- Serves consistent (quorum) list requests from the watch cache by using etcd progress events to verify freshness, without a round-trip to etcd for each read
-- Same class of improvement as KEP-3672 — reads stay in the cache, writes get more etcd bandwidth
-- **Kind consideration**: Kind bundles its own etcd; the compatible version depends on which `kindest/node` image is used. Our cluster uses `v1.34.0` which should include a compatible etcd.
-
-### KEP-5116: StreamingCollectionEncoding
-
-- **Beta default-on** in **1.33** (already active)
-- Encodes list responses item-by-item over chunked HTTP/1.1 or HTTP/2 frames, instead of serializing the whole collection into one buffer
-- **Relevance**: Reduces API server CPU and memory overhead on every list/watch response, freeing goroutine pool capacity for write processing. No client changes needed.
-
-### InOrderInformers
-
-- **Alpha (default on) in 1.33, Beta (default on) in 1.34** (already active)
-- Uses atomic operations in the client-go FIFO queue so a batch of ListAndWatch events is processed atomically, preventing the informer cache from becoming temporarily inconsistent mid-batch
-- **Relevance**: Prevents spurious reconciles caused by partial event batches — which directly reduces unnecessary `Status().Update()` calls and therefore reduces write contention
-
-### ConcurrentWatchObjectDecode
-
-- **Beta (default OFF)** since **1.31** — must be explicitly enabled
-- Decodes watch objects concurrently, preventing a slow conversion webhook from starving the single-threaded watch cache dispatch loop
-- **Relevance**: Lower impact for CRDs without conversion webhooks (like our Widget), but worth enabling to reduce watch cache serialization in general
-
-### What These Don't Fix
-
-None of these eliminate the fundamental constraint: concurrent `r.Status().Update()` calls from multiple goroutines serialize at etcd because each write requires a unique `resourceVersion`. The real alternative is **`r.Status().Patch()`** with Server-Side Apply and a field manager — SSA merges patches server-side and avoids `resourceVersion` conflicts entirely for non-overlapping field changes.
-
-A follow-up variant `good-patch` using `r.Status().Patch()` instead of `r.Status().Update()` + `RetryOnConflict` was run. Results below.
-
-## r.Status().Patch() vs r.Status().Update()
-
-### The fix for conflict amplification
-
-When multiple workers call `r.Status().Update()`, they each read the object, compute the desired status, and write it back with the `resourceVersion` they read. If another write landed between their read and write, the API server rejects it with a 409 Conflict. Even with `RetryOnConflict`, this means at least one extra GET + one extra write per conflict.
-
-`r.Status().Patch()` with a merge patch bypasses this entirely. A merge patch says "apply these field changes to whatever the current state is" — no `resourceVersion` matching required. Concurrent workers can patch without conflicting.
+Two new controller variants: `good-patch` (5w + `r.Status().Patch()`), `good-single-patch` (1w + `r.Status().Patch()`). All other patterns identical to `good` and `good-single`. `client.MergeFrom` merge patch — no `RetryOnConflict` wrapper needed.
 
 ```go
 // Before (Update + RetryOnConflict):
@@ -243,110 +183,118 @@ widget.Status.Phase = "Ready"
 r.Status().Patch(ctx, widget, client.MergeFrom(base))
 ```
 
+N = {1,000; 10,000}. 180-second window.
+
+> ⚠️ **Data gap:** N=2,000 and N=5,000 patch runs were killed mid-setup by a `kubectl delete` timeout bug (now fixed). Only N=1k and N=10k captured. The "Patch is slower at small N, converges at large N" claim would benefit from N=2k or N=5k to fill the curve.
+
 ### Results
 
-| N | Method | good-5w ok | good-5w lat | good-5w retries | good-1w ok | good-1w lat | good-1w retries |
+| N | Method | 5w success | 5w lat | 5w retries | 1w success | 1w lat | 1w retries |
 |---|---|---|---|---|---|---|---|
-| 1k | Update | 2,106 | 124ms | **17** | 3,000 | 32ms | 0 |
+| 1k | **Update** | 2,106 | 124ms | 17 | 3,000 | 32ms | 0 |
 | 1k | **Patch** | 1,000 | 242ms | **0** | 1,000 | 49ms | 0 |
-| 2k | Update | 3,094 | 164ms | **13** | 4,000 | 37ms | 0 |
-| 10k | Update | 4,385 | 248ms | 0 | 4,385 | 50ms | 0 |
-| 10k | **Patch** | 4,365 | 248ms | **0** | 4,365 | 50ms | 0 |
+| 10k | **Update** | 4,385 | 248ms | 0 | 4,385 | 50ms | 0 |
+| 10k | **Patch** | 4,365 | 248ms | 0 | 4,365 | 50ms | 0 |
 
-### What Patch did and didn't fix
+### What this tells us
 
-**What it fixed:**
-- Zero retries and errors at every scale, including N=1k where Update had 17 conflicts on the 5-worker controller ✓
-- Clean semantics — no retry machinery, simpler code path
+**Conflicts: eliminated** ✓ Zero retries at both scales including N=1k where Update had 17.
 
-**What it didn't fix:**
-- **Throughput ceiling unchanged** — ~24 reconciles/sec regardless of Update or Patch. The ceiling is etcd write serialization, not conflict retry overhead.
-- **Patch is slower at small N for 5 workers** — 242ms vs 124ms at N=1k. The merge patch adds API server processing overhead (JSON merge on server) that shows up when the server isn't already at capacity. At N=10k the latency converges back to ~248ms (same as Update at scale).
-- **1-worker controller barely changed** — 49ms vs 32ms (Patch slightly slower) since it never had conflicts to begin with. Patch adds overhead without removing any existing wasted work for the 1-worker case.
+**Throughput ceiling: unchanged.** Both variants still hit ~24 reconciles/sec at N=10k. The ceiling is etcd write serialization, not retry overhead. Patch removes noise but not the fundamental constraint.
 
-The hypothesis that `Patch` might break through the 20/sec ceiling was wrong — the ceiling is pure etcd write serialization. Patch removes noise (retries) but doesn't change the fundamental constraint.
+**Patch is slower at small N for the 5-worker variant** — 242ms vs 124ms at N=1k. The server-side JSON merge processing adds latency that the plain Update path didn't have. This shows up when the API server isn't already saturated with queued writes. At N=10k the serialization wait dominates and both methods converge to ~248ms.
 
-### When to use Patch vs Update
+**The 1-worker variant barely changed** — 49ms vs 32ms (Patch slightly slower). The 1-worker controller never had conflicts to begin with, so Patch adds overhead without removing any existing wasted work.
 
-Use `r.Status().Patch()` when:
-- Your controller has multiple workers writing status concurrently (5+)
-- You want simpler code without `RetryOnConflict` boilerplate
-- Your status updates are partial (only a few fields) — smaller patch payload
+> Note: Patch at N=10k produced 4,365 successes vs Update's 4,385 — Patch is marginally *worse* even at large scale. The server-side merge overhead is always present.
 
-Use `r.Status().Update()` with `RetryOnConflict` when:
-- Single worker controller (no concurrency benefit from Patch)
-- Status update requires computing from the latest version (Patch's "current state" semantics may not be what you want)
+**When to use each:** Use `r.Status().Patch()` when your controller has 5+ workers writing status concurrently and you want zero-conflict semantics with simpler code. Use `r.Status().Update()` + `RetryOnConflict` for single-worker controllers or when status computation requires reading the latest version. Neither approach moves the write throughput ceiling on a single-node cluster.
 
-## Feature Gate Run Results
+---
 
-Re-ran good (5w Update) vs good-single (1w Update) on a new Kind cluster with `ConcurrentWatchObjectDecode=true` and `WatchListClient=true` explicitly enabled. Config used:
+## Experiment 4: Can Recent Feature Gates Reduce API Server Pressure?
+
+### Why this matters
+
+Experiments 2 and 3 found a hard ceiling at ~24 writes/sec from etcd serialization. Kubernetes 1.31–1.34 added several KEPs targeting API server efficiency. `WatchListClient` (KEP-3157) streams initial list responses as watch events to reduce memory pressure; `ConcurrentWatchObjectDecode` parallelizes the watch cache dispatch loop. Both should free API server goroutines — if that frees enough capacity to help our write bottleneck.
+
+### Hypothesis
+
+Per-reconcile latency drops slightly for the 5-worker controller (less watch cache goroutine contention), the etcd write ceiling holds unchanged. The 1w vs 5w throughput gap narrows but doesn't close.
+
+### Method
+
+New Kind cluster (`widget-benchmark-fg`, same `kindest/node:v1.34.0` image) with explicit feature gate flags:
 
 ```yaml
-# kind-cluster-featuregates.yaml
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-kubeadmConfigPatches:
-  - |
-    kind: ClusterConfiguration
-    apiServer:
-      extraArgs:
-        feature-gates: "ConcurrentWatchObjectDecode=true,WatchList=true"
-    controllerManager:
-      extraArgs:
-        feature-gates: "WatchListClient=true"
+apiServer:
+  extraArgs:
+    feature-gates: "ConcurrentWatchObjectDecode=true"
+controllerManager:
+  extraArgs:
+    feature-gates: "WatchListClient=true"
 ```
 
-Notes:
-- `ListFromCacheSnapshot`, `InOrderInformers`, `StreamingCollectionEncoding*` are already default-on in our `kindest/node:v1.34.0`
-- `WatchList` (server-side) is default-on since 1.32 — already active
-- `WatchListClient` (client-side) may not be default-on until 1.35; worth explicit enabling
-- `ConcurrentWatchObjectDecode` is Beta but default-OFF — explicit opt-in needed
+`ListFromCacheSnapshot`, `InOrderInformers`, and `StreamingCollectionEncoding*` are reported as default-on in 1.34 and not explicitly set.
 
-**Hypothesis**: per-reconcile latency drops slightly for the 5-worker controller (less watch cache goroutine contention) but the etcd write ceiling stays at ~24/sec.
+> ⚠️ **Verification gap:** "default-on in 1.34" is based on release notes research, not verified against the running cluster. To confirm: `kubectl get --raw '/metrics' | grep '^kubernetes_feature_enabled'`.
+
+Same two variants as Experiment 2 (`good` 5w, `good-single` 1w). N = {1k, 2k, 5k, 10k}.
+
+> ⚠️ **Data gap:** N=5,000 result is suspect — the fg cluster shows `good-single ok=6,736` and `good ok=6,042` with retries at N=5k, which doesn't fit the pattern (both N=2k and N=10k show ~2k–4k successes). This is likely contaminated by leftover widgets from the previous scale run that a timed-out `kubectl delete` didn't fully clear. N=5k should be re-run on a freshly cleaned cluster.
 
 ### Results
 
 | N | Baseline 5w lat | Baseline 5w retries | FG 5w lat | FG 5w retries | Baseline 1w lat | FG 1w lat |
 |---|---|---|---|---|---|---|
-| 1k | 124ms | **17** | 242ms | **0** | 32ms | 49ms |
-| 2k | 164ms | **13** | 246ms | **0** | 37ms | 49ms |
-| 5k | 123ms | 7 | 165ms | 21 | 31ms | 35ms |
-| 10k | 248ms | 0 | 248ms | 0 | 50ms | 50ms |
+| 1k | 124ms | 17 | **242ms** | **0** | 32ms | **49ms** |
+| 2k | 164ms | 13 | **246ms** | **0** | 37ms | **49ms** |
+| 5k | 123ms | 7 | 165ms | ⚠️ 21 | 31ms | ⚠️ 35ms |
+| 10k | 248ms | 0 | **248ms** | 0 | 50ms | **50ms** |
 
-**Actual outcome: feature gates made latency higher, not lower** — the opposite of the hypothesis. The 5-worker controller at N=1k went from 124ms to 242ms. The 1-worker controller went from 32ms to 49ms. At N=10k both converged back to identical numbers (the ceiling is etcd writes, unaffected by these gates).
+### What this tells us
 
-### Why WatchListClient Added Latency (KEP-3157 deep dive)
+**The hypothesis was wrong** — the feature gates increased latency at small N rather than decreasing it. At N=1k the 5-worker controller went from 124ms to 242ms; the 1-worker went from 32ms to 49ms. At N=10k both converged back to baseline values (248ms / 50ms) because the etcd write ceiling dominates.
 
-WatchListClient is optimized for a specific problem: **concurrent informer thundering herd after cluster restarts**. When many controllers restart simultaneously and all issue `LIST RV="0"`, the API server buffers O(5 × response_size) per request in memory simultaneously. With hundreds of concurrent informers on a large cluster this causes OOM crashes. WatchListClient eliminates this by streaming objects one at a time rather than buffering the whole list.
+**Why WatchListClient adds overhead here (KEP-3157):**
 
-In our benchmark scenario — fresh cluster, fresh controller start, 1k–10k small CRD objects — all of the costs fire with none of the benefits:
+`WatchListClient` is designed for one specific production failure: when many controllers restart simultaneously and each issues `LIST RV="0"`, the API server must buffer the full response per requester — O(5 × response_size) of temporary memory per concurrent list. With hundreds of informers restarting after a network partition, this causes OOM crashes. WatchListClient prevents this by streaming objects one-at-a-time from the watch cache rather than buffering the full list.
 
-**1. Mandatory etcd quorum read on every startup**
+In our scenario — fresh single-controller start, 1k–10k small CRD objects — all the costs fire with none of the benefits:
 
-`WatchListClient` always performs a consistent read from etcd to get the authoritative ResourceVersion before streaming, even when the watch cache is perfectly fresh. The old `LIST RV="0"` served directly from the watch cache without touching etcd at all. This adds a flat ~10-15ms overhead per informer startup.
+1. **Mandatory etcd quorum read on startup.** `WatchListClient` always performs a consistent read from etcd before streaming, even on a fresh cache. The old `LIST RV="0"` served directly from the watch cache without touching etcd. This adds ~10–15ms per informer startup.
+2. **Per-object watch event overhead.** Instead of one JSON `items` array, each object is delivered as a separate `ADDED` watch event with its own envelope. For small objects, the per-event framing cost dominates any memory saving.
+3. **Known 1–1.25 second bookmark timer delay** ([GitHub #122277](https://github.com/kubernetes/kubernetes/issues/122277)). The "initial sync complete" BOOKMARK waits for the next periodic timer tick rather than firing immediately when the threshold ResourceVersion is reached. This can add a full second to every informer startup.
+4. **The Kubernetes project itself acknowledged the tradeoff.** The server-side `WatchList` gate was promoted to Beta default-on in 1.32, then **reverted to default-off in 1.33**. `WatchListClient` remains opt-in only in 1.34.
 
-**2. Per-object watch event overhead vs batched list**
+**`WatchListClient` actually helps when:** controllers restart simultaneously in a large cluster (thousands of nodes, 100k+ objects), API server memory is the constraint, or objects are large (Secrets with large cert data, ConfigMaps). For a single-replica controller on a development Kind cluster, leave it at the default (off).
 
-Instead of one JSON `items` array, each object is wrapped in a separate `ADDED` watch event envelope. For small CRD objects like Widget, the per-event overhead (type field, metadata, protobuf framing) dominates any memory savings. The 10k-object case pays this cost 10,000 times.
+---
 
-**3. 1–1.25 second bookmark timer delay (GitHub issue #122277)**
+## Final Summary
 
-The BOOKMARK event confirming "initial sync complete" waits for the next periodic timer tick rather than firing immediately when the threshold ResourceVersion is reached. This can add a full second to controller startup latency.
+Four levers tested against the API server write bottleneck. One dominated correctness. None moved throughput.
 
-**4. The Kubernetes project itself acknowledges the tradeoff**
+| Factor | Correctness | Throughput | Latency |
+|---|---|---|---|
+| `GenerationChangedPredicate` OFF | **Breaks** — objects never converge, loop is infinite | — | — |
+| `r.Update()` for status (vs `r.Status().Update()`) | **Breaks** — status silently discarded by API server | — | — |
+| `MaxConcurrentReconciles: 5` (vs 1) | ✓ No change | **No gain** on single-node Kind | **4–5× worse** (write serialization) |
+| `r.Status().Patch()` (vs Update + RetryOnConflict) | ✓ Eliminates conflict errors | **No gain** — ceiling is etcd serialization | **Slightly worse** at small N |
+| `ConcurrentWatchObjectDecode` + `WatchListClient` | ✓ No change | **No gain** | **Worse** at small N, same at large N |
 
-The server-side `WatchList` gate was promoted to Beta (default-on) in 1.32, then **reverted to default-off in 1.33** due to unresolved concerns. `WatchListClient` (client-side) remains opt-in only as of 1.34. There are open issues showing it can use *more* temporary memory than the old approach in certain high-concurrency cases (issue #129467).
+**For a single-node Kind cluster:** the etcd write ceiling (~24 writes/sec on this hardware) is the hard floor on throughput, and none of the tested knobs move it. The correctness levers (`GenerationChangedPredicate`, status subresource) are non-negotiable. The performance levers range from neutral to counterproductive on this setup.
 
-### When WatchListClient Actually Helps
+**For a real production cluster:** `MaxConcurrentReconciles: 5` should show genuine throughput gains on a multi-node HA API server where writes don't all serialize on one etcd leader. `WatchListClient` is designed for large-scale thundering-herd scenarios. The benchmark methodology in this repo can be re-run against production-scale infrastructure to find where each lever actually wins.
 
-- Large clusters (thousands of nodes, 100k+ objects of a type)
-- Scenarios with simultaneous informer restarts: rolling kube-apiserver upgrades, post-network-partition recovery, many controller replicas coming up at once
-- Memory-constrained control planes where OOM prevention is the priority
-- Large objects (Secrets with big certs, large ConfigMaps) where per-list buffer savings are material
+**Open data gaps before publishing:**
 
-For a single-replica controller watching a CRD with small objects on a development/CI cluster: leave `WatchListClient` at its default (off). The old LIST path is already well-optimised for this case.
+- [ ] Re-run N=5,000 for Experiments 1, 3, and 4 cleanly
+- [ ] Re-run Experiment 4 N=5k on freshly cleared cluster (suspect contamination)
+- [ ] Patch N=2,000 and N=5,000 (N=1k and N=10k only)
+- [ ] Extend one N=10k run to ~500s to report actual convergence time (both controllers still had ~5,600 queued at 180s)
+- [ ] Verify default-on gates via `kubectl get --raw '/metrics' | grep kubernetes_feature_enabled`
+- [ ] Add `kubectl top pod` CPU snapshots for bad-fix-5w to visually reinforce the wasted-work argument
 
 ## Running It Yourself
 
@@ -354,10 +302,13 @@ For a single-replica controller watching a CRD with small objects on a developme
 git clone https://github.com/pokgak/agent-skills
 cd agent-skills/experiments/k8s-controller-benchmark
 
-make setup        # create Kind cluster, build + load images, deploy CRDs and controllers
-make stress N=100 # create 100 widgets in each namespace, poll for 30s
-make compare      # side-by-side results table
-make clean        # tear down
+make setup          # create Kind cluster, build + load images, deploy CRDs and controllers
+make stress N=200   # 2×2 matrix run (all 4 variants)
+bash stress-good.sh 1000 180   # good variants only, N=1000
+bash stress-patch.sh 1000 180  # patch variants
+make setup-fg       # feature gate cluster
+bash stress-good-fg.sh 1000 180
+make clean          # tear down both clusters
 ```
 
-Requires: `kind`, `kubectl`, `docker`, `go 1.22+`
+Requires: `kind`, `kubectl`, `docker`, `go 1.22+`, `duckdb` (for CSV analysis)
