@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-controller
+  namespace: bad
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-controller
+  template:
+    metadata:
+      labels:
+        app: bad-controller
+    spec:
+      serviceAccountName: bad-controller
+      containers:
+        - name: manager
+          image: bad-controller:dev
+          imagePullPolicy: Never
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi

@@ -7,7 +7,7 @@ draft: false
 
 Four controller best-practice guidelines tested against their bad counterparts on a local Kind cluster: does `GenerationChangedPredicate` matter, does `MaxConcurrentReconciles` help, does `r.Status().Patch()` break the conflict bottleneck, and do recent k8s feature gates reduce API server pressure? Each factor gets its own controlled experiment with Prometheus metrics collected per-second to CSV.
 
-Code: [pokgak/agent-skills — experiments/k8s-controller-benchmark](https://github.com/pokgak/agent-skills/tree/main/experiments/k8s-controller-benchmark)
+Code: [pokgak/pokgak.github.io — content/experiments/k8s-controller-benchmark](https://github.com/pokgak/pokgak.github.io/tree/master/content/experiments/k8s-controller-benchmark)
 
 ## The Question
 
@@ -303,8 +303,8 @@ The recommended follow-up is to re-run Experiments 2–4 against a **multi-node 
 ## Running It Yourself
 
 ```bash
-git clone https://github.com/pokgak/agent-skills
-cd agent-skills/experiments/k8s-controller-benchmark
+git clone https://github.com/pokgak/pokgak.github.io
+cd pokgak.github.io/content/experiments/k8s-controller-benchmark
 
 make setup          # create Kind cluster, build + load images, deploy CRDs and controllers
 make stress N=200   # 2×2 matrix run (all 4 variants)

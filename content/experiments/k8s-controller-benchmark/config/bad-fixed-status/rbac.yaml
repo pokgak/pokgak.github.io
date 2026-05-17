@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bad-fixed-status-controller
+  namespace: bad-fixed-status
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: bad-fixed-status-controller
+rules:
+- apiGroups: ["benchmark.example.com"]
+  resources: ["widgets"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+- apiGroups: ["benchmark.example.com"]
+  resources: ["widgets/status"]
+  verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: bad-fixed-status-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: bad-fixed-status-controller
+subjects:
+- kind: ServiceAccount
+  name: bad-fixed-status-controller
+  namespace: bad-fixed-status

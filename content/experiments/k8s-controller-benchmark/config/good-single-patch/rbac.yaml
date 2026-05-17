@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: good-single-patch-controller
+  namespace: good-single-patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: good-single-patch-controller
+rules:
+- apiGroups: ["benchmark.example.com"]
+  resources: ["widgets"]
+  verbs: ["get","list","watch","patch"]
+- apiGroups: ["benchmark.example.com"]
+  resources: ["widgets/status"]
+  verbs: ["get","update","patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: good-single-patch-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: good-single-patch-controller
+subjects:
+- kind: ServiceAccount
+  name: good-single-patch-controller
+  namespace: good-single-patch

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: good-controller
+  namespace: good
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: good-controller
+  template:
+    metadata:
+      labels:
+        app: good-controller
+    spec:
+      serviceAccountName: good-controller
+      containers:
+        - name: manager
+          image: good-controller:dev
+          imagePullPolicy: Never
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi

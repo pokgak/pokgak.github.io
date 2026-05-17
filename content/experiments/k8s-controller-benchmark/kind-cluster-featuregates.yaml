@@ -1,0 +1,26 @@
+# Kind cluster with explicit feature gates for the API server bottleneck follow-up run.
+#
+# Gates already default-on in kindest/node:v1.34.0 (no opt-in needed):
+#   - ListFromCacheSnapshot (Beta default-on 1.34)
+#   - InOrderInformers (Beta default-on 1.34)
+#   - StreamingCollectionEncodingToJSON (Beta default-on 1.33)
+#   - StreamingCollectionEncodingToProtobuf (Beta default-on 1.33)
+#   - WatchList server-side (Beta default-on 1.32)
+#   - ConsistentListFromCache (Beta 1.31, stable ~1.34)
+#
+# Gates explicitly enabled here (Beta but default-OFF in 1.34):
+#   - ConcurrentWatchObjectDecode: decodes watch objects concurrently
+#   - WatchListClient: switches informers to streaming list protocol (default-on 1.35)
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    apiServer:
+      extraArgs:
+        feature-gates: "ConcurrentWatchObjectDecode=true"
+    controllerManager:
+      extraArgs:
+        feature-gates: "WatchListClient=true"
