@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-fixed-single-controller
+  namespace: bad-fixed-single
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-fixed-single-controller
+  template:
+    metadata:
+      labels:
+        app: bad-fixed-single-controller
+    spec:
+      serviceAccountName: bad-fixed-single-controller
+      containers:
+      - name: manager
+        image: bad-fixed-single-controller:dev
+        imagePullPolicy: Never
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+          requests:
+            cpu: "100m"
+            memory: "64Mi"

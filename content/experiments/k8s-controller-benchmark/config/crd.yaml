@@ -1,0 +1,51 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: widgets.benchmark.example.com
+spec:
+  group: benchmark.example.com
+  names:
+    kind: Widget
+    listKind: WidgetList
+    plural: widgets
+    singular: widget
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Count
+          type: integer
+          jsonPath: .spec.count
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - count
+              properties:
+                count:
+                  type: integer
+                message:
+                  type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                processedCount:
+                  type: integer
+                lastUpdated:
+                  type: string
+                  format: date-time

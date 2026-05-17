@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: good-controller
+  namespace: good
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: good-controller
+rules:
+  - apiGroups:
+      - benchmark.example.com
+    resources:
+      - widgets
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+  - apiGroups:
+      - benchmark.example.com
+    resources:
+      - widgets/status
+    verbs:
+      - get
+      - update
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: good-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: good-controller
+subjects:
+  - kind: ServiceAccount
+    name: good-controller
+    namespace: good

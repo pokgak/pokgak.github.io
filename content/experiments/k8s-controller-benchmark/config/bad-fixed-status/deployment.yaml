@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-fixed-status-controller
+  namespace: bad-fixed-status
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-fixed-status-controller
+  template:
+    metadata:
+      labels:
+        app: bad-fixed-status-controller
+    spec:
+      serviceAccountName: bad-fixed-status-controller
+      containers:
+      - name: manager
+        image: bad-fixed-status-controller:dev
+        imagePullPolicy: Never
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+          requests:
+            cpu: "100m"
+            memory: "64Mi"

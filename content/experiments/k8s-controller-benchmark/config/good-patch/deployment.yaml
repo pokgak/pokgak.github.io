@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: good-patch-controller
+  namespace: good-patch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: good-patch-controller
+  template:
+    metadata:
+      labels:
+        app: good-patch-controller
+    spec:
+      serviceAccountName: good-patch-controller
+      containers:
+      - name: manager
+        image: good-patch-controller:dev
+        imagePullPolicy: Never
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+          requests:
+            cpu: "100m"
+            memory: "64Mi"

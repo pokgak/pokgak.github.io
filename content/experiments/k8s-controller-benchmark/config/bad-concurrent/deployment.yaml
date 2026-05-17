@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bad-concurrent-controller
+  namespace: bad-concurrent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bad-concurrent-controller
+  template:
+    metadata:
+      labels:
+        app: bad-concurrent-controller
+    spec:
+      serviceAccountName: bad-concurrent-controller
+      containers:
+      - name: manager
+        image: bad-concurrent-controller:dev
+        imagePullPolicy: Never
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "128Mi"
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
