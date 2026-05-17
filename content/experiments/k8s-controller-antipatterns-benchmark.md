@@ -305,14 +305,62 @@ The recommended follow-up is to re-run Experiments 2–4 against a **multi-node 
 ```bash
 git clone https://github.com/pokgak/pokgak.github.io
 cd pokgak.github.io/content/experiments/k8s-controller-benchmark
-
-make setup          # create Kind cluster, build + load images, deploy CRDs and controllers
-make stress N=200   # 2×2 matrix run (all 4 variants)
-bash stress-good.sh 1000 180   # good variants only, N=1000
-bash stress-patch.sh 1000 180  # patch variants
-make setup-fg       # feature gate cluster
-bash stress-good-fg.sh 1000 180
-make clean          # tear down both clusters
 ```
 
-Requires: `kind`, `kubectl`, `docker`, `go 1.22+`, `duckdb` (for CSV analysis)
+### Prerequisites
+
+- `kind` — local Kubernetes clusters in Docker
+- `kubectl`
+- `docker` (or OrbStack)
+- `go 1.22+`
+- `duckdb` — for CSV analysis (optional)
+
+### Full setup (baseline cluster)
+
+```bash
+# 1. Create the Kind cluster, build all controller images, deploy CRDs and controllers
+make setup
+
+# 2. Run Experiment 1 — 2×2 matrix (all 4 variants: good, good-single, bad-fix, bad-fix-single)
+make stress N=500        # 60s observation window
+make stress N=5000
+
+# 3. Run Experiment 2 — good variants only at larger scale
+bash stress-good.sh 1000 180
+bash stress-good.sh 5000 180
+bash stress-good.sh 10000 180
+
+# 4. Run Experiment 3 — Patch variants
+bash stress-patch.sh 1000 180
+bash stress-patch.sh 5000 180
+```
+
+### Feature gate cluster (Experiment 4)
+
+```bash
+# Create a separate Kind cluster with ConcurrentWatchObjectDecode + WatchListClient enabled
+make setup-fg
+
+# Run the same good-only benchmark against the fg cluster
+bash stress-good-fg.sh 1000 180
+bash stress-good-fg.sh 5000 180
+
+make cluster-delete-fg   # tear down when done
+```
+
+### Analysing results
+
+Each stress run writes per-second Prometheus metrics to `metrics/<timestamp>-<variant>-N<scale>/metrics-<controller>.csv`. Load into DuckDB:
+
+```sql
+-- in duckdb interactive shell
+CREATE VIEW m AS SELECT * FROM read_csv_auto(['metrics/20260517T*/metrics-good*.csv']);
+.read queries.sql   -- pre-written queries for queue depth, latency, retries, convergence time
+```
+
+### Tear down
+
+```bash
+make clean           # delete baseline cluster
+make cluster-delete-fg   # delete feature gate cluster (if created)
+```
