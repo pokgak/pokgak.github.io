@@ -286,6 +286,20 @@ Four levers tested against the API server write bottleneck. One dominated correc
 
 **For a real production cluster:** `MaxConcurrentReconciles: 5` should show genuine throughput gains on a multi-node HA API server where writes don't all serialize on one etcd leader. `WatchListClient` is designed for large-scale thundering-herd scenarios. The benchmark methodology in this repo can be re-run against production-scale infrastructure to find where each lever actually wins.
 
+## Limitations and Future Work
+
+The central limitation of this entire experiment set is that **Kind serializes all etcd writes through a single node**. Every performance experiment after Experiment 1 is ultimately measuring the same thing: how many different ways can we saturate a single-node etcd at ~24 writes/sec. More workers, Patch instead of Update, feature gates — they all hit the same wall, so the results look identical across all configurations at large N.
+
+This is by design for a local development benchmark, but it means the performance conclusions are incomplete. The questions that remain unanswered:
+
+- **Does `MaxConcurrentReconciles: 5` actually help on a real cluster?** On a 3-node HA etcd setup with multiple kube-apiserver replicas, concurrent writes can be distributed across leaders. The ~5× theoretical speedup from parallelism may actually materialize. On Kind it never can.
+
+- **Does `r.Status().Patch()` reduce latency at scale on a real cluster?** The merge patch overhead we saw (~120ms vs ~50ms at large N) is partly from the single-node API server being saturated by queued writes. On a cluster that isn't write-saturated, the smaller patch payload and absence of conflict retries might produce meaningful latency improvements.
+
+- **Do the feature gates help at production scale?** `WatchListClient` is designed for large clusters with 100k+ objects and hundreds of concurrent informers — a regime impossible to reproduce on a single-node Kind cluster. Its real benefit (preventing API server OOM during thundering-herd restarts) simply has no opportunity to manifest here.
+
+The recommended follow-up is to re-run Experiments 2–4 against a **multi-node managed Kubernetes cluster** (GKE, EKS, AKS, or a self-hosted kubeadm cluster with 3+ etcd nodes and 2+ API server replicas). The benchmark scripts in this repo already support it — just point `KUBECONFIG` at a production cluster and run `bash stress-good.sh 10000 300`. The same CSV output, the same DuckDB queries, but with the artificial serialization bottleneck removed.
+
 ## Running It Yourself
 
 ```bash
