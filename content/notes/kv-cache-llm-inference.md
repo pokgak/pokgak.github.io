@@ -20,11 +20,11 @@ The tradeoff: speed for memory. Cache size = `2 × layers × heads × head_dim �
 
 **What are MHA, MQA, and GQA? Why do they matter for KV cache size?**
 
-In **Multi-Head Attention (MHA)**, each head has its own K and V matrices. 32 heads = 32 K matrices + 32 V matrices in cache.
+In **Multi-Head Attention (MHA)**[^1], each head has its own K and V matrices. 32 heads = 32 K matrices + 32 V matrices in cache.
 
-**Multi-Query Attention (MQA)** (Shazeer, 2019) keeps 32 separate Q heads but shares a single K and V across all of them. Cache shrinks ~32x. Slight quality degradation — all heads look up from the same K/V pool.
+**Multi-Query Attention (MQA)**[^2] (Shazeer, 2019) keeps 32 separate Q heads but shares a single K and V across all of them. Cache shrinks ~32x. Slight quality degradation — all heads look up from the same K/V pool.
 
-**Grouped Query Attention (GQA)** (Ainslie et al., 2023) is the middle ground — groups of heads share K/V (e.g. 8 KV heads for 32 Q heads). ~4x cache reduction, minimal quality loss. Now the default in most open models (Llama 2/3, Mistral).
+**Grouped Query Attention (GQA)**[^3] (Ainslie et al., 2023) is the middle ground — groups of heads share K/V (e.g. 8 KV heads for 32 Q heads). ~4x cache reduction, minimal quality loss. Now the default in most open models (Llama 2/3, Mistral).
 
 *Intuition: heads diverge in what they ask (Q), not in what they look up (K/V) — so sharing K/V is mostly fine.*
 
@@ -32,7 +32,7 @@ In **Multi-Head Attention (MHA)**, each head has its own K and V matrices. 32 he
 
 **What is MLA (Multi-head Latent Attention) and how does it go further than GQA?**
 
-MHA → MQA → GQA all reduce KV cache by sharing K/V across heads. MLA (DeepSeek-V2, 2024) takes a different approach: instead of sharing, it *compresses* K and V into a small latent vector using low-rank projection, then decompresses back to full K/V at attention time.
+MHA → MQA → GQA all reduce KV cache by sharing K/V across heads. MLA[^4] (DeepSeek-V2, 2024) takes a different approach: instead of sharing, it *compresses* K and V into a small latent vector using low-rank projection, then decompresses back to full K/V at attention time.
 
 Concretely: instead of storing `num_heads × head_dim` K and V vectors per token, MLA stores a single compressed latent of dimension `d_c` where `d_c << num_heads × head_dim`. At attention time, project the latent back up to full K/V. The latent is what gets cached — much smaller.
 
@@ -77,7 +77,7 @@ Limit: perplexity doesn't always correlate with task performance — use both.
 
 Standard attention writes the full Q×K^T matrix to HBM, runs softmax (round trip to HBM), multiplies by V (another round trip). Every intermediate result is a HBM read/write. For a 4096-token sequence that's a 4096×4096 matrix being written and read repeatedly — bandwidth-bound, not compute-bound.
 
-FlashAttention tiles input into blocks that fit GPU SRAM (~20MB, ~10x faster than HBM). Uses a running rescaling trick for softmax — as each tile is processed, a running max and normalization factor corrects partial results. Never materializes the full matrix. Mathematically identical to standard attention.
+FlashAttention[^5] tiles input into blocks that fit GPU SRAM (~20MB, ~10x faster than HBM). Uses a running rescaling trick for softmax — as each tile is processed, a running max and normalization factor corrects partial results. Never materializes the full matrix. Mathematically identical to standard attention.
 
 *Intuition: standard attention does its work on a whiteboard (HBM) — slow but big. FlashAttention keeps everything on a notepad (SRAM) — fast but small — only writes the final answer to the whiteboard.*
 
@@ -97,7 +97,7 @@ X100's main win is amortizing interpreter overhead — you'd get most of the spe
 
 Deepest similarity: both only work because the operations are algebraically decomposable. Aggregations are associative; softmax can be incrementally rescaled. Same insight, different hardware layer.
 
-Reference: *MonetDB/X100: Hyper-Pipelining Query Execution* (Boncz, Zukowski, Nes — CIDR 2005).
+Reference: *MonetDB/X100: Hyper-Pipelining Query Execution*[^6] (Boncz, Zukowski, Nes — CIDR 2005).
 
 ---
 
@@ -105,7 +105,7 @@ Reference: *MonetDB/X100: Hyper-Pipelining Query Execution* (Boncz, Zukowski, Ne
 
 Without it, KV cache is pre-allocated as a contiguous buffer per request. This causes internal fragmentation (reserved 2048 tokens, used 1000) and external fragmentation (enough total free memory but no contiguous block large enough). The same problem virtual memory was invented to solve.
 
-PagedAttention breaks KV cache into fixed-size blocks (~16–32 tokens of K+V). Each request has a block table mapping logical sequence positions to physical HBM blocks — same indirection as a page table.
+PagedAttention[^7] breaks KV cache into fixed-size blocks (~16–32 tokens of K+V). Each request has a block table mapping logical sequence positions to physical HBM blocks — same indirection as a page table.
 
 | OS Virtual Memory | PagedAttention |
 |---|---|
@@ -136,7 +136,7 @@ LLM inference has two distinct phases:
 This asymmetry matters for system design:
 - Prefill latency scales with prompt length. Decode latency scales with output length × KV cache size.
 - A request with a 10k-token prompt but 50-token output is prefill-dominated. A chatbot reply is decode-dominated.
-- Disaggregated prefill/decode (Splitwise, Sarathi-Serve, 2024) routes these phases to different hardware because they have different bottlenecks. Prefill wants compute (matrix multiply throughput). Decode wants memory bandwidth (HBM read speed).
+- Disaggregated prefill/decode[^8] (Splitwise, Sarathi-Serve, 2024) routes these phases to different hardware because they have different bottlenecks. Prefill wants compute (matrix multiply throughput). Decode wants memory bandwidth (HBM read speed).
 
 *Intuition: prefill is like reading a whole book at once — fast because you can parallelize. Decode is like writing a book one word at a time, checking everything you've written before each new word — fundamentally sequential.*
 
@@ -160,7 +160,7 @@ Result: ~70-90% GPU utilization vs ~30-40%. Main reason vLLM was a step change i
 
 Flat prefix caching (original vLLM) hashes a block's token sequence — on match, reuse. One level only. Misses tree-shaped sharing: same system prompt + different few-shot examples + different questions all share the system prompt but diverge after.
 
-RadixAttention uses a radix tree where each node is a shared token segment with a pointer to its KV blocks. New request walks the tree: matched nodes reuse existing KV blocks, unmatched suffix is computed and inserted as a new leaf. Tree grows organically from traffic — topology stabilizes after warmup.
+RadixAttention[^9] uses a radix tree where each node is a shared token segment with a pointer to its KV blocks. New request walks the tree: matched nodes reuse existing KV blocks, unmatched suffix is computed and inserted as a new leaf. Tree grows organically from traffic — topology stabilizes after warmup.
 
 Node splitting handles partial matches: if [system_prompt | question_A] is one node and [system_prompt | question_B] arrives, split at divergence — system_prompt becomes parent, question_A/B become children. Reference counting prevents eviction of blocks in active use.
 
@@ -230,7 +230,7 @@ score(i) = dot(Q_current, K_i) / sqrt(head_dim)
 
 After softmax, scores sum to 1. Near-zero score = token barely contributes = safe to offload. These scores are computed anyway during every attention step — using them as an eviction signal is free.
 
-**Attention sink phenomenon** (StreamingLLM): the first few tokens almost always get high attention scores even when semantically irrelevant. The model uses them as a probability dump when nothing else is relevant. Evict them and outputs degrade badly — always keep in HBM regardless.
+**Attention sink phenomenon**[^10] (StreamingLLM): the first few tokens almost always get high attention scores even when semantically irrelevant. The model uses them as a probability dump when nothing else is relevant. Evict them and outputs degrade badly — always keep in HBM regardless.
 
 *Intuition: attention scores are a free readout of which memories the model is actually using. Near-zero score = cold page in a buffer pool.*
 
@@ -259,9 +259,9 @@ Workload patterns:
 No standard exists. Active research area. What systems actually do:
 
 - **vLLM**: block-level LRU. No attention-score peeking. CPU offload used for whole-request preemption under memory pressure, not fine-grained tiering.
-- **H2O (research)**: accumulates per-token importance scores (sum of attention weights across heads/steps), evicts bottom-k. Not widely deployed.
-- **SnapKV (research)**: identifies important tokens during prefill by examining attention on the last few query tokens, keeps those throughout decode. Prefill-time prediction rather than online tracking.
-- **InfiniGen / FastDecode (research)**: predict which blocks will be needed using lightweight speculative models. More prefetch predictor than eviction policy.
+- **H2O**[^11] (research): accumulates per-token importance scores (sum of attention weights across heads/steps), evicts bottom-k. Not widely deployed.
+- **SnapKV**[^12] (research): identifies important tokens during prefill by examining attention on the last few query tokens, keeps those throughout decode. Prefill-time prediction rather than online tracking.
+- **InfiniGen / FastDecode** (research): predict which blocks will be needed using lightweight speculative models. More prefetch predictor than eviction policy.
 - **Production (vLLM, TensorRT-LLM)**: prefix caching + whole-request preemption + position-based proxy (recent = hot). Attention-score approaches remain mostly research — tracking per-token per-head per-step adds up.
 
 *Intuition: like PostgreSQL before pg_buffercache gave visibility into what was hot. Systems evict on cheap proxies (position, recency). True attention-score hotness is expensive to track. Research is ahead of production.*
@@ -270,11 +270,28 @@ No standard exists. Active research area. What systems actually do:
 
 ## Appendix: Timeline
 
-- **2017** — Transformers (*Attention is All You Need*, Vaswani et al.). K/V/Q defined. KV cache implicit in autoregressive decoding.
-- **2019** — MQA (Shazeer). First paper to treat KV cache size as the primary problem.
+- **2017** — Transformers (*Attention is All You Need*, Vaswani et al.[^1]). K/V/Q defined. KV cache implicit in autoregressive decoding.
+- **2019** — MQA (Shazeer[^2]). First paper to treat KV cache size as the primary problem.
 - **2020** — Longformer (Beltagy et al.) — sliding window attention to bound cache for long contexts.
-- **2022** — FlashAttention (Dao et al.) — HBM-bandwidth-aware attention. Made memory bottleneck explicit.
-- **2023** — GQA (Ainslie et al.); PagedAttention/vLLM (Kwon et al.); StreamingLLM/attention sinks (Xiao et al.); H2O eviction (Zhang et al.); speculative decoding.
-- **2024** — DeepSeek-V2 MLA (low-rank compressed KV); SGLang RadixAttention; disaggregated prefill/decode (Splitwise, Sarathi-Serve); prompt caching APIs (Anthropic, OpenAI, Google); KV quantization (INT8/INT4) standard in vLLM/TensorRT-LLM.
+- **2022** — FlashAttention (Dao et al.[^5]) — HBM-bandwidth-aware attention. Made memory bottleneck explicit.
+- **2023** — GQA (Ainslie et al.[^3]); PagedAttention/vLLM (Kwon et al.[^7]); StreamingLLM/attention sinks (Xiao et al.[^10]); H2O eviction (Zhang et al.[^11]); speculative decoding.
+- **2024** — DeepSeek-V2 MLA[^4] (low-rank compressed KV); SGLang RadixAttention[^9]; disaggregated prefill/decode[^8] (Splitwise, Sarathi-Serve); prompt caching APIs (Anthropic, OpenAI, Google); KV quantization (INT8/INT4) standard in vLLM/TensorRT-LLM.
 - **2025** — 1M+ context windows make KV cache a systems-architecture problem. CPU/NVMe offloading matures. Cross-request persistent cache emerges.
 - **2026** — KV cache as distributed resource. MLA adoption spreading. Debate: solve decode bottleneck via hardware (HBM bandwidth) or architecture (MLA, sparse attention)?
+
+---
+
+## References
+
+[^1]: Vaswani et al., "Attention is All You Need" (2017). https://arxiv.org/abs/1706.03762
+[^2]: Shazeer, "Fast Transformer Decoding: One Write-Head is All You Need" (2019). https://arxiv.org/abs/1911.02150
+[^3]: Ainslie et al., "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints" (2023). https://arxiv.org/abs/2305.13245
+[^4]: DeepSeek-AI, "DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model" (2024). https://arxiv.org/abs/2405.04434
+[^5]: Dao et al., "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness" (2022). https://arxiv.org/abs/2205.14135
+[^6]: Boncz, Zukowski, Nes, "MonetDB/X100: Hyper-Pipelining Query Execution" (CIDR 2005). https://www.cidrdb.org/cidr2005/papers/P19.pdf
+[^7]: Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention" (2023). https://arxiv.org/abs/2309.06180
+[^8]: Splitwise: Patel et al., "Splitwise: Efficient Generative LLM Inference Using Phase Splitting" (2024). https://arxiv.org/abs/2311.18677
+[^9]: Zheng et al., "SGLang: Efficient Execution of Structured Language Model Programs" (2023). https://arxiv.org/abs/2312.07104
+[^10]: Xiao et al., "Efficient Streaming Language Models with Attention Sinks" (2023). https://arxiv.org/abs/2309.17453
+[^11]: Zhang et al., "H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models" (2023). https://arxiv.org/abs/2306.14048
+[^12]: Li et al., "SnapKV: LLM Knows What You are Looking for Before Generation" (2024). https://arxiv.org/abs/2404.14469
