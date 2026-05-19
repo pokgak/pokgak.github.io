@@ -152,8 +152,10 @@ function articleListItem(article) {
     </li>`;
 }
 
-function homePage(articles) {
-  const latest = articles.slice(0, 5);
+function homePage(articles, notes, experiments) {
+  const latestArticles = articles.slice(0, 3);
+  const latestNotes = notes.slice(0, 3);
+  const latestExperiments = experiments.slice(0, 3);
   return baseLayout(SITE_TITLE, `
     <section class="mb-12">
       <div class="flex gap-4 mb-8">
@@ -169,12 +171,28 @@ function homePage(articles) {
       </div>
     </section>
 
-    <section>
+    <section class="mb-12">
       <h2 class="text-xl font-semibold mb-6">Latest Articles</h2>
       <ul class="space-y-3 mb-6">
-        ${latest.map(articleListItem).join('\n        ')}
+        ${latestArticles.map(articleListItem).join('\n        ')}
       </ul>
       <a href="/articles/" class="text-sm hover:opacity-75 transition-opacity">View all &rarr;</a>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-xl font-semibold mb-6">Latest Notes</h2>
+      <ul class="space-y-3 mb-6">
+        ${latestNotes.map(noteListItem).join('\n        ')}
+      </ul>
+      <a href="/notes/" class="text-sm hover:opacity-75 transition-opacity">View all &rarr;</a>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-xl font-semibold mb-6">Latest Experiments</h2>
+      <ul class="space-y-3 mb-6">
+        ${latestExperiments.map(experimentListItem).join('\n        ')}
+      </ul>
+      <a href="/experiments/" class="text-sm hover:opacity-75 transition-opacity">View all &rarr;</a>
     </section>
 
     <section class="mt-16 flex justify-center">
@@ -336,7 +354,7 @@ function build() {
   ensureDir(PUBLIC_DIR);
 
   // Home page
-  fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), homePage(articles));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), homePage(articles, notes, experiments));
 
   // Articles list
   ensureDir(path.join(PUBLIC_DIR, 'articles'));
