@@ -58,6 +58,7 @@ new-talk:
 	@echo 'event: ""' >> content/talks/$(SLUG).md
 	@echo 'embed_url: ""' >> content/talks/$(SLUG).md
 	@echo 'slides_pdf: ""' >> content/talks/$(SLUG).md
+	@echo 'thumbnail: ""' >> content/talks/$(SLUG).md
 	@echo 'tags: []' >> content/talks/$(SLUG).md
 	@echo '---' >> content/talks/$(SLUG).md
 	@echo '' >> content/talks/$(SLUG).md

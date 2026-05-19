@@ -82,6 +82,7 @@ function loadTalks(dir) {
       event: data.event || '',
       embed_url: data.embed_url || '',
       slides_pdf: data.slides_pdf || '',
+      thumbnail: data.thumbnail || '',
       slug,
       html,
     };
@@ -345,7 +346,13 @@ function experimentPage(experiment) {
 }
 
 function talkListItem(talk) {
+  const thumb = talk.thumbnail
+    ? `<a href="/talks/${talk.slug}/" class="block mb-3 hover:opacity-75 transition-opacity">
+        <img src="/images/${escapeXml(talk.thumbnail)}" alt="${escapeXml(talk.title)}" class="w-full rounded-lg aspect-video object-cover">
+      </a>`
+    : '';
   return `<li class="flex flex-col gap-1">
+      ${thumb}
       <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
         <time class="text-sm text-gray-500 dark:text-gray-400 shrink-0" datetime="${talk.date.toISOString()}">${formatDateShort(talk.date)}</time>
         <a href="/talks/${talk.slug}/" class="hover:opacity-75 transition-opacity">${escapeXml(talk.title)}</a>
@@ -369,7 +376,9 @@ function talkPage(talk) {
         <iframe src="${escapeXml(talk.embed_url)}" frameborder="0" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"
           class="absolute inset-0 w-full h-full rounded-lg"></iframe>
       </div>`
-    : '';
+    : talk.thumbnail
+      ? `<img src="/images/${escapeXml(talk.thumbnail)}" alt="${escapeXml(talk.title)}" class="w-full rounded-lg mb-8">`
+      : '';
 
   const pdfLink = talk.slides_pdf
     ? `<a href="${escapeXml(talk.slides_pdf)}" class="inline-flex items-center gap-1 text-sm hover:opacity-75 transition-opacity" download>
