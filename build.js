@@ -23,6 +23,7 @@ const SITE_URL = 'https://pokgak.xyz';
 const ARTICLES_DIR = path.join(__dirname, 'content/articles');
 const NOTES_DIR = path.join(__dirname, 'content/notes');
 const EXPERIMENTS_DIR = path.join(__dirname, 'content/experiments');
+const TALKS_DIR = path.join(__dirname, 'content/talks');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const STATIC_DIR = path.join(__dirname, 'static');
 
@@ -65,6 +66,30 @@ function escapeXml(str) {
 }
 
 // --- Load content ---
+
+function loadTalks(dir) {
+  if (!fs.existsSync(dir)) return [];
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md') && f !== 'CLAUDE.md');
+  const items = files.map(file => {
+    const raw = fs.readFileSync(path.join(dir, file), 'utf-8');
+    const { data, content } = matter(raw);
+    const slug = slugFromFilename(file);
+    const html = marked(content);
+    return {
+      title: data.title || slug,
+      date: data.date ? new Date(data.date) : new Date(0),
+      tags: data.tags || [],
+      event: data.event || '',
+      embed_url: data.embed_url || '',
+      slides_pdf: data.slides_pdf || '',
+      thumbnail: data.thumbnail || '',
+      slug,
+      html,
+    };
+  });
+  items.sort((a, b) => b.date - a.date);
+  return items;
+}
 
 function loadContent(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -127,6 +152,7 @@ function baseLayout(title, content, { isHome = false } = {}) {
       <a href="/articles/" class="hover:opacity-75 transition-opacity">Articles</a>
       <a href="/notes/" class="hover:opacity-75 transition-opacity">Notes</a>
       <a href="/experiments/" class="hover:opacity-75 transition-opacity">Experiments</a>
+      <a href="/talks/" class="hover:opacity-75 transition-opacity">Talks</a>
       <button @click="dark = !dark" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" aria-label="Toggle dark mode">
         <svg x-show="!dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
         <svg x-show="dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -319,6 +345,73 @@ function experimentPage(experiment) {
   `);
 }
 
+function talkListItem(talk) {
+  const thumb = talk.thumbnail
+    ? `<a href="/talks/${talk.slug}/" class="block mb-3 hover:opacity-75 transition-opacity">
+        <img src="/images/${escapeXml(talk.thumbnail)}" alt="${escapeXml(talk.title)}" class="w-full rounded-lg aspect-video object-cover">
+      </a>`
+    : '';
+  return `<li class="flex flex-col gap-1">
+      ${thumb}
+      <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
+        <time class="text-sm text-gray-500 dark:text-gray-400 shrink-0" datetime="${talk.date.toISOString()}">${formatDateShort(talk.date)}</time>
+        <a href="/talks/${talk.slug}/" class="hover:opacity-75 transition-opacity">${escapeXml(talk.title)}</a>
+      </div>
+      ${talk.event ? `<p class="text-sm text-gray-500 dark:text-gray-400 sm:pl-[calc(10ch+1rem)]">${escapeXml(talk.event)}</p>` : ''}
+    </li>`;
+}
+
+function talksListPage(talks) {
+  return baseLayout('Talks', `
+    <h1 class="text-2xl font-semibold mb-8">Talks</h1>
+    <ul class="space-y-6">
+      ${talks.map(talkListItem).join('\n      ')}
+    </ul>
+  `);
+}
+
+function talkPage(talk) {
+  const embed = talk.embed_url
+    ? `<div class="relative w-full mb-8" style="padding-top: 56.25%;">
+        <iframe src="${escapeXml(talk.embed_url)}" frameborder="0" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true"
+          class="absolute inset-0 w-full h-full rounded-lg"></iframe>
+      </div>`
+    : talk.thumbnail
+      ? `<img src="/images/${escapeXml(talk.thumbnail)}" alt="${escapeXml(talk.title)}" class="w-full rounded-lg mb-8">`
+      : '';
+
+  const pdfLink = talk.slides_pdf
+    ? `<a href="${escapeXml(talk.slides_pdf)}" class="inline-flex items-center gap-1 text-sm hover:opacity-75 transition-opacity" download>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Download PDF
+      </a>`
+    : '';
+
+  const body = talk.html
+    ? `<div class="prose prose-gray dark:prose-invert max-w-none mt-8
+        prose-headings:font-semibold
+        prose-code:before:content-none prose-code:after:content-none
+        prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded">
+        ${talk.html}
+      </div>`
+    : '';
+
+  return baseLayout(talk.title, `
+    <article>
+      <header class="mb-8">
+        <h1 class="text-2xl font-semibold mb-2">${escapeXml(talk.title)}</h1>
+        <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+          <time datetime="${talk.date.toISOString()}">${formatDate(talk.date)}</time>
+          ${talk.event ? `<span>&middot;</span><span>${escapeXml(talk.event)}</span>` : ''}
+        </div>
+      </header>
+      ${embed}
+      ${pdfLink}
+      ${body}
+    </article>
+  `);
+}
+
 function rssFeed(articles) {
   const items = articles.slice(0, 20).map(a => `    <item>
       <title>${escapeXml(a.title)}</title>
@@ -347,7 +440,8 @@ function build() {
   const articles = loadContent(ARTICLES_DIR);
   const notes = loadContent(NOTES_DIR);
   const experiments = loadContent(EXPERIMENTS_DIR);
-  console.log(`Found ${articles.length} articles, ${notes.length} notes, ${experiments.length} experiments`);
+  const talks = loadTalks(TALKS_DIR);
+  console.log(`Found ${articles.length} articles, ${notes.length} notes, ${experiments.length} experiments, ${talks.length} talks`);
 
   // Clean and create public dir
   fs.rmSync(PUBLIC_DIR, { recursive: true, force: true });
@@ -387,6 +481,17 @@ function build() {
     const dir = path.join(PUBLIC_DIR, 'experiments', experiment.slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), experimentPage(experiment));
+  }
+
+  // Talks list
+  ensureDir(path.join(PUBLIC_DIR, 'talks'));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'talks/index.html'), talksListPage(talks));
+
+  // Individual talks
+  for (const talk of talks) {
+    const dir = path.join(PUBLIC_DIR, 'talks', talk.slug);
+    ensureDir(dir);
+    fs.writeFileSync(path.join(dir, 'index.html'), talkPage(talk));
   }
 
   // RSS feed

@@ -1,4 +1,4 @@
-.PHONY: build preview clean new-article new-note new-experiment install
+.PHONY: build preview clean new-article new-note new-experiment new-talk install
 
 install:
 	npm install
@@ -47,3 +47,19 @@ new-experiment:
 	@echo '---' >> content/experiments/$(SLUG).md
 	@echo '' >> content/experiments/$(SLUG).md
 	@echo "Created content/experiments/$(SLUG).md"
+
+# Usage: make new-talk SLUG=my-talk
+new-talk:
+	@test -n "$(SLUG)" || (echo "Usage: make new-talk SLUG=my-talk" && exit 1)
+	@mkdir -p content/talks
+	@echo '---' > content/talks/$(SLUG).md
+	@echo 'title: "$(SLUG)"' >> content/talks/$(SLUG).md
+	@echo 'date: $(shell date +%Y-%m-%dT%H:%M:%S%z)' >> content/talks/$(SLUG).md
+	@echo 'event: ""' >> content/talks/$(SLUG).md
+	@echo 'embed_url: ""' >> content/talks/$(SLUG).md
+	@echo 'slides_pdf: ""' >> content/talks/$(SLUG).md
+	@echo 'thumbnail: ""' >> content/talks/$(SLUG).md
+	@echo 'tags: []' >> content/talks/$(SLUG).md
+	@echo '---' >> content/talks/$(SLUG).md
+	@echo '' >> content/talks/$(SLUG).md
+	@echo "Created content/talks/$(SLUG).md"
