@@ -30,6 +30,37 @@ In **Multi-Head Attention (MHA)**, each head has its own K and V matrices. 32 he
 
 ---
 
+**What is MLA (Multi-head Latent Attention) and how does it go further than GQA?**
+
+MHA → MQA → GQA all reduce KV cache by sharing K/V across heads. MLA (DeepSeek-V2, 2024) takes a different approach: instead of sharing, it *compresses* K and V into a small latent vector using low-rank projection, then decompresses back to full K/V at attention time.
+
+Concretely: instead of storing `num_heads × head_dim` K and V vectors per token, MLA stores a single compressed latent of dimension `d_c` where `d_c << num_heads × head_dim`. At attention time, project the latent back up to full K/V. The latent is what gets cached — much smaller.
+
+Why this works: K and V matrices across heads are not independent — they lie in a low-dimensional subspace. Low-rank projection captures that structure, same idea as PCA or SVD compression.
+
+Cache reduction: DeepSeek-V2 reports ~5–13x reduction vs standard MHA depending on configuration, with minimal quality loss. Outperforms GQA on the cache-size-to-quality tradeoff.
+
+Tradeoff: the decompression adds compute at attention time. You're trading cache memory for a small amount of extra matrix multiplication per decode step — a good trade when memory bandwidth is the bottleneck.
+
+*Intuition: GQA shares K/V across heads like giving multiple workers the same filing cabinet. MLA compresses the filing cabinet itself into a summary, then reconstructs the full cabinet only when needed.*
+
+---
+
+**Can you reduce KV cache size without changing the attention architecture — just make each entry smaller?**
+
+Yes — KV cache quantization. Store K and V in lower precision instead of the default float16 or bfloat16.
+
+- **INT8**: halves memory vs float16. Quality loss typically <0.5% perplexity on most benchmarks. Standard in vLLM, TensorRT-LLM since 2024.
+- **INT4**: quarters memory vs float16. More quality loss, workload-dependent — fine for long context summarization, noticeable on reasoning tasks.
+
+Why K and V tolerate quantization better than weights: the attention computation averages over many tokens. Quantization error in one K/V entry gets washed out by the softmax weighting. Errors don't accumulate the way they would in a weight matrix multiply.
+
+This is orthogonal to MHA/MQA/GQA/MLA — you can combine them. A model using GQA + INT8 KV cache gets both the sharing reduction and the precision reduction.
+
+*Intuition: instead of fewer files in the cabinet (MQA/GQA) or a compressed summary (MLA), you're just using smaller handwriting. Each entry takes less space, with acceptable loss of precision.*
+
+---
+
 **How do you measure quality loss from architectural changes like MQA/GQA?**
 
 **Perplexity** is the primary proxy — how surprised the model is by real text. Low = predicted well, high = confused. Interpretable: perplexity of 10 means the model is as uncertain as picking uniformly from 10 options at each step. Cheap to compute on any corpus, sensitive to small architectural changes.
@@ -91,6 +122,23 @@ PostgreSQL analogy: shared_buffers is a pool of 8KB pages — queries don't care
 *Intuition: attention kernel sees a clean logical sequence. Block manager hides fragmented, shared, dynamically allocated HBM behind a block table — same abstraction as a page table.*
 
 What's different: no transparent swap to disk — if HBM runs out, preempt the request to CPU DRAM or reject. Latency too strict. Block size is also fixed by model architecture, not hardware page size.
+
+---
+
+**What are prefill and decode — and why do they behave differently?**
+
+LLM inference has two distinct phases:
+
+**Prefill**: process the entire input prompt in one forward pass. All input tokens are known upfront, so their K/V can be computed in parallel. Highly parallelizable — the GPU does a large matrix multiplication over all input tokens simultaneously. Compute-bound.
+
+**Decode**: generate output tokens one at a time. Each step produces one new token, computes its K/V, appends to cache, then reads the entire cache to generate the next token. Cannot be parallelized across tokens — each token depends on the previous. Memory-bandwidth-bound — mostly waiting to read the growing KV cache from HBM.
+
+This asymmetry matters for system design:
+- Prefill latency scales with prompt length. Decode latency scales with output length × KV cache size.
+- A request with a 10k-token prompt but 50-token output is prefill-dominated. A chatbot reply is decode-dominated.
+- Disaggregated prefill/decode (Splitwise, Sarathi-Serve, 2024) routes these phases to different hardware because they have different bottlenecks. Prefill wants compute (matrix multiply throughput). Decode wants memory bandwidth (HBM read speed).
+
+*Intuition: prefill is like reading a whole book at once — fast because you can parallelize. Decode is like writing a book one word at a time, checking everything you've written before each new word — fundamentally sequential.*
 
 ---
 
