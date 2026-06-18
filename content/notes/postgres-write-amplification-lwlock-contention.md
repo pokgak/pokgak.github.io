@@ -4,7 +4,9 @@ date: 2026-06-18T10:00:00+0800
 tags: [postgres, databases, performance, concurrency]
 ---
 
-A high-churn table everyone called "lock-contended" had **zero** heavyweight lock waits. The real pain was lightweight locks (LWLocks) driven by index write amplification — which is exactly why `log_lock_waits` caught nothing.
+**"Slow query? Add an index."** It's the reflex, and it's right often enough to become muscle memory. But an index is a *read* optimization whose cost is paid on *every write* — and that cost is invisible to whoever adds it. You see the SELECT get fast immediately; you never see the write tax, which surfaces later, on a different code path, as tail latency nobody connects back to the index.
+
+This is a real case where that reflex compounded into a production fire. Nobody set out to put **~25 indexes** on one table — ~25 people each fixed one slow query. Each index was locally rational; the aggregate turned a high-churn table into a lightweight-lock (LWLock) contention disaster with **zero** heavyweight lock waits — which is exactly why `log_lock_waits` caught nothing. This note is the diagnosis, then what to do *instead* of reaching for index #26.
 
 ## The setup
 
@@ -97,19 +99,47 @@ Two plausible-but-wrong theories the evidence killed:
 
 Per-query latency: **p50 ≈ 1 ms, p99 ≈ 60+ s** for inserts. The median write is instant; the contention shows up only as a fat tail when concurrency spikes. Averages were dragged 100–1000× above the median. Lesson: **look at p99, not avg** — contention is a tail phenomenon.
 
-## Fixes (in order of leverage)
+## What to do instead of adding index #26
 
-1. **Fewer indexes.** The direct lever: fewer index entries per write = less WAL, fewer extension points, less leaf contention. Audit with `pg_stat_user_indexes.idx_scan` (on *every* node — the counter is per-replica) to find genuinely unused ones. We found ~5 indexes with 0 scans on both primary and replica, plus single-column indexes redundant with composites (`(a)` is covered by `(a, b)`'s leading column).
-2. **BRIN for append-ordered columns.** A B-tree on `created_at` is huge and hot at the right leaf. A BRIN stores min/max per block range → few MB, near-zero write cost, no per-row leaf insert. Lossy (range scans only), so only where the query is a range scan.
-3. **`synchronous_commit = off`** on the high-frequency write path — commit returns before the WAL fsync. Cuts insert tail latency; risk is a sub-second window of lost *acknowledged* txns on crash (no corruption/inconsistency). Scope per-session, not the money ledger.
-4. **Autovacuum tuning** per-table (`scale_factor` ~0.02) so bloat doesn't accumulate.
-5. **Upgrade to PG 16+** — its bulk relation extension adds many pages at once and hands spares to waiters, so the extension lock is taken far less often. Directly targets cause-2 #2.
-6. **App-side write buffering** — the real "batch and flush periodically": hold hot churn in Redis / an append-only ledger and persist only meaningful state. (There's *no* Postgres knob to defer B-tree index updates — synchronous by design. The only built-in batch-and-flush is GIN `fastupdate`, GIN-only.)
+The reflex is to add an index. Here the leverage runs the other way: the question isn't "what index makes this read faster" but "does this query — or this write — need to hit Postgres at all?" Three tiers, cheapest-to-build first.
+
+### Tier 1 — fix the indexes you already have (subtract, don't add)
+
+- **Remove dead and redundant indexes.** Audit with `pg_stat_user_indexes.idx_scan` (check *every* node — the counter is per-replica). We found ~5 indexes with 0 scans on both primary and replica, plus single-column indexes redundant with composites (`(a)` is covered by `(a, b)`'s leading column). Each one deleted is index entries removed from *every* write.
+- **When you do need an index, pick a cheaper one.** This isn't "don't index" — it's "don't reach for a default B-tree." A **partial index** (`WHERE status = 'RUNNING'`) covers only the rows the query wants and stays out of the write path for the rest. A **BRIN** on an append-ordered column (`created_at`) stores min/max per block range → few MB, near-zero write cost, no per-row leaf insert (lossy, range scans only). One well-chosen composite often replaces three single-column indexes.
+
+### Tier 2 — speed up the read without taxing writes
+
+When a read genuinely needs to be fast and no cheap index fits, move the cost off the write path entirely:
+
+- **Cache the read in Redis.** The hot lookup never reaches Postgres. Best when the read is far more frequent than the underlying change, or slight staleness is acceptable.
+- **Materialized view / rollup table** for expensive aggregations — compute once, read many times. You trade freshness for read speed and pay a refresh cost, not a per-write cost.
+- **Denormalize at write time.** Maintain the answer (a counter, a flattened field) as part of the write you already do, so the read becomes a trivial point lookup instead of a scan that begs for an index.
+- **Read replica** for read scaling — but note this *adds* write amplification (every index is rebuilt on the replica too); it scales read throughput, not write cost.
+
+### Tier 3 — eliminate the writes (the real lever here)
+
+The deepest fix questions the schema, not the query. A short-lived resource churning through a state machine doesn't need a durable, heavily-indexed RDBMS row for *every* intermediate transition:
+
+- **Buffer / batch the churn.** Hold the hot state in Redis and flush only meaningful (often terminal) state to Postgres. The ~5 intermediate updates per row collapse to 1–2 persisted writes → most of the 450M daily index insertions never happen. (There's *no* Postgres knob to defer B-tree index updates — they're synchronous by design; the only built-in batch-and-flush is GIN `fastupdate`, GIN-only. So this has to happen in the app.)
+- **Move the ephemeral state machine out of Postgres.** Let the durable store hold only the final record; Postgres becomes the archive, not the hot mutable store. This is the headline architectural answer — it deletes the write storm rather than tuning it.
+- **Event-sourcing / append-only ledger.** Inserts only, no in-place updates → no MVCC dead tuples, no per-update index churn. Project current state into a cache for reads.
+
+### Postgres knobs (mitigation, not cure)
+
+Worth doing, but they tune the symptom rather than remove the write:
+
+- **`synchronous_commit = off`** on the high-frequency write path — commit returns before the WAL fsync. Cuts insert tail latency; risk is a sub-second window of lost *acknowledged* txns on crash (no corruption/inconsistency). Scope per-session, never the money ledger.
+- **Autovacuum tuning** per-table (`scale_factor` ~0.02) so bloat doesn't accumulate.
+- **Upgrade to PG 16+** — bulk relation extension adds many pages at once and hands spares to waiters, so the extension lock is taken far less often. Directly targets cause-2 #2.
+
+> Note: **don't reach for partitioning here.** Partitioning by `status` looks tempting, but `status` is the churn key — every transition would move the row across partitions (a delete + insert), which is *worse* than the non-HOT update you already have. Partition only on an immutable column (e.g. `created_at`), and only if a query actually prunes on it.
 
 ## Takeaways
 
-- **Indexing a hot-path-mutated column kills HOT updates** → every write becomes the slow path.
-- **`log_lock_waits` silence ≠ no contention.** It only sees heavyweight locks. LWLock / buffer / WAL contention is invisible to it — split `lock_time` by `lock_type`.
+- **The "add an index" reflex optimizes reads and silently taxes every write.** On a high-churn table, each locally-rational index compounds into a write-amplification fire nobody attributes to indexing.
+- **Before adding an index, ask if the query (or the write) should exist at all** — cache it, denormalize it, or buffer the churn out of the database.
+- **Indexing a hot-path-mutated column kills HOT updates** → every write becomes the slow path. Check `n_tup_hot_upd / n_tup_upd`.
+- **`log_lock_waits` silence ≠ no contention.** It only sees heavyweight locks. LWLock / buffer / WAL contention is invisible to it — split `lock_time` by `lock_type` (or sample `pg_stat_activity.wait_event`).
 - **Heavyweight row-lock theories are seductive and often wrong** — check lock *mode compatibility* (`FOR KEY SHARE` vs `FOR NO KEY UPDATE`) before blaming a "hot row."
 - **Contention is a tail phenomenon** — p99, not avg.
-- The fix for write-amplification contention is usually **fewer/cheaper indexes + buffering writes**, not a magic GUC.
