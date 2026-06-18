@@ -41,6 +41,42 @@ The managed query-stats view splits `lock_time` by `lock_type`. Result on the to
 - It's **why `log_lock_waits` was silent** — there were essentially no heavyweight waits to log.
 - The table wasn't row-lock-bound; it was **LWLock/throughput-bound** from the write volume.
 
+### Getting this data without a managed view
+
+No managed dashboard needed — `pg_stat_activity.wait_event_type` already separates the two worlds: `Lock` = heavyweight (what `log_lock_waits` sees), `LWLock` = lightweight (`WALInsert`, `BufferContent`, `LockManager`, …).
+
+```sql
+-- pg_stat_activity is a point-in-time snapshot. Poll it repeatedly
+-- (e.g. every 100ms for a minute) and aggregate the samples.
+SELECT wait_event_type, wait_event, count(*)
+FROM pg_stat_activity
+WHERE state = 'active' AND wait_event_type IS NOT NULL
+GROUP BY 1, 2
+ORDER BY 3 DESC;
+```
+
+If `LWLock` rows dominate and `Lock` rows are absent, that's the "100% lw, 0% hw" result — contention is lightweight, and `log_lock_waits` stays silent.
+
+For continuous accumulation instead of manual polling, `pg_wait_sampling` profiles wait events in the background:
+
+```sql
+CREATE EXTENSION pg_wait_sampling;
+SELECT event_type, event, count
+FROM pg_wait_sampling_profile
+ORDER BY count DESC
+LIMIT 20;
+```
+
+This active-session-sampling approach is exactly what RDS Performance Insights and Cloud SQL Query Insights are built on. While you're in there, confirm the bloat half too:
+
+```sql
+-- HOT-update ratio (here: 0.3%) — low means writes are taking the slow path
+SELECT relname, n_tup_upd, n_tup_hot_upd,
+       round(100.0 * n_tup_hot_upd / nullif(n_tup_upd, 0), 1) AS hot_pct
+FROM pg_stat_user_tables
+ORDER BY n_tup_upd DESC;
+```
+
 What the LWLock contention actually is, for an insert-heavy + 25-index table:
 
 1. **WAL-insert locks** — every write emits WAL for the heap tuple + ~25 index entries; high write volume contends on the WAL insert slots.
