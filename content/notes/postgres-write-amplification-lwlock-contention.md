@@ -134,12 +134,17 @@ The offload techniques above — cache, denormalize, project — invite an obvio
 
 - **Projections don't reduce writes to the source table.** The lifecycle still does its 1 insert + ~5 updates, and the projection *adds* writes (the counter `HINCRBY`, the cache set).
 - **The win isn't offloading writes — it's that projections let you delete the read-serving *indexes*.** Same write count, but each write fans out to ~15 indexes instead of ~25. The reduction is in *amplification per write*, not write count — real work eliminated on the hot table, not shuffled elsewhere. This is the same "subtract, don't add" lever as Tier 1, reached from the read side.
-- **A write isn't a write — cost depends on where it lands:**
+- **A write isn't a write — cost depends on where it lands.** A Postgres write does a pile of work `HINCRBY` simply doesn't:
 
-| write | actual cost |
-|---|---|
-| Postgres row UPDATE | new tuple + an entry in *every* index + WAL record + a dead tuple for VACUUM |
-| Redis `HINCRBY` | one in-memory hash-field increment — no index, no B-tree, no MVCC; WAL only as sequential AOF |
+| | Postgres row UPDATE | Redis `HINCRBY` |
+|---|---|---|
+| **Storage** | locate + pin a heap page (`shared_buffers`, sometimes disk) | in-memory field write |
+| **Indexes** | a new entry into *every* index on the row (the fan-out) | none — hashes have no secondary indexes |
+| **MVCC** | new tuple + dead old tuple → bloat + later VACUUM | mutates value in place, no versions |
+| **Locking** | row lock + buffer-content LWLocks + lock-manager | single-threaded → "it's my turn," no lock machinery |
+| **Durability** | WAL record per change + fsync on commit | optional AOF (sequential append, fsync ~every 1s) or none |
+| **Complexity** | the thing it replaces (quota scan) is O(M) over the active set | O(1) |
+| **Per-call overhead** | parse + plan + execute SQL | a simple protocol command |
 
 So the quota counter doesn't offload a Postgres write — it *replaces a Postgres read* (the O(M) aggregate scan) with cheap Redis ops, cheap precisely because Redis isn't a B-tree/WAL/MVCC store.
 
