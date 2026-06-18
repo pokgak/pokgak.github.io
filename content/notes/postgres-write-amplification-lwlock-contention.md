@@ -6,7 +6,9 @@ tags: [postgres, databases, performance, concurrency]
 
 **"Slow query? Add an index."** It's the reflex, and it's right often enough to become muscle memory. But an index is a *read* optimization whose cost is paid on *every write* — and that cost is invisible to whoever adds it. You see the SELECT get fast immediately; you never see the write tax, which surfaces later, on a different code path, as tail latency nobody connects back to the index.
 
-This is a real case where that reflex compounded into a production fire. Nobody set out to put **~25 indexes** on one table — ~25 people each fixed one slow query. Each index was locally rational; the aggregate turned a high-churn table into a lightweight-lock (LWLock) contention disaster with **zero** heavyweight lock waits — which is exactly why `log_lock_waits` caught nothing. This note is the diagnosis, then what to do *instead* of reaching for index #26.
+This is a real case where that reflex compounded into a production fire. Nobody set out to put **~25 indexes** on one table — ~25 people each fixed one slow query, each index locally rational.
+
+Then comes the trap that makes this worth a note. The aggregate turned a high-churn table into a contention disaster — but when someone enabled `log_lock_waits` to find the "lock contention," it logged **nothing**. Conclusion: "not a lock problem." Wrong. It was the most lock-bound table in the fleet — just at a layer the tooling hides. The waits were on **lightweight locks (LWLocks)**: microsecond shared-memory locks on WAL insertion, page buffers, and the lock manager, driven by the write amplification those 25 indexes create. `log_lock_waits` only sees *heavyweight* locks, so the over-indexing damage is invisible to exactly the tool you'd reach for. That invisibility is what makes the reflex dangerous — and it's why the diagnosis below matters as much as the fix.
 
 ## The setup
 
