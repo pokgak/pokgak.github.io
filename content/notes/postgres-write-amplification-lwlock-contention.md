@@ -117,6 +117,7 @@ When a read genuinely needs to be fast and no cheap index fits, move the cost of
 - **Cache the read in Redis.** The hot lookup never reaches Postgres. Best when the read is far more frequent than the underlying change, or slight staleness is acceptable.
 - **Materialized view / rollup table** for expensive aggregations — compute once, read many times. You trade freshness for read speed and pay a refresh cost, not a per-write cost.
 - **Denormalize at write time.** Maintain the answer (a counter, a flattened field) as part of the write you already do, so the read becomes a trivial point lookup instead of a scan that begs for an index.
+- **Project hot reads into a read model (CQRS-lite).** Serve quota, dashboards, and billing from a Redis counter, cache, or the read replica — *then delete the read-serving indexes those queries needed*. The relief isn't fewer writes; it's that each remaining write fans out to fewer indexes. This one has a catch worth its own section — see "One write ≠ one write" below.
 - **Read replica** for read scaling — but note this *adds* write amplification (every index is rebuilt on the replica too); it scales read throughput, not write cost.
 
 ### Tier 3 — eliminate the writes (the real lever here)
@@ -126,6 +127,26 @@ The deepest fix questions the schema, not the query. A short-lived resource chur
 - **Buffer / batch the churn.** Hold the hot state in Redis and flush only meaningful (often terminal) state to Postgres. The ~5 intermediate updates per row collapse to 1–2 persisted writes → most of the 450M daily index insertions never happen. (There's *no* Postgres knob to defer B-tree index updates — they're synchronous by design; the only built-in batch-and-flush is GIN `fastupdate`, GIN-only. So this has to happen in the app.)
 - **Move the ephemeral state machine out of Postgres.** Let the durable store hold only the final record; Postgres becomes the archive, not the hot mutable store. This is the headline architectural answer — it deletes the write storm rather than tuning it.
 - **Event-sourcing / append-only ledger.** Inserts only, no in-place updates → no MVCC dead tuples, no per-update index churn. Project current state into a cache for reads.
+
+### One write ≠ one write
+
+The offload techniques above — cache, denormalize, project — invite an obvious objection: *isn't that just moving the writes? The table still gets its updates, and now I write the projection too — more writes, not fewer.* Half true, and resolving it is the actual insight.
+
+- **Projections don't reduce writes to the source table.** The lifecycle still does its 1 insert + ~5 updates, and the projection *adds* writes (the counter `HINCRBY`, the cache set).
+- **The win isn't offloading writes — it's that projections let you delete the read-serving *indexes*.** Same write count, but each write fans out to ~15 indexes instead of ~25. The reduction is in *amplification per write*, not write count — real work eliminated on the hot table, not shuffled elsewhere. This is the same "subtract, don't add" lever as Tier 1, reached from the read side.
+- **A write isn't a write — cost depends on where it lands:**
+
+| write | actual cost |
+|---|---|
+| Postgres row UPDATE | new tuple + an entry in *every* index + WAL record + a dead tuple for VACUUM |
+| Redis `HINCRBY` | one in-memory hash-field increment — no index, no B-tree, no MVCC; WAL only as sequential AOF |
+
+So the quota counter doesn't offload a Postgres write — it *replaces a Postgres read* (the O(M) aggregate scan) with cheap Redis ops, cheap precisely because Redis isn't a B-tree/WAL/MVCC store.
+
+- **The trap:** if the projection is *another indexed Postgres table updated per event*, you've just duplicated the amplification → net loss. Projections only help when they live in a cheap store (Redis/cache), are batched/async, or carry far fewer indexes.
+- **The caveat that makes or breaks it:** the win only materializes if you *actually drop* the indexes the projection replaced. Projection without the index-drop is pure added cost — exactly the "more writes, no benefit" outcome. Projection and index-drop are one package.
+
+Mental model: **projections don't reduce writes; they make read-serving indexes *deletable*, and that reduces per-write fan-out. Their own writes are only worth it when they're cheaper than a B-tree (Redis/cache) or batched.**
 
 ### Postgres knobs (mitigation, not cure)
 
@@ -145,3 +166,4 @@ Worth doing, but they tune the symptom rather than remove the write:
 - **`log_lock_waits` silence ≠ no contention.** It only sees heavyweight locks. LWLock / buffer / WAL contention is invisible to it — split `lock_time` by `lock_type` (or sample `pg_stat_activity.wait_event`).
 - **Heavyweight row-lock theories are seductive and often wrong** — check lock *mode compatibility* (`FOR KEY SHARE` vs `FOR NO KEY UPDATE`) before blaming a "hot row."
 - **Contention is a tail phenomenon** — p99, not avg.
+- **Projections extend "subtract, don't add" to the read side** — they don't reduce writes, they make read-serving indexes deletable (and a write to Redis ≠ a write to a B-tree). The relief comes from the index drop they unlock, not the offload.
