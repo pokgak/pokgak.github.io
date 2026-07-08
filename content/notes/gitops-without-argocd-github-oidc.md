@@ -110,3 +110,16 @@ Use the lightweight approach when: a handful of clusters, a modest set of delibe
 - **Server-side apply earns its keep three ways** — field-ownership (`managedFields`) instead of a client-side `last-applied-configuration` annotation lets you adopt out-of-band resources without disruption, coexist with the operator's owned fields, and get a `diff` that's byte-for-byte what apply would do (a real NO-OP = no pod roll). A `pull_request_target` dry-run of that diff is a safe pre-merge check *if* it only ever runs `diff`.
 - **Its weaknesses are drift-correction and pruning** — the first is cheaply mitigated with a scheduled diff (detection), the second is low-impact at small scale.
 - **It's a self-managed control-plane pattern.** EKS degrades it (single OIDC provider, no CEL); GKE can't trust the JWT directly at all. The portable version keeps GitHub OIDC as the keyless anchor but redeems it at cloud IAM (STS/WIF) instead of the apiserver.
+
+## Where this could go: external infra via Crossplane (untested idea)
+
+Here's the thread I'm still pulling on, not yet validated. Every layer above works because it's *"desired state as CRs, reconciled by an in-cluster controller"* — helm-controller for the platform, the operator for the apps. [Crossplane](https://www.crossplane.io/) makes external infra (buckets, DNS, databases, even whole clusters) fit that same shape: a **Managed Resource** is just another CR, and Crossplane's provider controller reconciles it against the real cloud API. So in principle the *exact* pipeline extends to infra with zero new machinery — GHA OIDC → `kubectl apply --server-side` the infra CRs → Crossplane converges them. Three layers (platform / apps / infra) on one push-apply-plus-in-cluster-reconcile spine, one preview diff, one auth model.
+
+Two things make it more than a curiosity, and two caveats keep me honest:
+
+- It would *close the drift gap* for infra specifically. Crossplane reconciles continuously, so unlike the push-only app layer, external resources would get real self-heal for free.
+- The preview diff would extend to infra — a change to a database CR shows up in the same PR comment.
+- **Caveat 1:** Crossplane needs cloud credentials in-cluster (`ProviderConfig`), which reintroduces a standing credential — cutting against the "no credential honeypot" win. Mitigated by having the provider use IRSA / Workload Identity so it stays keyless, but it's a real shift in the trust model.
+- **Caveat 2:** `kubectl diff --server-side` on a Crossplane CR shows the change to the *desired CR spec*, not a `terraform plan`-style diff of what actually changes in the cloud (the provider reconciles async, after merge). So the preview is weaker than Terraform's for infra — it tells you the intent changed, not the blast radius.
+
+File under "toying with it," not "run this in prod." But if it holds up, the appeal is obvious: apps and their infra managed by one legible pipeline instead of a GitOps tool for k8s plus a separate Terraform/Atlantis stack for the cloud.
