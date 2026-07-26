@@ -178,10 +178,34 @@ function articleListItem(article) {
     </li>`;
 }
 
+// Type badge shown in the merged homepage feed. Ink is tinted per type; the
+// chip shape matches the tag badges on article/note/experiment pages.
+const FEED_TYPES = {
+  article: { label: 'article', dir: 'articles', ink: 'text-[#4b5563] dark:text-[#cbd5e1]' },
+  note: { label: 'note', dir: 'notes', ink: 'text-[#7c6f52] dark:text-[#cbb994]' },
+  experiment: { label: 'experiment', dir: 'experiments', ink: 'text-[#4d6b7c] dark:text-[#93c0d6]' },
+};
+
+function feedListItem(item) {
+  const kind = FEED_TYPES[item.type];
+  return `<li class="flex items-baseline gap-4">
+      <span class="shrink-0 w-28 flex flex-col items-start gap-0.5">
+        <time class="text-sm text-gray-500 dark:text-gray-400 tabular-nums" datetime="${item.date.toISOString()}">${formatDateShort(item.date)}</time>
+        <span class="text-[0.66rem] uppercase tracking-wide px-1.5 rounded bg-gray-100 dark:bg-gray-800 ${kind.ink}">${kind.label}</span>
+      </span>
+      <a href="/${kind.dir}/${item.slug}/" class="hover:opacity-75 transition-opacity">${escapeXml(item.title)}</a>
+    </li>`;
+}
+
 function homePage(articles, notes, experiments) {
-  const latestArticles = articles.slice(0, 3);
-  const latestNotes = notes.slice(0, 3);
-  const latestExperiments = experiments.slice(0, 3);
+  const feed = [
+    ...articles.map(a => ({ ...a, type: 'article' })),
+    ...notes.map(n => ({ ...n, type: 'note' })),
+    ...experiments.map(e => ({ ...e, type: 'experiment' })),
+  ]
+    .sort((a, b) => b.date - a.date)
+    .slice(0, 10);
+
   return baseLayout(SITE_TITLE, `
     <section class="mb-12">
       <div class="flex gap-4 mb-8">
@@ -198,27 +222,10 @@ function homePage(articles, notes, experiments) {
     </section>
 
     <section class="mb-12">
-      <h2 class="text-xl font-semibold mb-6">Latest Articles</h2>
-      <ul class="space-y-3 mb-6">
-        ${latestArticles.map(articleListItem).join('\n        ')}
+      <h2 class="text-xl font-semibold mb-6">Latest Writing</h2>
+      <ul class="space-y-4">
+        ${feed.map(feedListItem).join('\n        ')}
       </ul>
-      <a href="/articles/" class="text-sm hover:opacity-75 transition-opacity">View all &rarr;</a>
-    </section>
-
-    <section class="mb-12">
-      <h2 class="text-xl font-semibold mb-6">Latest Notes</h2>
-      <ul class="space-y-3 mb-6">
-        ${latestNotes.map(noteListItem).join('\n        ')}
-      </ul>
-      <a href="/notes/" class="text-sm hover:opacity-75 transition-opacity">View all &rarr;</a>
-    </section>
-
-    <section class="mb-12">
-      <h2 class="text-xl font-semibold mb-6">Latest Experiments</h2>
-      <ul class="space-y-3 mb-6">
-        ${latestExperiments.map(experimentListItem).join('\n        ')}
-      </ul>
-      <a href="/experiments/" class="text-sm hover:opacity-75 transition-opacity">View all &rarr;</a>
     </section>
 
     <section class="mt-16 flex justify-center">
