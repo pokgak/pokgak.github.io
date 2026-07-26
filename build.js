@@ -16,6 +16,18 @@ renderer.code = function (code, lang) {
   }
   return `<pre tabindex="0"><code class="hljs language-${lang}">${highlighted}</code></pre>`;
 };
+renderer.image = function (href, title, text) {
+  const titleAttribute = title ? ` title="${escapeXml(title)}"` : '';
+  const dimensions = imageDimensions(href);
+  const dimensionAttributes = dimensions ? ` width="${dimensions.width}" height="${dimensions.height}"` : '';
+  return `<img src="${escapeXml(href)}" alt="${escapeXml(text)}"${titleAttribute}${dimensionAttributes} loading="lazy" decoding="async">`;
+};
+renderer.tablecell = function (content, flags) {
+  const type = flags.header ? 'th' : 'td';
+  const scope = flags.header ? ' scope="col"' : '';
+  const align = flags.align ? ` align="${flags.align}"` : '';
+  return `<${type}${scope}${align}>${content}</${type}>\n`;
+};
 marked.use({ renderer });
 
 const SITE_TITLE = 'Aiman Ismail';
@@ -66,6 +78,49 @@ function escapeXml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function imageDimensions(href) {
+  if (!href.startsWith('/images/')) return null;
+  const filename = path.basename(href);
+  const imagePath = path.join(STATIC_DIR, 'images', filename);
+  if (!fs.existsSync(imagePath)) return null;
+
+  const data = fs.readFileSync(imagePath);
+  if (data.subarray(1, 4).toString() === 'PNG' && data.length >= 24) {
+    return { width: data.readUInt32BE(16), height: data.readUInt32BE(20) };
+  }
+
+  if (data[0] === 0xff && data[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 < data.length) {
+      if (data[offset] !== 0xff) {
+        offset++;
+        continue;
+      }
+      const marker = data[offset + 1];
+      const segmentLength = data.readUInt16BE(offset + 2);
+      if ([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker)) {
+        return { width: data.readUInt16BE(offset + 7), height: data.readUInt16BE(offset + 5) };
+      }
+      if (segmentLength < 2) break;
+      offset += segmentLength + 2;
+    }
+  }
+
+  return null;
+}
+
+function escapeMarkdownText(str) {
+  return str.replace(/([\\[\]])/g, '\\$1');
+}
+
+function jsonLd(data) {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
+function absoluteUrl(pathname) {
+  return `${SITE_URL}${pathname}`;
+}
+
 function normalizeLang(lang) {
   const value = typeof lang === 'string' ? lang.trim() : 'en';
   return /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(value) ? value : 'en';
@@ -74,6 +129,49 @@ function normalizeLang(lang) {
 function navLink(href, label, section, currentSection) {
   const current = section === currentSection ? ' aria-current="page"' : '';
   return `<a href="${href}" class="hover:opacity-75 transition-opacity"${current}>${label}</a>`;
+}
+
+function collectionPageOptions(name, pathname, currentSection = '') {
+  const url = absoluteUrl(pathname);
+  return {
+    currentSection,
+    canonicalPath: pathname,
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name,
+      description: SITE_DESCRIPTION,
+      url,
+    },
+  };
+}
+
+function contentPageOptions(item, section, schemaType = 'BlogPosting') {
+  const canonicalPath = `/${section}/${item.slug}/`;
+  const url = absoluteUrl(canonicalPath);
+  return {
+    lang: item.lang,
+    currentSection: section,
+    description: item.description || SITE_DESCRIPTION,
+    canonicalPath,
+    markdownPath: `${canonicalPath}index.md`,
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': schemaType,
+      headline: item.title,
+      description: item.description || SITE_DESCRIPTION,
+      datePublished: item.date.toISOString(),
+      inLanguage: item.lang,
+      url,
+      mainEntityOfPage: url,
+      author: {
+        '@type': 'Person',
+        name: SITE_TITLE,
+        url: SITE_URL,
+      },
+      ...(item.tags.length ? { keywords: item.tags.join(', ') } : {}),
+    },
+  };
 }
 
 // --- Load content ---
@@ -94,11 +192,14 @@ function loadTalks(dir) {
       embed_url: data.embed_url || '',
       slides_pdf: data.slides_pdf || '',
       thumbnail: data.thumbnail || '',
+      description: data.description || '',
+      draft: data.draft === true,
       lang: normalizeLang(data.lang),
       slug,
       html,
+      content,
     };
-  });
+  }).filter(item => !item.draft);
   items.sort((a, b) => b.date - a.date);
   return items;
 }
@@ -116,19 +217,28 @@ function loadContent(dir) {
       title: data.title || slug,
       date: data.date ? new Date(data.date) : new Date(0),
       tags: data.tags || [],
+      description: data.description || '',
+      draft: data.draft === true,
       lang: normalizeLang(data.lang),
       slug,
       html,
       content: fixedContent,
     };
-  });
+  }).filter(item => !item.draft);
   items.sort((a, b) => b.date - a.date);
   return items;
 }
 
 // --- Templates ---
 
-function baseLayout(title, content, { lang = 'en', currentSection = '', description = SITE_DESCRIPTION } = {}) {
+function baseLayout(title, content, {
+  lang = 'en',
+  currentSection = '',
+  description = SITE_DESCRIPTION,
+  canonicalPath = '',
+  markdownPath = '',
+  structuredData = null,
+} = {}) {
   const pageTitle = title;
   return `<!DOCTYPE html>
 <html lang="${escapeXml(normalizeLang(lang))}">
@@ -141,6 +251,9 @@ function baseLayout(title, content, { lang = 'en', currentSection = '', descript
   <link rel="stylesheet" href="/styles.css">
   <link rel="icon" href="/images/sprite.svg" type="image/svg+xml">
   <link rel="alternate" type="application/rss+xml" title="${escapeXml(SITE_TITLE)}" href="/index.xml">
+  ${canonicalPath ? `<link rel="canonical" href="${escapeXml(absoluteUrl(canonicalPath))}">` : ''}
+  ${markdownPath ? `<link rel="alternate" type="text/markdown" href="${escapeXml(markdownPath)}" title="Markdown version">` : ''}
+  ${structuredData ? `<script type="application/ld+json">${jsonLd(structuredData)}</script>` : ''}
   <!-- Analytics placeholder -->
 </head>
 <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen flex flex-col text-base lg:text-lg">
@@ -234,7 +347,7 @@ function homePage(articles, notes, experiments) {
     </section>
 
     <section class="mt-16 flex flex-col items-center gap-5">
-      <img src="/images/sprite.svg" alt="Pixel art portrait of Aiman Ismail" class="w-20 h-20" style="image-rendering: pixelated;" />
+      <img src="/images/sprite.svg" alt="Pixel art portrait of Aiman Ismail" width="80" height="80" class="w-20 h-20" style="image-rendering: pixelated;" />
       <div class="flex gap-4">
         <a href="https://github.com/pokgak" class="text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition-colors" aria-label="GitHub">
           <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
@@ -247,7 +360,7 @@ function homePage(articles, notes, experiments) {
         </a>
       </div>
     </section>
-  `);
+  `, collectionPageOptions(SITE_TITLE, '/'));
 }
 
 function articlesListPage(articles) {
@@ -256,7 +369,7 @@ function articlesListPage(articles) {
     <ul class="space-y-3">
       ${articles.map(articleListItem).join('\n      ')}
     </ul>
-  `, { currentSection: 'articles' });
+  `, collectionPageOptions('Articles', '/articles/', 'articles'));
 }
 
 function articlePage(article) {
@@ -280,7 +393,7 @@ function articlePage(article) {
         ${article.html}
       </div>
     </article>
-  `, { lang: article.lang, currentSection: 'articles' });
+  `, contentPageOptions(article, 'articles'));
 }
 
 function noteListItem(note) {
@@ -297,7 +410,7 @@ function notesListPage(notes) {
     <ul class="space-y-3">
       ${notes.map(noteListItem).join('\n      ')}
     </ul>
-  `, { currentSection: 'notes' });
+  `, collectionPageOptions('Notes', '/notes/', 'notes'));
 }
 
 function notePage(note) {
@@ -322,7 +435,7 @@ function notePage(note) {
         ${note.html}
       </div>
     </article>
-  `, { lang: note.lang, currentSection: 'notes' });
+  `, contentPageOptions(note, 'notes'));
 }
 
 function experimentListItem(experiment) {
@@ -340,7 +453,7 @@ function experimentsListPage(experiments) {
     <ul class="space-y-3">
       ${experiments.map(experimentListItem).join('\n      ')}
     </ul>
-  `, { currentSection: 'experiments' });
+  `, collectionPageOptions('Experiments', '/experiments/', 'experiments'));
 }
 
 function experimentPage(experiment) {
@@ -365,12 +478,12 @@ function experimentPage(experiment) {
         ${experiment.html}
       </div>
     </article>
-  `, { lang: experiment.lang, currentSection: 'experiments' });
+  `, contentPageOptions(experiment, 'experiments'));
 }
 
 function talkListItem(talk) {
   const thumb = talk.thumbnail
-    ? `<a href="/talks/${talk.slug}/" class="block mb-3 hover:opacity-75 transition-opacity">
+    ? `<a href="/talks/${talk.slug}/" class="block mb-3 hover:opacity-75 transition-opacity" aria-label="View ${escapeXml(talk.title)}">
         <img src="/images/${escapeXml(talk.thumbnail)}" alt="" class="w-full rounded-lg aspect-video object-cover">
       </a>`
     : '';
@@ -390,7 +503,7 @@ function talksListPage(talks) {
     <ul class="space-y-6">
       ${talks.map(talkListItem).join('\n      ')}
     </ul>
-  `, { currentSection: 'talks' });
+  `, collectionPageOptions('Talks', '/talks/', 'talks'));
 }
 
 function talkPage(talk) {
@@ -432,7 +545,7 @@ function talkPage(talk) {
       ${pdfLink}
       ${body}
     </article>
-  `, { lang: talk.lang, currentSection: 'talks' });
+  `, contentPageOptions(talk, 'talks', 'PresentationDigitalDocument'));
 }
 
 function rssFeed(articles) {
@@ -454,6 +567,97 @@ function rssFeed(articles) {
     ${items}
   </channel>
 </rss>`;
+}
+
+function markdownTwin(item, section) {
+  const canonical = absoluteUrl(`/${section}/${item.slug}/`);
+  const frontmatter = [
+    '---',
+    `title: ${JSON.stringify(item.title)}`,
+    `date: ${item.date.toISOString()}`,
+    `lang: ${JSON.stringify(item.lang)}`,
+    `canonical: ${JSON.stringify(canonical)}`,
+    ...(item.description ? [`description: ${JSON.stringify(item.description)}`] : []),
+    ...(item.tags.length ? [`tags: ${JSON.stringify(item.tags)}`] : []),
+    '---',
+  ].join('\n');
+
+  const details = section === 'talks'
+    ? [
+        ...(item.event ? [`- Event: ${item.event}`] : []),
+        ...(item.embed_url ? [`- [View presentation](${item.embed_url})`] : []),
+        ...(item.slides_pdf ? [`- [Download slides](${item.slides_pdf})`] : []),
+      ].join('\n')
+    : '';
+  const body = item.content.trim();
+
+  return `${frontmatter}\n\n# ${item.title}\n${details ? `\n${details}\n` : ''}${body ? `\n${body}\n` : ''}`;
+}
+
+function llmsTxt(articles, notes, experiments, talks) {
+  const links = (items, dir) => items
+    .map(item => `- [${escapeMarkdownText(item.title)}](${SITE_URL}/${dir}/${item.slug}/index.md)${item.description ? `: ${item.description}` : ''}`)
+    .join('\n');
+
+  return `# ${SITE_TITLE}
+
+> ${SITE_DESCRIPTION}
+
+This is Aiman Ismail's personal blog. Content is organized into long-form articles, concise notes, structured experiments, and presentation materials.
+
+## Main sections
+
+- [Home](${SITE_URL}/)
+- [Articles](${SITE_URL}/articles/): Long-form, human-written posts.
+- [Notes](${SITE_URL}/notes/): Concise ideas and quick technical references, possibly AI-assisted.
+- [Experiments](${SITE_URL}/experiments/): Structured investigations with questions, methods, observations, and conclusions.
+- [Talks](${SITE_URL}/talks/): Presentation slides and event details.
+- [RSS feed](${SITE_URL}/index.xml)
+
+## Articles
+
+${links(articles, 'articles')}
+
+## Notes
+
+${links(notes, 'notes')}
+
+## Experiments
+
+${links(experiments, 'experiments')}
+
+## Talks
+
+${links(talks, 'talks')}
+`;
+}
+
+function sitemap(articles, notes, experiments, talks) {
+  const staticPaths = ['/', '/articles/', '/notes/', '/experiments/', '/talks/'];
+  const staticUrls = staticPaths.map(pathname => `  <url><loc>${escapeXml(absoluteUrl(pathname))}</loc></url>`);
+  const contentUrls = [
+    ...articles.map(item => ({ item, section: 'articles' })),
+    ...notes.map(item => ({ item, section: 'notes' })),
+    ...experiments.map(item => ({ item, section: 'experiments' })),
+    ...talks.map(item => ({ item, section: 'talks' })),
+  ].map(({ item, section }) => `  <url>
+    <loc>${escapeXml(absoluteUrl(`/${section}/${item.slug}/`))}</loc>
+    <lastmod>${item.date.toISOString()}</lastmod>
+  </url>`);
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${[...staticUrls, ...contentUrls].join('\n')}
+</urlset>
+`;
+}
+
+function robotsTxt() {
+  return `User-agent: *
+Allow: /
+
+Sitemap: ${SITE_URL}/sitemap.xml
+`;
 }
 
 // --- Build ---
@@ -482,6 +686,7 @@ function build() {
     const dir = path.join(PUBLIC_DIR, 'articles', article.slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), articlePage(article));
+    fs.writeFileSync(path.join(dir, 'index.md'), markdownTwin(article, 'articles'));
   }
 
   // Notes list
@@ -493,6 +698,7 @@ function build() {
     const dir = path.join(PUBLIC_DIR, 'notes', note.slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), notePage(note));
+    fs.writeFileSync(path.join(dir, 'index.md'), markdownTwin(note, 'notes'));
   }
 
   // Experiments list
@@ -504,6 +710,7 @@ function build() {
     const dir = path.join(PUBLIC_DIR, 'experiments', experiment.slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), experimentPage(experiment));
+    fs.writeFileSync(path.join(dir, 'index.md'), markdownTwin(experiment, 'experiments'));
   }
 
   // Talks list
@@ -515,10 +722,18 @@ function build() {
     const dir = path.join(PUBLIC_DIR, 'talks', talk.slug);
     ensureDir(dir);
     fs.writeFileSync(path.join(dir, 'index.html'), talkPage(talk));
+    fs.writeFileSync(path.join(dir, 'index.md'), markdownTwin(talk, 'talks'));
   }
 
   // RSS feed
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.xml'), rssFeed(articles));
+
+  // Machine-readable site summary for AI agents
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'llms.txt'), llmsTxt(articles, notes, experiments, talks));
+
+  // Crawler discovery surfaces
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'sitemap.xml'), sitemap(articles, notes, experiments, talks));
+  fs.writeFileSync(path.join(PUBLIC_DIR, 'robots.txt'), robotsTxt());
 
   // Copy static assets
   copyDirSync(path.join(STATIC_DIR, 'images'), path.join(PUBLIC_DIR, 'images'));
