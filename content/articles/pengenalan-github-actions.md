@@ -1,6 +1,7 @@
 ---
 title: "Pengenalan Github Actions"
 date: 2021-08-24T04:49:42+08:00
+lang: ms
 tags: [Github Actions, CI/CD]
 ---
 
@@ -11,15 +12,15 @@ Github Actions (GA) adalah servis automation yang ditawarkan oleh Github untuk s
 
 Untuk mula menggunakan Github Actions, anda boleh pergi ke mana-mana repository public yang anda miliki dan seterusnya pergi ke tab Actions.
 
-![](images/actions-tab.png)
+![Tab Actions dipilih dalam navigasi repositori GitHub](images/actions-tab.png)
 
 Jika anda belum pernah setup mana-mana workflow di repository tersebut, anda akan melihat pilihan templates siap yang boleh digunakan untuk pelbagai jenis projek. Sebagai pemula, saya cadangkan anda mula dengan template barebones yang ditawarkan.
 
-![](images/actions-get-started.png)
+![Halaman mula GitHub Actions yang mencadangkan workflow Jekyll](images/actions-get-started.png)
 
 Anda boleh menggunakan editor local di komputer sendiri tapi Github juga ada menawarkan editor online di mana fail workflow anda akan diperiksa formatnya secara langsung sambil anda menaip. Github akan highlight jika fail workflow anda mempunyai kesalahan yang membuatkan workflow anda akan gagal. Selain itu juga, di tepi editor online itu ada dipaparkan documentation ringkas mengenai syntax fail workflow jadi anda tidak perlu lagi tukar-tukar tab untuk semasa menulis fail workflow anda.
 
-![Github Actions online Editor](images/actions-editor.png)
+![Editor workflow GitHub Actions dengan fail YAML di sebelah dokumentasi Marketplace](images/actions-editor.png)
 
 ## Anatomi fail workflow Github Actions
 
@@ -119,4 +120,3 @@ Dalam contoh di atas, saya menggunakan Actions dari Github `actions/checkout` un
 Saya pernah menggunakan Jenkins dan Bitbucket Pipeline dan berdasarkan pengalaman saya Github Actions adalah jauh lebih baik dari kedua-dua produk CI/CD tersebut. Dokumentasi Github Actions yang ditawarkan Github adalah sangat lengkap. Saya paling banyak merujuk halaman [Workflow Syntax](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions) semasa mula belajar menggunakan Github Actions. Selain itu, halaman-halaman lain dalam [Reference](https://docs.github.com/en/actions/reference) ini juga sangat membantu anda ingin mula melakukan perkara yang lebih advance dengan Github Actions.
 
 Antara contoh automation yang pernah saya lakukan menggunakan Github Actions adalah, menjalankan unit test untuk setiap commit push, memeriksa dan baiki tajuk pull request secara automatik jika tidak memenuhi kriteria anda. Saya juga pernah menggunakan Github Actions workflow untuk melakukan DB dump daripada server dan terus upload ke S3. Pada pandangan saya, Github Actions sangat menarik dan macam-macam yang anda boleh lakukan dengannya.
-

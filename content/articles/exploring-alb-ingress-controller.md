@@ -8,7 +8,7 @@ Recently, [my company got DDoS'ed](https://pokgak.xyz/articles/we-got-ddosed/) a
 
 ## Current Setup
 
-![AWS NLB with ingress-nginx](images/lb-nlb-ingress-nginx.png)
+![AWS NLB routing through three ingress-nginx instances to five backend services](images/lb-nlb-ingress-nginx.png)
 
 Our current setup uses a AWS NLB per country to accepts the connection from the internet. The NLB then forwards the requests to a target group consisting all the ingress-nginx controller pods. The ingress-nginx pods will then route the traffic from NLB to the backend services based on the configured Ingress configurations.
 
@@ -16,7 +16,7 @@ For arguments sake, let's assume that AWS NLB is reliable and can scale infinite
 
 ## Proposed Setup
 
-![AWS ALB without ingress-nginx](images/lb-alb.png)
+![AWS ALB routing directly to five backend services without ingress-nginx](images/lb-alb.png)
 
 Our proposed setup uses the ALB directly and route traffic to the backend services through its listener rules. By default the aws-load-balancer controller will provision one ALB for each Ingress resource but we can share the ALB for multiple Ingress by specifying the same `alb.ingress.kubernetes.io/group.name`. In my case there will be one group name for each country resulting in separate ALB created for each respectively. Each Ingress resource will create a separate listener rule based on the host and path configuration specified in the Ingress.
 

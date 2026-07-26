@@ -1,6 +1,7 @@
 ---
 title: "Animasi interaktif berdasarkan data CITF menggunakan Plotly"
 date: 2021-08-25T04:59:55+08:00
+lang: ms
 ---
 
 Saya gemar melayari subreddit r/dataisbeautiful dan melihat graf hasil buatan pengguna Reddit lain di sana. Salah satu jenis graf yang saya paling minat adalah apabila graf itu seolah-olah animasi, berubah selaras mengikut jangka masa waktu yang semakin bertambah. Kita boleh melihat perkembangan sesuatu data itu dari mula hingga ke akhir. 
@@ -8,7 +9,7 @@ Saya gemar melayari subreddit r/dataisbeautiful dan melihat graf hasil buatan pe
 Contoh post terbaru di subreddit itu yang mempunyai graf sebegini adalah seperti graf di bawah yang memaparkan Kadar vaksinasi sebahagian daripada negara-negara di seluruh dunia (*sayang Malaysia tidak dimasukkan sekali di sini*):
 
 {{< rawhtml >}}
-<iframe id="reddit-embed" src="https://www.redditmedia.com/r/dataisbeautiful/comments/p7l5rm/oc_the_race_to_vaccinate/?ref_source=embed&amp;ref=share&amp;embed=true" sandbox="allow-scripts allow-same-origin allow-popups" style="border: none;" height="620" width="640" scrolling="no"></iframe>
+<iframe id="reddit-embed" src="https://www.redditmedia.com/r/dataisbeautiful/comments/p7l5rm/oc_the_race_to_vaccinate/?ref_source=embed&amp;ref=share&amp;embed=true" title="Animasi kadar vaksinasi negara-negara di seluruh dunia" sandbox="allow-scripts allow-same-origin allow-popups" style="border: none;" height="620" width="640" scrolling="no"></iframe>
 {{< /rawhtml >}}
 
 Sebelum ini saya menganggap animasi sebegini rumit untuk dilakukan tetapi apabila pihak CITF telah melancarkan [public repo](https://twitter.com/Khairykj/status/1410164953965752331?s=20) di Github bagi data vaksinasi Malaysia, saya memutuskan untuk cuba menghasilkan semula gaya visualisasi ini menggunakan data tersebut.
@@ -16,7 +17,7 @@ Sebelum ini saya menganggap animasi sebegini rumit untuk dilakukan tetapi apabil
 Seterusnya saya akan menerangkan langkah-langkah yang diperlukan untuk menghasilkan visualisasi seperti yang di bawah. Sebagai rujukan, code penuh yang saya gunakan di sini boleh didapati di [sini](https://github.com/pokgak/citf-graphs/blob/main/main.py).
 
 {{< rawhtml >}}
-<iframe id="pokgak-citf" src="https://pokgak.github.io/citf-graphs/" style="border: none;" height="400" width="640" scrolling="no"></iframe>
+<iframe id="pokgak-citf" src="https://pokgak.github.io/citf-graphs/" title="Animasi kadar vaksinasi mengikut negeri di Malaysia" style="border: none;" height="400" width="640" scrolling="no"></iframe>
 {{< /rawhtml >}}
 
 ## Pembersihan Data
@@ -80,10 +81,8 @@ Dalam visualisasi graf bar, Plotly akan menunjukkan pertukaran posisi bar terseb
 
 Akhir sekali, parameter `labels` dan `title` digunakan untuk menetapkan label yang lebih mesra pembaca untuk legend, paksi, serta tajuk graf.
 
-# Konklusi
+## Konklusi
 
 Saya amat berpuas hati dengan animasi graf ini kerana saya telah belajar cara untuk menghasilkan jenis bentuk graf yang telah saya minati buat sekian lama. Namun begitu, walaupun graf ini kelihatan lebih cantik berbanding graf lain dengan animasi bergerak, saya akui apa yang telah saya hasilkan ini lebih kepada latihan menggunakan library Plotly itu sendiri. Masih banyak aspek yang boleh diperbaiki untuk menyampaikan maklumat menggunakan graf secara tepat dan efektif. 
 
 Untuk mengakses segala code yang telah saya tunjukkan di sini, boleh akses repository [pokgak/citf-graphs](https://github.com/pokgak/citf-graphs) di Github. Saya juga telah menetapkan jadual berkala supaya graf visualisasi tersebut dikemas kini setiap hari menggunakan Github Actions. Blog post cara saya bagaimana saya buat akan datang.
-
-

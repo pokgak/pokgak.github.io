@@ -1,6 +1,7 @@
 ---
 title: "Apa itu Cloud Computing?"
 date: 2021-08-25T23:47:19+08:00
+lang: ms
 tags: [Cloud Computing]
 ---
 

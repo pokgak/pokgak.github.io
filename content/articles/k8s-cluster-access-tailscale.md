@@ -6,7 +6,7 @@ images:
 - "images/k8s-external-dns-tailscale.png"
 ---
 
-![Full flow](images/k8s-external-dns-tailscale.png)
+![Six-step request flow connecting a Tailscale user to an internal Kubernetes Service through Cloudflare DNS, external-dns, and a Tailscale subnet router](images/k8s-external-dns-tailscale.png)
 
 I recently setup a local kubernetes in my home network to play with and one of the issues that I faced is that it is hard to access the services inside the cluster from my laptop. I don't have a load-balancer in my setup so everytime I want to access a service from my laptop, I'll have to run `kubectl port-forward` first before using the localhost address to access it. It works but it's annoying.
 

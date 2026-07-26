@@ -137,7 +137,7 @@ TBH I'm still not clear what is the difference betwen using `NodeSDK` vs manuall
 
 To start manually instrumenting your application, you'll have to create a root span. A root span is the first span you create once the request enters your application. 
 
-![Request/Response Flow](images/request-flow.png)
+![Nested spans in a controller application: entryPoint contains calculateSomething and doSomething, while calculateSomething contains callApi](images/request-flow.png)
 
 Now, if you have a normal HTTP request/response-based application, it is easy to figure out where to start and end your root spans. All your incoming requests will most likely be handled by a controller and each endpoint will be handled by a method. In this type of application, your root span can be started once the request hits the application in the method in your controller and ends before you send the response.
 

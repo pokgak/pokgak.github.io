@@ -10,7 +10,7 @@ Imagine going through your AWS bills and noticing that **APS1-DataTransfer-Regio
 
 ## The Traffic Flow
 
-![](images/cross-az-traffic.png)
+![Before-and-after traffic flow across three availability zones: cross-zone paths are replaced by zone-local load balancer, ingress-nginx, and pod paths](images/cross-az-traffic.png)
 
 In this article I will use the above diagram as our example network flow. Our example scenario will use the AWS Network Load Balancer (NLB) as the load balancer (LB), then routes the traffic to the ingress-nginx pods running inside our cluster. Finally, ingress-controller pods will route the traffic to the backend services serving the API.
 

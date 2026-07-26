@@ -12,7 +12,7 @@ The first attack was around 10PM on a Sunday. I was at home at the time and was 
 
 Then, one of my colleagues showed me the metrics for new connections to our load balancer. We're getting 10x our usual traffic in a minute. That's a DDoS for sure.
 
-![New connections to load balancer](images/ddos-lb-active-flow.png)
+![Load balancer connection count with attack spikes reaching about 1.3 million connections](images/ddos-lb-active-flow.png)
 
 ## Rate limiting from the ingress-controller
 
@@ -70,7 +70,7 @@ We have NAT Gateways configured in our network which means that if the requests 
 
 After this incident, we created a [list on Cloudflare](https://developers.cloudflare.com/waf/tools/lists/) containing all our known IPs and skip blocking to avoid confusion in the future.
 
-![Slack message](images/slack-suspicious-ips.png)
+![Slack message identifying two suspicious IP addresses with repeated unauthenticated requests](images/slack-suspicious-ips.png)
 
 ### Blocking accessibility bots (from US)
 

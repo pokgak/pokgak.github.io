@@ -201,7 +201,7 @@ Finally, we managed to build a multi-platform image using docker buildx bake!
 
 ## well ackshually
 
-![](images/well-ackchyually.png)
+![“Well, ackchyually” meme](images/well-ackchyually.png)
 
 > you can just use docker multi-stage build
 
@@ -219,5 +219,4 @@ TLDR here's what I had to do to get multi-platform build working when using mult
 1. Build the image using `docker buildx bake`
 
 This use case is quite niche tbh and like I've said it is avoidable by using multi-stage builds but it is what it is. There's other use cases for Bake as described in this [guide](https://docs.docker.com/guides/bake/) that is more practical. It's worth a read IMO. Hope you've learnt something new as I have.
-
 
