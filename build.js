@@ -178,8 +178,9 @@ function articleListItem(article) {
     </li>`;
 }
 
-// Type badge shown in the merged homepage feed. Ink is tinted per type; the
-// chip shape matches the tag badges on article/note/experiment pages.
+// Type badge shown in the merged homepage feed: a lowercase outline pill, kept
+// quieter than the filled tag badges on the article/note/experiment pages so it
+// reads as a marker rather than a label. Ink is tinted per type.
 const FEED_TYPES = {
   article: { label: 'article', dir: 'articles', ink: 'text-[#4b5563] dark:text-[#cbd5e1]' },
   note: { label: 'note', dir: 'notes', ink: 'text-[#7c6f52] dark:text-[#cbb994]' },
@@ -193,7 +194,7 @@ function feedListItem(item) {
   return `<li class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
       <span class="flex items-center gap-2 sm:w-28 sm:shrink-0 sm:flex-col sm:items-start sm:gap-1">
         <time class="text-sm leading-none text-gray-500 dark:text-gray-400 tabular-nums" datetime="${item.date.toISOString()}">${formatDateShort(item.date)}</time>
-        <span class="text-[0.66rem] leading-none uppercase tracking-wide px-1.5 py-1 rounded bg-gray-100 dark:bg-gray-800 ${kind.ink}">${kind.label}</span>
+        <span class="text-[0.7rem] leading-none px-1.5 py-1 rounded-full border border-gray-200 dark:border-gray-700 ${kind.ink}">${kind.label}</span>
       </span>
       <a href="/${kind.dir}/${item.slug}/" class="leading-snug hover:opacity-75 transition-opacity">${escapeXml(item.title)}</a>
     </li>`;
