@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Installing locked Node.js dependencies..."
+npm ci
+
+echo "Ensuring the agent-browser Chrome binary is installed..."
+command -v agent-browser >/dev/null
+agent-browser install
+
+echo "Building the site..."
+npm run build

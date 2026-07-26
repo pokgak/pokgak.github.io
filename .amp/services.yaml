@@ -1,0 +1,6 @@
+services:
+  blog:
+    command: npm run build && npm run preview -- "$PORT"
+    portal:
+      title: Blog Preview
+      description: Generated blog preview for browser testing.
