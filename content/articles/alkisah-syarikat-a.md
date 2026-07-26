@@ -1,6 +1,7 @@
 ---
 title: "Alkisah Syarikat A"
 date: 2021-08-26T18:24:00+08:00
+lang: ms
 tags: [Cloud Computing, Cerpen]
 draft: true
 ---

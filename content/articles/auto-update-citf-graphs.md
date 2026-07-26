@@ -1,6 +1,7 @@
 ---
 title: "Auto-update Graf Covid-19 menggunakan Github Actions"
 date: 2021-09-02T09:56:10+08:00
+lang: ms
 tags: [Github Actions, CI/CD]
 ---
 
@@ -139,7 +140,7 @@ Seperti yang anda boleh lihat, mudah sahaja cara penggunaan actions ini. Kita ha
 
 Sejak adanya workflow ini, saya tidak perlu lagi memastikan graf yang saya hasilkan di [pokgak/citf-graphs](https://github.com/pokgak/citf-graphs) sentiasa dikemaskini dengan maklumat terbaru secara manual, semuanya dilakukan secara automatik. Sejak itu juga, Github menunjukkan aktiviti saya aktif setiap hari, walaupun pada hakikatnya itu semua adalah bot sahaja :p
 
-![Cuba teka bila saya mula pakai workflow ni?](images/github-activity.png)
+![Graf sumbangan GitHub meningkat dengan ketara selepas workflow kemas kini automatik mula digunakan](images/github-activity.png)
 
 
 [1]: https://pokgak.xyz/articles/graf-interaktif-citf-plotly/

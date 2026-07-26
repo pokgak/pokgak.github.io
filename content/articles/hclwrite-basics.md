@@ -1,6 +1,7 @@
 ---
 title: "Generate fail HCL menggunakan library hclwrite"
 date: 2021-09-19T12:25:34+08:00
+lang: ms
 ---
 
 HCL adalah bahasa yang digunakan dalam produk-produk daripada Hashicorp seperti Terraform dan Packer. Kebiasaannya, fail HCL ini ditulis secara manual tetapi jika anda ingin menulis atau mengubah fail-fail tersebut secara programmatik menggunakan code, maka anda boleh menggunakan [`hclwrite`](https://pkg.go.dev/github.com/hashicorp/hcl/v2@v2.10.1/hclwrite#Tokens), sebuah library yang ditulis dalam Go.

@@ -6,7 +6,7 @@ tags: [interview, kubernetes, dns, networking]
 
 This will be the first in my interview questions series. I'll compile interesting questions that I got from my experience interviewing for DevOps/SRE role in Malaysia.
 
-![](images/k8s-dns.png)
+![Kubernetes DNS request flow from a pod through CoreDNS, kube-proxy, and iptables to a Service endpoint](images/k8s-dns.png)
 
 ## Calling a service by its cluster-internal DNS
 

@@ -1,6 +1,7 @@
 ---
 title: "Teknologi Blockchain"
 date: 2021-10-16T12:37:25+08:00
+lang: ms
 draft: true
 ---
 

@@ -77,7 +77,7 @@ otel-cli exec --service my-service --name "My First Trace" echo "HELLO WORLD"
 
 Then you should be able to see the a new line in the other terminal that we ran `otel-cli server tui` just now.
 
-![Result in otel-cli server](images/otel-cli-trace.png)
+![Terminal showing two otel-cli client spans named My First Trace and My Second Trace](images/otel-cli-trace.png)
 
 ## Conclusion
 
