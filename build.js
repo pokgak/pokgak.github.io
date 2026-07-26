@@ -20,6 +20,7 @@ marked.use({ renderer });
 
 const SITE_TITLE = 'Aiman Ismail';
 const SITE_URL = 'https://pokgak.xyz';
+const SITE_DESCRIPTION = 'Writing by Aiman Ismail about infrastructure, observability, databases, Kubernetes, and AI engineering.';
 const ARTICLES_DIR = path.join(__dirname, 'content/articles');
 const NOTES_DIR = path.join(__dirname, 'content/notes');
 const EXPERIMENTS_DIR = path.join(__dirname, 'content/experiments');
@@ -127,37 +128,20 @@ function loadContent(dir) {
 
 // --- Templates ---
 
-function baseLayout(title, content, { lang = 'en', currentSection = '' } = {}) {
+function baseLayout(title, content, { lang = 'en', currentSection = '', description = SITE_DESCRIPTION } = {}) {
   const pageTitle = title;
   return `<!DOCTYPE html>
-<html lang="${escapeXml(normalizeLang(lang))}" x-data="{ dark: localStorage.getItem('dark') === 'true' }" x-init="$watch('dark', v => { localStorage.setItem('dark', v); document.getElementById('hljs-light').disabled = v; document.getElementById('hljs-dark').disabled = !v; }); document.getElementById('hljs-light').disabled = dark; document.getElementById('hljs-dark').disabled = !dark;" :class="{ 'dark': dark }">
+<html lang="${escapeXml(normalizeLang(lang))}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="${escapeXml(description)}">
   <title>${escapeXml(pageTitle)}</title>
-  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: { extend: {} },
-    }
-  </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
+  <script>try{if(localStorage.getItem('dark')==='true')document.documentElement.classList.add('dark')}catch(e){}</script>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="icon" href="/images/sprite.svg" type="image/svg+xml">
   <link rel="alternate" type="application/rss+xml" title="${escapeXml(SITE_TITLE)}" href="/index.xml">
   <!-- Analytics placeholder -->
-  <style>
-    .prose pre { @apply rounded-lg overflow-x-auto; max-width: 100%; }
-    .prose pre code { font-size: 0.875em; white-space: pre; word-wrap: normal; overflow-wrap: normal; }
-    .prose pre { padding: 0 !important; background-color: transparent !important; }
-    .prose pre code.hljs { color: #24292e; background: #f6f8fa; display: block; overflow-x: visible; padding: 1em; border-radius: 0.5rem; }
-    .dark .prose pre code.hljs { color: #c9d1d9; background: #0d1117; }
-    .prose img { @apply rounded-lg mx-auto; }
-    .prose a { @apply underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2 hover:decoration-gray-800 dark:hover:decoration-gray-200 transition-colors; }
-    :focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
-    .dark :focus-visible { outline-color: #60a5fa; }
-  </style>
 </head>
 <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200 min-h-screen flex flex-col text-base lg:text-lg">
   <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-gray-900 focus:shadow-lg dark:focus:bg-gray-800 dark:focus:text-white">Skip to content</a>
@@ -168,9 +152,9 @@ function baseLayout(title, content, { lang = 'en', currentSection = '' } = {}) {
       ${navLink('/notes/', 'Notes', 'notes', currentSection)}
       ${navLink('/experiments/', 'Experiments', 'experiments', currentSection)}
       ${navLink('/talks/', 'Talks', 'talks', currentSection)}
-      <button type="button" @click="dark = !dark" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" aria-pressed="false" aria-label="Enable dark mode" :aria-pressed="dark.toString()" :aria-label="dark ? 'Disable dark mode' : 'Enable dark mode'">
-        <svg x-show="!dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-        <svg x-show="dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      <button id="theme-toggle" type="button" class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" aria-pressed="false" aria-label="Enable dark mode">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true" focusable="false"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
       </button>
     </nav>
   </header>
@@ -182,6 +166,23 @@ function baseLayout(title, content, { lang = 'en', currentSection = '' } = {}) {
   <footer class="max-w-2xl mx-auto w-full px-6 py-8 text-sm text-gray-500 dark:text-gray-400">
     <a href="/index.xml" class="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">RSS</a>
   </footer>
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const toggle = document.getElementById('theme-toggle');
+      const updateToggle = () => {
+        const dark = root.classList.contains('dark');
+        toggle.setAttribute('aria-pressed', String(dark));
+        toggle.setAttribute('aria-label', dark ? 'Disable dark mode' : 'Enable dark mode');
+      };
+      updateToggle();
+      toggle.addEventListener('click', () => {
+        root.classList.toggle('dark');
+        try { localStorage.setItem('dark', String(root.classList.contains('dark'))); } catch (e) {}
+        updateToggle();
+      });
+    })();
+  </script>
 </body>
 </html>`;
 }

@@ -4,7 +4,7 @@ install:
 	npm install
 
 build:
-	node build.js
+	npm run build
 
 preview: build
 	npx serve public

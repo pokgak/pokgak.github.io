@@ -6,7 +6,7 @@ Personal blog for Aiman Ismail. Plain HTML site built with a single Node.js scri
 
 ```bash
 make install   # npm install
-make build     # node build.js → outputs to public/
+make build     # generate HTML and compile CSS → outputs to public/
 make preview   # build + serve locally
 make clean     # rm -rf public
 ```
@@ -64,13 +64,15 @@ The build script rewrites `images/` → `/images/` automatically.
 ```
 .
 ├── build.js                  # Build script — templates, markdown rendering, RSS
-├── package.json              # Deps: marked, gray-matter, highlight.js
+├── package.json              # Deps and Tailwind build tooling
+├── tailwind.config.js        # Tailwind content paths and typography plugin
 ├── Makefile                  # Build/preview/new-article commands
 ├── content/
 │   ├── articles/             # Human-written articles (YAML frontmatter + body)
 │   ├── notes/                # Agent-written quick notes — concise, point-based
 │   └── experiments/          # Agent-written research logs — scientific style
 ├── static/
+│   ├── styles.css            # Tailwind entrypoint and syntax theme
 │   └── images/               # Images copied to public/images/ during build
 ├── public/                   # Build output (gitignored)
 │   ├── index.html            # Home page
@@ -98,13 +100,14 @@ The build script rewrites `images/` → `/images/` automatically.
 4. Writes `public/index.html`, `public/articles/…`, `public/notes/…`, `public/experiments/…`
 5. Copies `static/images/` → `public/images/`
 6. Generates RSS feed at `public/index.xml`
+7. Tailwind compiles and minifies `static/styles.css` → `public/styles.css`
 
 ## Frontend Stack
 
-- **Tailwind CSS** via CDN — no build step, configured inline
-- **Alpine.js** via CDN — dark mode toggle with localStorage persistence
-- **highlight.js** via CDN — code syntax highlighting (github/github-dark themes)
-- **@tailwindcss/typography** — prose classes for article content (via Tailwind CDN plugin config)
+- **Tailwind CSS** compiled and minified at build time
+- **Vanilla JavaScript** dark mode toggle with localStorage persistence
+- **highlight.js** server-side highlighting with bundled GitHub light/dark theme colors
+- **@tailwindcss/typography** — prose classes for article content
 
 ## Customization
 
