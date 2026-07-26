@@ -11,6 +11,29 @@ make preview   # build + serve locally
 make clean     # rm -rf public
 ```
 
+## Orb Browser Testing
+
+Fresh Amp orbs run `.agents/setup`, which installs locked npm dependencies,
+installs the Chrome binary used by the orb-provided `agent-browser`, and builds
+the site. The supervised preview service is declared in `.amp/services.yaml`.
+
+Start or reconcile the service and print its portal URL:
+
+```bash
+amp orb services ensure
+```
+
+Run the smoke test against that portal URL:
+
+```bash
+npm run test:browser -- https://<portal-url>
+```
+
+For a local preview listening on port 3000, run `npm run build && npm run
+preview -- 3000`, then run `npm run test:browser`. The test uses an
+isolated `agent-browser` session to verify the homepage, theme toggle, primary
+navigation, an article page, and the generated agent-discovery files.
+
 ## Content Types
 
 There are three content types:
