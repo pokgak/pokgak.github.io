@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Interactive comparison of the Maglev and Rendezvous backend-selection algorithms, with a live churn simulation over 20,000 flows.">
+<title>Maglev vs Rendezvous</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500;700&family=Karla:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap">
+
+<style>
+:root {
+  color-scheme: light;
+
+  /* -- Solarized (Ethan Schoonover), light side -- */
+  --base3:  #fdf6e3;
+  --base2:  #eee8d5;
+  --base1:  #93a1a1;
+  --base00: #657b83;
+  --base01: #586e75;
+  --base02: #073642;
+
+  --ground:  #eee8d5;
+  --surface: #fdf6e3;
+  --sunken:  #eee8d5;
+  --rule:    #586e75;
+  --rule-2:  #93a1a1;
+
+  --ink:     #073642;
+  --ink-2:   #657b83;
+  --ink-3:   #93a1a1;
+
+  --navy:    #268bd2;   /* solarized blue   - structure, links, focus */
+  --signal:  #cb4b16;   /* solarized orange - drained, needless      */
+
+  /* backend series - canonical solarized accents, validated all-pairs */
+  --s0: #b58900;   /* yellow */
+  --s1: #dc322f;   /* red    */
+  --s2: #6c71c4;   /* violet */
+  --s3: #2aa198;   /* cyan   */
+  --t0: #002b36;
+  --t1: #fdf6e3;
+  --t2: #fdf6e3;
+  --t3: #002b36;
+
+  --step-1: 4px;
+  --step-2: 8px;
+  --step-3: 14px;
+  --step-4: 22px;
+  --step-5: 36px;
+  --step-6: 60px;
+  --step-7: 96px;
+
+  --sans: "Karla", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --disp: "Spectral", ui-serif, Georgia, "Times New Roman", serif;
+  --mono: "Fira Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='9' viewBox='0 0 140 9'%3E%3Cpath d='M0 5.5 C 17 1.5, 30 8, 47 4.5 S 78 1, 93 5.5 S 123 8.5, 140 4' fill='none' stroke='%23586e75' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --squiggle-faint: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='9' viewBox='0 0 140 9'%3E%3Cpath d='M0 5.5 C 17 1.5, 30 8, 47 4.5 S 78 1, 93 5.5 S 123 8.5, 140 4' fill='none' stroke='%2393a1a1' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+
+  /* hand-drawn corners - irregular, never symmetrical */
+  --hand-1: 12px 4px 14px 6px / 6px 14px 4px 12px;
+  --hand-2: 5px 13px 4px 15px / 14px 5px 12px 4px;
+  --hand-3: 9px 3px 11px 5px / 4px 12px 3px 10px;
+  --hand-btn: 9px 3px 11px 4px / 4px 11px 3px 9px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink-2);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { max-width: 1120px; margin: 0 auto; padding: 0 var(--step-4) var(--step-7); }
+.prose { max-width: 66ch; }
+
+h1, h2, h3 {
+  font-family: var(--disp);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  text-wrap: balance;
+  line-height: 1.14;
+  letter-spacing: -0.012em;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+/* -- masthead ------------------------------------------- */
+.masthead {
+  padding: var(--step-6) 0 calc(var(--step-5) + 12px);
+  background-image: var(--squiggle);
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: 140px 9px;
+}
+.masthead h1 {
+  font-size: clamp(42px, 7.2vw, 78px);
+  font-weight: 700;
+  margin: var(--step-3) 0 var(--step-4);
+  letter-spacing: -0.022em;
+}
+.masthead h1 .vs {
+  color: var(--ink-3); font-style: italic; font-weight: 400;
+  font-size: 0.58em; letter-spacing: 0;
+}
+.deck { font-size: clamp(17px, 1.9vw, 20px); color: var(--ink-2); max-width: 60ch; margin: 0; }
+.deck strong { color: var(--ink); font-weight: 700; }
+
+.ticker {
+  display: flex; flex-wrap: wrap; gap: var(--step-2) var(--step-5);
+  margin-top: var(--step-4); padding-top: var(--step-3);
+  background-image: var(--squiggle-faint);
+  background-repeat: repeat-x; background-position: left top; background-size: 140px 9px;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+}
+.ticker b { color: var(--ink); font-weight: 500; }
+
+/* -- sections ------------------------------------------- */
+section { padding-top: var(--step-6); }
+.sec-head { display: flex; align-items: baseline; gap: var(--step-3); margin-bottom: var(--step-3); }
+.sec-head .num {
+  font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--navy);
+  border: 2px solid var(--navy); background: var(--surface);
+  border-radius: var(--hand-3);
+  padding: 2px 9px; flex: none; letter-spacing: 0.04em;
+  transform: rotate(-2.2deg);
+}
+section h2 { font-size: clamp(27px, 3.5vw, 38px); font-weight: 700; }
+section > .prose p { margin: var(--step-3) 0 0; }
+section > .prose p strong { color: var(--ink); font-weight: 700; }
+
+/* -- panels: flat paper with a drawn outline ------------ */
+.panel {
+  background: var(--surface);
+  border: 2px solid var(--rule);
+  border-radius: var(--hand-1);
+  margin-top: var(--step-4);
+  overflow: hidden;
+}
+.panel:nth-of-type(even) { border-radius: var(--hand-2); }
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--step-3);
+  flex-wrap: wrap;
+  padding: var(--step-3) var(--step-4);
+  border-bottom: 2px solid var(--rule-2);
+  background: var(--sunken);
+}
+.panel-head h3 { font-size: 19px; }
+.panel-body { padding: var(--step-4); }
+.panel-note {
+  padding: var(--step-3) var(--step-4);
+  border-top: 2px solid var(--rule-2);
+  background: var(--sunken);
+  font-size: 13.5px; color: var(--ink-2); line-height: 1.58;
+}
+.panel-note b { color: var(--ink); font-weight: 700; }
+
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--step-4); margin-top: var(--step-4); }
+@media (max-width: 860px) { .duo { grid-template-columns: minmax(0, 1fr); } }
+.duo .panel { margin-top: 0; }
+
+.algo-tag {
+  font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* -- mechanism list ------------------------------------- */
+ol.mech { list-style: none; counter-reset: m; margin: 0; padding: 0; }
+ol.mech li {
+  counter-increment: m; position: relative;
+  padding: 0 0 var(--step-3) var(--step-5);
+  font-size: 14.5px; line-height: 1.6; color: var(--ink-2);
+}
+ol.mech li:last-child { padding-bottom: 0; }
+ol.mech li::before {
+  content: counter(m); position: absolute; left: 0; top: 2px;
+  font-family: var(--disp); font-size: 12.5px; font-weight: 600; color: var(--ink);
+  width: 22px; height: 22px; display: grid; place-items: center;
+  border: 2px solid var(--rule-2); background: var(--surface);
+  border-radius: 50% 45% 52% 48% / 48% 52% 45% 55%;
+}
+ol.mech li b { color: var(--ink); font-weight: 700; }
+ol.mech code, .prose code, td code, .panel-note code {
+  font-family: var(--mono); font-size: 0.86em;
+  background: var(--sunken); border: 1px solid var(--rule-2);
+  border-radius: 4px 2px 5px 2px; padding: 0.5px 4px; color: var(--ink);
+}
+
+/* -- controls ------------------------------------------- */
+button {
+  font-family: var(--sans); font-size: 13.5px; font-weight: 500;
+  color: var(--ink); background: var(--surface);
+  border: 2px solid var(--rule); border-radius: var(--hand-btn);
+  padding: 4px 13px 5px; cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+button:hover { background: var(--sunken); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+button.primary { background: var(--ink); color: var(--base3); border-color: var(--ink); }
+button.primary:hover { background: var(--navy); border-color: var(--navy); color: var(--base3); }
+.ctl-row { display: flex; flex-wrap: wrap; gap: var(--step-2); align-items: center; }
+
+input[type="text"] {
+  font-family: var(--mono); font-size: 13px; color: var(--ink);
+  background: var(--sunken); border: 2px solid var(--rule-2);
+  border-radius: var(--hand-3); padding: 8px 11px; width: 100%;
+}
+select {
+  font-family: var(--mono); font-size: 11.5px; color: var(--ink);
+  background: var(--surface); border: 2px solid var(--rule-2);
+  border-radius: 6px 3px 7px 3px; padding: 3px 6px; cursor: pointer;
+}
+
+/* -- table grids ---------------------------------------- */
+.tablegrid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+#buildGrid { max-width: 580px; margin-inline: auto; }
+.cell {
+  aspect-ratio: 1; background: var(--sunken);
+  border-radius: 4px 2px 5px 3px;
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: 9.5px; font-weight: 500;
+  color: transparent;
+  transition: background-color 90ms linear, color 90ms linear;
+}
+.cell.empty { box-shadow: inset 0 0 0 1.5px var(--rule-2); }
+.cell.just { outline: 2px solid var(--ink); outline-offset: -1px; position: relative; z-index: 2; }
+.cell.hit  { outline: 3px solid var(--signal); outline-offset: 1px; position: relative; z-index: 3; }
+
+.fill-meta { display: flex; flex-wrap: wrap; gap: var(--step-2) var(--step-4); font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); margin-top: var(--step-3); }
+.fill-meta b { color: var(--ink); font-weight: 500; }
+
+/* -- legend --------------------------------------------- */
+.legend { display: flex; flex-wrap: wrap; gap: var(--step-2) var(--step-3); margin-top: var(--step-3); }
+.legend .item { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+.legend .sw { width: 13px; height: 13px; border-radius: 5px 2px 6px 3px; flex: none; border: 1.5px solid var(--ink); }
+.legend .item.off { color: var(--ink-3); text-decoration: line-through; }
+.legend .item.off .sw { background: transparent !important; border-style: dashed; }
+
+/* -- rendezvous score bars ------------------------------ */
+.scores { display: flex; flex-direction: column; gap: 7px; }
+.score-row { display: grid; grid-template-columns: 62px minmax(0,1fr) 92px; align-items: center; gap: var(--step-2); }
+.score-row .name { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+.score-row .track { height: 20px; background: var(--sunken); border: 1.5px solid var(--rule-2); border-radius: 5px 2px 6px 3px; overflow: hidden; }
+.score-row .bar { display: block; height: 100%; transition: width 260ms cubic-bezier(.2,.7,.2,1); }
+.score-row .val { font-family: var(--mono); font-size: 11px; color: var(--ink-3); text-align: right; font-variant-numeric: tabular-nums; }
+.score-row.win .name, .score-row.win .val { color: var(--ink); font-weight: 500; }
+
+.verdict {
+  margin-top: var(--step-3); padding: var(--step-3);
+  background: var(--sunken); border: 2px solid var(--rule-2);
+  border-radius: var(--hand-2);
+  font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); line-height: 1.7;
+}
+.verdict b { color: var(--ink); font-weight: 500; }
+.chip {
+  display: inline-flex; align-items: center;
+  font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+  padding: 2px 9px; border-radius: 7px 3px 8px 3px;
+  border: 1.5px solid var(--ink);
+}
+
+/* -- disruption lab ------------------------------------- */
+.lab-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--step-4); }
+@media (max-width: 860px) { .lab-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.col-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--step-2);
+  flex-wrap: wrap; padding-bottom: 12px; margin-bottom: var(--step-3);
+  background-image: var(--squiggle);
+  background-repeat: repeat-x; background-position: left bottom; background-size: 140px 9px;
+}
+.col-head h3 { font-size: 21px; }
+
+.strip-block + .strip-block { margin-top: var(--step-3); }
+.strip-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 5px; }
+.strip { display: flex; gap: 1px; height: 32px; }
+.strip.delta { height: 17px; }
+.strip i { flex: 1 1 0; min-width: 0; background: var(--sunken); }
+
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--step-2); margin-top: var(--step-4); }
+.metric {
+  background: var(--surface); border: 2px solid var(--rule-2);
+  border-radius: var(--hand-3); padding: var(--step-3); min-width: 0;
+}
+.metric:nth-child(2) { border-radius: var(--hand-2); }
+.metric .k { font-family: var(--mono); font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); }
+.metric .k, .metric .s { overflow-wrap: anywhere; }
+.metric .v { font-family: var(--disp); font-weight: 600; font-size: clamp(21px, 4.6vw, 30px); color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.18; margin-top: 3px; letter-spacing: -0.015em; }
+.metric .s { font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+.metric.bad { border-color: var(--signal); }
+.metric.bad .v { color: var(--signal); }
+
+.loadbars { display: flex; flex-direction: column; gap: 6px; margin-top: var(--step-4); }
+.loadrow { display: grid; grid-template-columns: 54px minmax(0,1fr) 54px; align-items: center; gap: var(--step-2); }
+.loadrow .nm { font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+.loadrow .tr { height: 15px; background: var(--sunken); border: 1.5px solid var(--rule-2); border-radius: 5px 2px 6px 3px; overflow: hidden; position: relative; }
+.loadrow .tr::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1.5px; background: var(--ink-3); }
+.loadrow .bh { display: block; height: 100%; transition: width 300ms cubic-bezier(.2,.7,.2,1); }
+.loadrow .pc { font-family: var(--mono); font-size: 11px; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+
+.state-line {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--step-2);
+  font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+  padding: var(--step-3) var(--step-4); background: var(--sunken);
+  border-bottom: 2px solid var(--rule-2);
+}
+.state-line b { color: var(--ink); }
+.pill {
+  font-family: var(--mono); border: 2px solid var(--signal); color: var(--signal);
+  padding: 1px 9px; border-radius: 8px 3px 9px 3px; font-size: 11px;
+  transform: rotate(-1.4deg); display: inline-block;
+}
+
+.node-toggle {
+  font-family: var(--mono); font-size: 11.5px;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 3px 11px 4px 8px; border-width: 2px;
+}
+.node-toggle .dot { width: 12px; height: 12px; border-radius: 5px 2px 6px 3px; flex: none; border: 1.5px solid var(--ink); }
+.node-toggle.drained { color: var(--ink-3); border-color: var(--rule-2); border-style: dashed; }
+.node-toggle.drained .dot { background: transparent !important; border-style: dashed; border-color: var(--ink-3); }
+
+/* -- comparison table ----------------------------------- */
+.tablewrap { overflow-x: auto; margin-top: var(--step-4); border: 2px solid var(--rule); background: var(--surface); border-radius: var(--hand-2); }
+table.cmp { border-collapse: collapse; width: 100%; min-width: 660px; font-size: 14px; }
+table.cmp th, table.cmp td { text-align: left; padding: var(--step-3) var(--step-4); border-bottom: 2px solid var(--rule-2); vertical-align: top; }
+table.cmp thead th { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; background: var(--sunken); }
+table.cmp tbody th { font-family: var(--disp); font-size: 16px; font-weight: 600; color: var(--ink); width: 23%; }
+table.cmp td { color: var(--ink-2); width: 38.5%; }
+table.cmp tr:last-child th, table.cmp tr:last-child td { border-bottom: 0; }
+
+/* -- takeaway cards ------------------------------------- */
+.notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--step-3); margin-top: var(--step-4); }
+@media (max-width: 760px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+.note { background: var(--surface); border: 2px solid var(--rule); border-radius: var(--hand-1); padding: var(--step-4); }
+.note:nth-child(2n) { border-radius: var(--hand-2); }
+.note:nth-child(3) { border-radius: var(--hand-3); }
+.note h4 { font-family: var(--disp); font-size: 19px; font-weight: 600; color: var(--ink); margin: 0 0 var(--step-2); }
+.note p { margin: 0; font-size: 14px; color: var(--ink-2); line-height: 1.62; }
+
+.colophon {
+  margin-top: var(--step-6); padding-top: var(--step-3);
+  background-image: var(--squiggle-faint);
+  background-repeat: repeat-x; background-position: left top; background-size: 140px 9px;
+  font-size: 12.5px; color: var(--ink-3); max-width: 74ch; line-height: 1.65;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+  .sec-head .num, .pill { transform: none; }
+}
+</style>
+<style>
+  /* Embedded in an article: the host page supplies the title and the spacing. */
+  html.embedded .masthead { display: none; }
+  html.embedded .page { padding-top: var(--step-4); padding-bottom: var(--step-5); }
+  html.embedded section:first-of-type { padding-top: 0; }
+</style>
+
+<script>if (new URLSearchParams(location.search).has('embed') || window.self !== window.top) document.documentElement.classList.add('embedded');</script>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Google Cloud &middot; internal passthrough network load balancer</p>
+    <h1>Maglev <span class="vs">vs</span> Rendezvous</h1>
+    <p class="deck">Google is replacing the backend&#8209;selection algorithm inside most internal passthrough NLBs. Same connection tracking, same session affinity, same health checks &mdash; <strong>a different answer to one question: given this flow, which backend?</strong> Here is what each algorithm actually does, and what changes when the backend set does.</p>
+    <div class="ticker">
+      <span><b>Rollout begins</b> 21 Sep 2026</span>
+      <span><b>Complete by</b> 9 Oct 2026</span>
+      <span><b>Exempt</b> multi&#8209;NIC backends serving 2+ ILBs</span>
+      <span><b>Unchanged</b> connection tracking</span>
+    </div>
+  </header>
+
+  <section id="mechanism">
+    <div class="sec-head"><span class="num">01</span><h2>One packet, two ways to choose</h2></div>
+    <div class="prose">
+      <p>Both algorithms are <strong>consistent hashing</strong>: no shared state, no coordination, every load balancer instance independently reaching the same answer for the same flow. They get there in opposite ways &mdash; one precomputes an answer for every possible hash, the other computes the answer on demand.</p>
+    </div>
+
+    <div class="duo">
+      <article class="panel">
+        <div class="panel-head">
+          <h3>Maglev</h3>
+          <span class="algo-tag">Build a table, then read it</span>
+        </div>
+        <div class="panel-body">
+          <ol class="mech">
+            <li>Each backend derives two numbers from its own name: an <b>offset</b> and a <b>skip</b>, from two independent hashes.</li>
+            <li>Those generate its <b>preference list</b> &mdash; <code>offset</code>, <code>offset+skip</code>, <code>offset+2&middot;skip</code>&hellip; all mod <code>M</code>, a prime table size (65537 in the paper).</li>
+            <li>Backends <b>take turns</b>. On your turn, claim the first slot on your list that nobody has taken. Repeat until all <code>M</code> slots are full.</li>
+            <li>A packet arrives: hash the 5&#8209;tuple, take it <code>mod M</code>, read that slot. <b>One array lookup</b>, whatever the backend count.</li>
+          </ol>
+        </div>
+        <div class="panel-note">The table is the product. Every load balancer holds a copy, and any change to the backend set means building a new one.</div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h3>Rendezvous</h3>
+          <span class="algo-tag">Score everyone, keep the highest</span>
+        </div>
+        <div class="panel-body">
+          <ol class="mech">
+            <li>Nothing is precomputed. <b>No table exists.</b></li>
+            <li>A packet arrives: for each backend, hash the pair <code>(flow, backend&nbsp;name)</code> into a number &mdash; its <b>score</b> for this specific flow.</li>
+            <li>The <b>highest score wins</b>. That is the entire algorithm.</li>
+            <li>Every load balancer computes the same winner from the same inputs, with <b>nothing to build and nothing to keep in sync</b>.</li>
+          </ol>
+        </div>
+        <div class="panel-note">Also called Highest Random Weight (HRW), Thaler &amp; Ravishankar, 1996 &mdash; two years older than consistent hashing rings, and quietly better behaved.</div>
+      </article>
+    </div>
+  </section>
+
+  <section id="lookup">
+    <div class="sec-head"><span class="num">02</span><h2>Resolve a flow</h2></div>
+    <div class="prose">
+      <p>Type any flow identifier below &mdash; a 5&#8209;tuple, a hostname, anything. Both algorithms run on it live, against the same four backends, using the same 32&#8209;bit hash.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-body">
+        <label class="strip-label" for="flowInput">Flow key (5&#8209;tuple)</label>
+        <input type="text" id="flowInput" value="10.240.0.14:51820 -&gt; 10.128.0.9:443 tcp" spellcheck="false">
+        <div class="ctl-row" style="margin-top:var(--step-3)">
+          <button id="randFlow">Random flow</button>
+          <span class="algo-tag" id="hashOut"></span>
+        </div>
+
+        <div class="duo" style="margin-top:var(--step-4)">
+          <div>
+            <div class="strip-label">Maglev &mdash; table read</div>
+            <div class="tablegrid" id="lookupGrid" role="img" aria-label="Maglev lookup table of 127 slots, coloured by owning backend"></div>
+            <div class="fill-meta" id="lookupMeta"></div>
+          </div>
+          <div>
+            <div class="strip-label">Rendezvous &mdash; scores for this flow</div>
+            <div class="scores" id="scoreList"></div>
+            <div class="verdict" id="rvVerdict"></div>
+          </div>
+        </div>
+        <div class="legend" id="legendLookup"></div>
+      </div>
+      <div class="panel-note">Demo table size is <b>M&nbsp;=&nbsp;127</b> so all slots fit on screen; production Maglev uses a much larger prime (65537 or 655373). The simulation further down uses 65537.</div>
+    </div>
+  </section>
+
+  <section id="build">
+    <div class="sec-head"><span class="num">03</span><h2>Watch the table get built</h2></div>
+    <div class="prose">
+      <p>This is the part Rendezvous does not have. Backends take turns claiming slots from their own preference sequence; when a slot is already taken they skip ahead to the next free one on their list. The turn&#8209;taking is what makes the result <strong>exactly balanced</strong> &mdash; every backend ends up with either &lfloor;M/N&rfloor; or &lceil;M/N&rceil; slots, no statistics involved.</p>
+      <p>It is also what makes it <strong>expensive to change</strong>. Add or remove one backend and the permutations interleave differently, so the table is rebuilt from scratch &mdash; every instance, every forwarding rule, before the next packet gets the right answer.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Maglev population, M = 127, N = 4</h3>
+        <div class="ctl-row">
+          <button id="playBtn" class="primary">Play</button>
+          <button id="stepBtn">Step</button>
+          <button id="roundBtn">Round</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="tablegrid" id="buildGrid" role="img" aria-label="Maglev table population, animated"></div>
+        <div class="fill-meta" id="buildMeta"></div>
+        <div class="legend" id="legendBuild"></div>
+      </div>
+      <div class="panel-note" id="buildNote"></div>
+    </div>
+  </section>
+
+  <section id="lab">
+    <div class="sec-head"><span class="num">04</span><h2>What moves when a backend does</h2></div>
+    <div class="prose">
+      <p>This runs for real: <strong>20,000 synthetic flows</strong>, resolved by both algorithms before and after every change you make, in your browser. Drain a backend, bring it back &mdash; the numbers are measured, not quoted.</p>
+      <p>The bar to beat is the <strong>unavoidable</strong> churn. When a backend is drained its own flows have to go somewhere; nothing else needs to move. Rendezvous hits that bar <strong>exactly, always</strong> &mdash; the needless column is provably zero, not just small.</p>
+      <p>Maglev misses it, but at a full&#8209;size table it barely misses: a fraction of a percent of flows. That is the honest headline, and it is why the table size matters. <strong>Shrink <code>M</code> and Maglev's needless churn climbs</strong> &mdash; the big table is what buys the near&#8209;minimal behaviour, and the big table is exactly what has to be held and rebuilt.</p>
+    </div>
+
+    <div class="panel">
+      <div class="state-line">
+        <span>Backends:</span>
+        <span id="nodeToggles" class="ctl-row"></span>
+        <span id="lastAction"></span>
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:var(--step-2)">
+          <label for="mSelect">Maglev table size <code>M</code></label>
+          <select id="mSelect">
+            <option value="127">127</option>
+            <option value="1021">1,021</option>
+            <option value="16381">16,381</option>
+            <option value="65537" selected>65,537</option>
+            <option value="655373">655,373</option>
+          </select>
+        </span>
+      </div>
+      <div class="panel-body">
+        <div class="lab-grid">
+          <div>
+            <div class="col-head"><h3>Maglev</h3><span class="algo-tag" id="mgColTag">M = 65,537 &middot; table rebuilt</span></div>
+            <div class="strip-block"><div class="strip-label">Before &mdash; 180 sampled flows</div><div class="strip" id="mgBefore"></div></div>
+            <div class="strip-block"><div class="strip-label">After</div><div class="strip" id="mgAfter"></div></div>
+            <div class="strip-block"><div class="strip-label">Flows that moved</div><div class="strip delta" id="mgDelta"></div></div>
+            <div class="metrics">
+              <div class="metric"><div class="k">Remapped</div><div class="v" id="mgMoved">&mdash;</div><div class="s" id="mgMovedPct"></div></div>
+              <div class="metric"><div class="k">Unavoidable</div><div class="v" id="mgMin">&mdash;</div><div class="s" id="mgMinPct"></div></div>
+              <div class="metric" id="mgExcessTile"><div class="k">Needless</div><div class="v" id="mgExcess">&mdash;</div><div class="s" id="mgExcessPct"></div></div>
+            </div>
+            <div class="loadbars" id="mgLoad"></div>
+          </div>
+
+          <div>
+            <div class="col-head"><h3>Rendezvous</h3><span class="algo-tag">no table &middot; nothing rebuilt</span></div>
+            <div class="strip-block"><div class="strip-label">Before &mdash; 180 sampled flows</div><div class="strip" id="rvBefore"></div></div>
+            <div class="strip-block"><div class="strip-label">After</div><div class="strip" id="rvAfter"></div></div>
+            <div class="strip-block"><div class="strip-label">Flows that moved</div><div class="strip delta" id="rvDelta"></div></div>
+            <div class="metrics">
+              <div class="metric"><div class="k">Remapped</div><div class="v" id="rvMoved">&mdash;</div><div class="s" id="rvMovedPct"></div></div>
+              <div class="metric"><div class="k">Unavoidable</div><div class="v" id="rvMin">&mdash;</div><div class="s" id="rvMinPct"></div></div>
+              <div class="metric" id="rvExcessTile"><div class="k">Needless</div><div class="v" id="rvExcess">&mdash;</div><div class="s" id="rvExcessPct"></div></div>
+            </div>
+            <div class="loadbars" id="rvLoad"></div>
+          </div>
+        </div>
+        <div class="legend" id="legendLab"></div>
+      </div>
+      <div class="panel-note" id="labNote"></div>
+    </div>
+  </section>
+
+  <section id="tradeoff">
+    <div class="sec-head"><span class="num">05</span><h2>The trade Google is making</h2></div>
+    <div class="prose">
+      <p>Google's stated reason is <strong>scalability and efficiency</strong>, and the lab above shows why it is not primarily about churn: at a full&#8209;size table Maglev is already within a fraction of a percent of optimal. The thing Rendezvous removes is <strong>the table itself</strong> &mdash; the memory every load balancer spends per forwarding rule, and the rebuild every one of them performs whenever a backend appears or disappears.</p>
+      <p>It is not free. Rendezvous gives up the O(1) lookup and pays a hash per backend on every new flow. That cost lands in the one place it is affordable: <strong>only flows that miss the connection&#8209;tracking table pay it</strong>.</p>
+    </div>
+
+    <div class="tablewrap">
+      <table class="cmp">
+        <thead><tr><th scope="col"></th><th scope="col">Maglev</th><th scope="col">Rendezvous</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">State per rule</th><td>A lookup table of <code>M</code> entries, replicated to every LB instance</td><td>None. The backend list is the only state.</td></tr>
+          <tr><th scope="row">Work per new flow</th><td>1 hash + 1 array read &mdash; O(1)</td><td><code>N</code> hashes + <code>N</code> comparisons &mdash; O(N)</td></tr>
+          <tr><th scope="row">Work per backend change</th><td>Rebuild the whole table before the next packet is right</td><td>Nothing. The next lookup is already correct.</td></tr>
+          <tr><th scope="row">Load balance</th><td>Exact by construction: <code>&lfloor;M/N&rfloor;</code> or <code>&lceil;M/N&rceil;</code> slots each</td><td>Statistical: even in expectation, with binomial spread</td></tr>
+          <tr><th scope="row">Churn on backend loss</th><td>Near&#8209;minimal, and only because <code>M</code> is large &mdash; the reshuffle moves a little extra</td><td>Exactly minimal at any size. Provably nothing else moves.</td></tr>
+          <tr><th scope="row">Weights</th><td>Approximated &mdash; heavier backends are given extra turns</td><td>Exact and closed&#8209;form: <code>&minus;w / ln(u)</code>, <code>u&nbsp;=&nbsp;h/2&#179;&sup2;</code></td></tr>
+          <tr><th scope="row">Scaling pressure</th><td>Memory and rebuild cost, per rule, per instance</td><td>Per&#8209;flow CPU, growing with backend count</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Lookup cost, measured here</h3><div class="ctl-row"><button id="benchBtn">Run benchmark</button></div></div>
+      <div class="panel-body" id="benchOut" style="font-family:var(--mono);font-size:13px;color:var(--ink-2)">Resolves 200,000 flows with each algorithm and reports nanoseconds per lookup.</div>
+      <div class="panel-note">JavaScript in a browser, on one core &mdash; indicative of the <em>shape</em> of the difference, not its magnitude in a production datapath, where selection is vectorised and, for the vast majority of packets, skipped entirely thanks to connection tracking.</div>
+    </div>
+  </section>
+
+  <section id="impact">
+    <div class="sec-head"><span class="num">06</span><h2>What it means for your ILB</h2></div>
+    <div class="notes">
+      <div class="note">
+        <h4>Established connections are not affected</h4>
+        <p>Backend selection only runs for a flow with no entry in the connection&#8209;tracking table. Tracked connections keep going to the backend they already have, straight through the migration.</p>
+      </div>
+      <div class="note">
+        <h4>The mapping itself changes once</h4>
+        <p>The same 5&#8209;tuple can resolve to a different backend after the switch, even with an unchanged backend set. It is a one&#8209;time remap of new flows, not ongoing instability.</p>
+      </div>
+      <div class="note">
+        <h4>Watch for state outside the connection</h4>
+        <p>If a backend keeps per&#8209;client state that is not carried in the connection &mdash; an in&#8209;memory session keyed by client IP, a local cache warmed per tenant &mdash; that is where a remap is visible. Long&#8209;idle flows that age out of connection tracking re&#8209;resolve too.</p>
+      </div>
+      <div class="note">
+        <h4>The carve&#8209;out</h4>
+        <p>Load balancers stay on Maglev when backend VMs have two or more NICs <em>and</em> at least two of those NICs are eligible backends of at least two internal passthrough NLBs. If that is your topology, nothing changes for you.</p>
+      </div>
+    </div>
+  </section>
+
+  <p class="colophon">
+    Both algorithms here are implemented from their published descriptions &mdash; Maglev per Eisenbud et&nbsp;al., NSDI&nbsp;2016 (offset/skip permutations, prime table, turn&#8209;based population); Rendezvous per Thaler &amp; Ravishankar, 1996 (highest&#8209;score wins) &mdash; both over the same MurmurHash3 32&#8209;bit function. Google has not published the details of its own implementation, so treat the measured numbers as properties of the algorithms, not predictions about your specific load balancer.
+  </p>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* -- hash ------------------------------------------------ */
+  function murmur3(key, seed) {
+    let h = seed >>> 0, i = 0;
+    const len = key.length, c1 = 0xcc9e2d51, c2 = 0x1b873593;
+    const nblocks = len & ~3;
+    for (; i < nblocks; i += 4) {
+      let k = (key.charCodeAt(i) & 0xff) | ((key.charCodeAt(i + 1) & 0xff) << 8) |
+              ((key.charCodeAt(i + 2) & 0xff) << 16) | ((key.charCodeAt(i + 3) & 0xff) << 24);
+      k = Math.imul(k, c1); k = (k << 15) | (k >>> 17); k = Math.imul(k, c2);
+      h ^= k; h = (h << 13) | (h >>> 19); h = (Math.imul(h, 5) + 0xe6546b64) | 0;
+    }
+    let k1 = 0;
+    switch (len & 3) {
+      case 3: k1 ^= (key.charCodeAt(i + 2) & 0xff) << 16;
+      case 2: k1 ^= (key.charCodeAt(i + 1) & 0xff) << 8;
+      case 1: k1 ^= (key.charCodeAt(i) & 0xff);
+              k1 = Math.imul(k1, c1); k1 = (k1 << 15) | (k1 >>> 17); k1 = Math.imul(k1, c2); h ^= k1;
+    }
+    h ^= len;
+    h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b);
+    h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35);
+    h ^= h >>> 16;
+    return h >>> 0;
+  }
+  const SEED_FLOW = 0x5f2a1c07, SEED_OFF = 0xdeadbeef, SEED_SKIP = 0xbeefdead, SEED_RV = 0x9747b28c;
+
+  /* -- backends -------------------------------------------- */
+  const POOL = [
+    { name: "be-0", c: "var(--s0)", t: "var(--t0)", hex: "#b58900" },
+    { name: "be-1", c: "var(--s1)", t: "var(--t1)", hex: "#dc322f" },
+    { name: "be-2", c: "var(--s2)", t: "var(--t2)", hex: "#6c71c4" },
+    { name: "be-3", c: "var(--s3)", t: "var(--t3)", hex: "#2aa198" }
+  ];
+
+  /* -- maglev ---------------------------------------------- */
+  function buildMaglev(names, M) {
+    const n = names.length;
+    const off = new Int32Array(n), skip = new Int32Array(n), next = new Int32Array(n);
+    for (let i = 0; i < n; i++) {
+      off[i] = murmur3(names[i], SEED_OFF) % M;
+      skip[i] = murmur3(names[i], SEED_SKIP) % (M - 1) + 1;
+    }
+    const entry = new Int16Array(M).fill(-1);
+    const steps = [];
+    let filled = 0;
+    outer: while (true) {
+      for (let i = 0; i < n; i++) {
+        let c = (off[i] + next[i] * skip[i]) % M;
+        while (entry[c] !== -1) { next[i]++; c = (off[i] + next[i] * skip[i]) % M; }
+        entry[c] = i; next[i]++; filled++;
+        steps.push(c);
+        if (filled === M) break outer;
+      }
+    }
+    return { entry, steps, off, skip };
+  }
+  const mgLookup = (tbl, key, M) => tbl.entry[murmur3(key, SEED_FLOW) % M];
+
+  /* -- rendezvous ------------------------------------------ */
+  function rvScores(key, names) {
+    const out = new Array(names.length);
+    for (let i = 0; i < names.length; i++) out[i] = murmur3(key + "|" + names[i], SEED_RV);
+    return out;
+  }
+  function rvPick(key, names) {
+    let best = 0, bw = -1;
+    for (let i = 0; i < names.length; i++) {
+      const w = murmur3(key + "|" + names[i], SEED_RV);
+      if (w > bw) { bw = w; best = i; }
+    }
+    return best;
+  }
+
+  const $ = (s) => document.querySelector(s);
+  const hex32 = (v) => "0x" + v.toString(16).padStart(8, "0");
+  const pct = (a, b) => (100 * a / b).toFixed(2) + "%";
+  const fmt = (n) => n.toLocaleString("en-US");
+
+  /* -- legends --------------------------------------------- */
+  function legend(el, idxs, drained) {
+    el.innerHTML = idxs.map(i =>
+      `<span class="item${drained && drained.has(i) ? " off" : ""}">
+         <span class="sw" style="background:${POOL[i].c}"></span>${POOL[i].name}</span>`).join("");
+  }
+
+  /* -- section 02 : lookup --------------------------------- */
+  const M_DEMO = 127;
+  const DEMO_IDX = [0, 1, 2, 3];
+  const DEMO_NAMES = DEMO_IDX.map(i => POOL[i].name);
+  const demoTable = buildMaglev(DEMO_NAMES, M_DEMO);
+
+  const lookupGrid = $("#lookupGrid");
+  const lookupCells = [];
+  for (let s = 0; s < M_DEMO; s++) {
+    const d = document.createElement("div");
+    const b = demoTable.entry[s];
+    d.className = "cell";
+    d.style.background = POOL[DEMO_IDX[b]].c;
+    d.style.color = POOL[DEMO_IDX[b]].t;
+    d.textContent = String(b);
+    d.title = "slot " + s + " -> " + POOL[DEMO_IDX[b]].name;
+    lookupGrid.appendChild(d);
+    lookupCells.push(d);
+  }
+  legend($("#legendLookup"), DEMO_IDX);
+
+  const flowInput = $("#flowInput"), scoreList = $("#scoreList");
+  let lastHit = -1;
+
+  function resolveFlow() {
+    const key = flowInput.value || " ";
+    const h = murmur3(key, SEED_FLOW);
+    const slot = h % M_DEMO;
+    const mgWin = demoTable.entry[slot];
+
+    $("#hashOut").textContent = "murmur3 = " + hex32(h);
+    if (lastHit >= 0) lookupCells[lastHit].classList.remove("hit");
+    lookupCells[slot].classList.add("hit");
+    lastHit = slot;
+    $("#lookupMeta").innerHTML =
+      `<span><b>${hex32(h)}</b> mod 127 = slot <b>${slot}</b></span>` +
+      `<span>slot ${slot} holds <b>${POOL[DEMO_IDX[mgWin]].name}</b></span>`;
+
+    const sc = rvScores(key, DEMO_NAMES);
+    const max = Math.max(...sc), win = sc.indexOf(max);
+    scoreList.innerHTML = DEMO_IDX.map((bi, i) => `
+      <div class="score-row${i === win ? " win" : ""}">
+        <span class="name">${POOL[bi].name}</span>
+        <span class="track"><span class="bar" style="width:${(100 * sc[i] / 4294967295).toFixed(2)}%;background:${POOL[bi].c}"></span></span>
+        <span class="val">${hex32(sc[i])}</span>
+      </div>`).join("");
+
+    $("#rvVerdict").innerHTML =
+      `highest score wins &rarr; <span class="chip" style="background:${POOL[DEMO_IDX[win]].hex};color:${POOL[DEMO_IDX[win]].t}">${POOL[DEMO_IDX[win]].name}</span>` +
+      `<br>Maglev sent it to <b>${POOL[DEMO_IDX[mgWin]].name}</b> &mdash; ` +
+      (win === mgWin
+        ? "same backend, by coincidence."
+        : "a different backend. Neither is wrong; they are simply different mappings.");
+  }
+  flowInput.addEventListener("input", resolveFlow);
+  $("#randFlow").addEventListener("click", () => {
+    const r = (n) => Math.floor(Math.random() * n);
+    flowInput.value = `10.240.${r(4)}.${r(255)}:${1024 + r(64000)} -> 10.128.0.9:443 tcp`;
+    resolveFlow();
+  });
+  resolveFlow();
+
+  /* -- section 03 : build animation ------------------------ */
+  const buildGrid = $("#buildGrid"), buildCells = [];
+  for (let s = 0; s < M_DEMO; s++) {
+    const d = document.createElement("div");
+    d.className = "cell empty";
+    buildGrid.appendChild(d);
+    buildCells.push(d);
+  }
+  legend($("#legendBuild"), DEMO_IDX);
+  $("#buildNote").innerHTML =
+    "Preference seeds: " + DEMO_IDX.map((bi, i) =>
+      `<b>${POOL[bi].name}</b> offset ${demoTable.off[i]}, skip ${demoTable.skip[i]}`).join(" &nbsp;&middot;&nbsp; ") +
+    ". Slot <i>j</i> on a backend's list is <code>(offset + j &middot; skip) mod 127</code>.";
+
+  let cursor = 0, timer = null, lastPlaced = -1;
+  const N_DEMO = DEMO_IDX.length;
+
+  function paintStep() {
+    const slot = demoTable.steps[cursor];
+    const b = cursor % N_DEMO;
+    const cell = buildCells[slot];
+    cell.classList.remove("empty");
+    cell.style.background = POOL[DEMO_IDX[b]].c;
+    cell.style.color = POOL[DEMO_IDX[b]].t;
+    cell.textContent = String(b);
+    cell.title = "slot " + slot + " -> " + POOL[DEMO_IDX[b]].name;
+    if (lastPlaced >= 0) buildCells[lastPlaced].classList.remove("just");
+    cell.classList.add("just");
+    lastPlaced = slot;
+    cursor++;
+    updateBuildMeta();
+  }
+  function updateBuildMeta() {
+    const round = Math.floor(cursor / N_DEMO);
+    const turn = cursor % N_DEMO;
+    const counts = new Array(N_DEMO).fill(0);
+    for (let i = 0; i < cursor; i++) counts[i % N_DEMO]++;
+    $("#buildMeta").innerHTML =
+      `<span>slots filled <b>${cursor} / ${M_DEMO}</b></span>` +
+      `<span>round <b>${round + (turn ? 1 : 0)}</b></span>` +
+      `<span>next up <b>${cursor < M_DEMO ? POOL[DEMO_IDX[turn]].name : "&mdash; table complete"}</b></span>` +
+      `<span>per backend <b>${counts.join(" / ")}</b></span>`;
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } $("#playBtn").textContent = "Play"; }
+  function play() {
+    if (timer) { stop(); return; }
+    if (cursor >= M_DEMO) reset();
+    $("#playBtn").textContent = "Pause";
+    timer = setInterval(() => {
+      if (cursor >= M_DEMO) { stop(); return; }
+      paintStep();
+    }, 45);
+  }
+  function reset() {
+    stop(); cursor = 0; lastPlaced = -1;
+    buildCells.forEach(c => {
+      c.className = "cell empty";
+      c.style.background = ""; c.style.color = ""; c.textContent = ""; c.title = "";
+    });
+    updateBuildMeta();
+  }
+  $("#playBtn").addEventListener("click", play);
+  $("#stepBtn").addEventListener("click", () => { stop(); if (cursor < M_DEMO) paintStep(); });
+  $("#roundBtn").addEventListener("click", () => {
+    stop();
+    for (let i = 0; i < N_DEMO && cursor < M_DEMO; i++) paintStep();
+  });
+  $("#resetBtn").addEventListener("click", reset);
+  reset();
+
+  /* -- section 04 : disruption lab ------------------------- */
+  const NKEYS = 20000, SAMPLES = 180;
+  let M_SIM = 65537;
+  const keys = new Array(NKEYS);
+  for (let i = 0; i < NKEYS; i++) {
+    const a = (i * 2654435761) >>> 0;
+    keys[i] = `10.${128 + (a & 31)}.${(a >>> 8) & 255}.${(a >>> 16) & 255}:${1024 + (a % 64000)}->443`;
+  }
+  const sampleIdx = [];
+  for (let i = 0; i < SAMPLES; i++) sampleIdx.push(Math.floor(i * NKEYS / SAMPLES));
+
+  function assignAll(idxs) {
+    const names = idxs.map(i => POOL[i].name);
+    const tbl = buildMaglev(names, M_SIM);
+    const mg = new Int16Array(NKEYS), rv = new Int16Array(NKEYS);
+    for (let k = 0; k < NKEYS; k++) {
+      mg[k] = idxs[mgLookup(tbl, keys[k], M_SIM)];
+      rv[k] = idxs[rvPick(keys[k], names)];
+    }
+    return { mg, rv };
+  }
+
+  function makeStrip(el) {
+    el.innerHTML = "";
+    const arr = [];
+    for (let i = 0; i < SAMPLES; i++) { const t = document.createElement("i"); el.appendChild(t); arr.push(t); }
+    return arr;
+  }
+  const strips = {
+    mgB: makeStrip($("#mgBefore")), mgA: makeStrip($("#mgAfter")), mgD: makeStrip($("#mgDelta")),
+    rvB: makeStrip($("#rvBefore")), rvA: makeStrip($("#rvAfter")), rvD: makeStrip($("#rvDelta"))
+  };
+  function paintStrip(nodes, arr) {
+    for (let i = 0; i < SAMPLES; i++) {
+      const b = arr[sampleIdx[i]];
+      nodes[i].style.background = POOL[b].c;
+      nodes[i].title = "flow #" + sampleIdx[i] + " -> " + POOL[b].name;
+    }
+  }
+  function paintDelta(nodes, before, after) {
+    for (let i = 0; i < SAMPLES; i++) {
+      const k = sampleIdx[i];
+      const moved = before[k] !== after[k];
+      nodes[i].style.background = moved ? "var(--ink)" : "var(--base2)";
+      nodes[i].title = moved
+        ? "flow #" + k + " moved: " + POOL[before[k]].name + " -> " + POOL[after[k]].name
+        : "flow #" + k + " stayed on " + POOL[before[k]].name;
+    }
+  }
+
+  let active = [0, 1, 3];
+  let prev = [0, 1, 2, 3];
+  let actionLabel = "be-2 drained";
+
+  function renderToggles() {
+    const el = $("#nodeToggles");
+    el.innerHTML = "";
+    POOL.forEach((b, i) => {
+      const on = active.includes(i);
+      const btn = document.createElement("button");
+      btn.className = "node-toggle" + (on ? "" : " drained");
+      btn.innerHTML = `<span class="dot" style="background:${b.c}"></span>${b.name}${on ? "" : " &middot; out"}`;
+      btn.setAttribute("aria-pressed", String(on));
+      btn.title = on ? "Drain " + b.name : "Add " + b.name;
+      btn.addEventListener("click", () => toggle(i));
+      el.appendChild(btn);
+    });
+    $("#lastAction").innerHTML = `<span class="pill">${actionLabel}</span>`;
+  }
+
+  function toggle(i) {
+    const on = active.includes(i);
+    if (on && active.length <= 2) return;
+    prev = active.slice();
+    active = on ? active.filter(x => x !== i) : active.concat(i).sort((a, b) => a - b);
+    actionLabel = (on ? POOL[i].name + " drained" : POOL[i].name + " added");
+    renderToggles();
+    runLab();
+  }
+
+  function loadBars(el, arr, idxs) {
+    const counts = {}; idxs.forEach(i => counts[i] = 0);
+    for (let k = 0; k < NKEYS; k++) counts[arr[k]]++;
+    const ideal = 100 / idxs.length;
+    el.innerHTML = idxs.map(i => {
+      const p = 100 * counts[i] / NKEYS;
+      return `<div class="loadrow">
+        <span class="nm">${POOL[i].name}</span>
+        <span class="tr" title="even share would be ${ideal.toFixed(2)}%"><span class="bh" style="width:${Math.min(100, p / (ideal * 2) * 100).toFixed(2)}%;background:${POOL[i].c}"></span></span>
+        <span class="pc">${p.toFixed(2)}%</span></div>`;
+    }).join("");
+    const vals = idxs.map(i => 100 * counts[i] / NKEYS);
+    return Math.max(...vals) - Math.min(...vals);
+  }
+
+  // maglev-only churn for the current change at an arbitrary table size
+  function maglevExcessAt(M) {
+    const build = (idxs) => {
+      const tbl = buildMaglev(idxs.map(i => POOL[i].name), M);
+      const out = new Int16Array(NKEYS);
+      for (let k = 0; k < NKEYS; k++) out[k] = idxs[mgLookup(tbl, keys[k], M)];
+      return out;
+    };
+    const b = build(prev), a = build(active);
+    const removed = prev.filter(i => !active.includes(i));
+    const added = active.filter(i => !prev.includes(i));
+    let moved = 0, must = 0;
+    for (let k = 0; k < NKEYS; k++) {
+      if (b[k] !== a[k]) moved++;
+      if (removed.includes(b[k]) || added.includes(a[k])) must++;
+    }
+    return moved - must;
+  }
+
+  function runLab() {
+    const before = assignAll(prev), after = assignAll(active);
+    const added = active.filter(i => !prev.includes(i));
+    const removed = prev.filter(i => !active.includes(i));
+
+    const report = (which, ids) => {
+      const b = before[which], a = after[which];
+      let moved = 0, must = 0;
+      for (let k = 0; k < NKEYS; k++) {
+        if (b[k] !== a[k]) moved++;
+        if (removed.includes(b[k]) || added.includes(a[k])) must++;
+      }
+      return { moved, must, excess: moved - must, b, a };
+    };
+
+    const mg = report("mg"), rv = report("rv");
+
+    paintStrip(strips.mgB, mg.b); paintStrip(strips.mgA, mg.a); paintDelta(strips.mgD, mg.b, mg.a);
+    paintStrip(strips.rvB, rv.b); paintStrip(strips.rvA, rv.a); paintDelta(strips.rvD, rv.b, rv.a);
+
+    const put = (p, r) => {
+      $("#" + p + "Moved").textContent = fmt(r.moved);
+      $("#" + p + "MovedPct").textContent = pct(r.moved, NKEYS) + " of flows";
+      $("#" + p + "Min").textContent = fmt(r.must);
+      $("#" + p + "MinPct").textContent = pct(r.must, NKEYS) + " of flows";
+      $("#" + p + "Excess").textContent = fmt(r.excess);
+      $("#" + p + "ExcessPct").textContent = r.excess === 0 ? "nothing needless" : pct(r.excess, NKEYS) + " of flows";
+      $("#" + p + "ExcessTile").classList.toggle("bad", r.excess > 0);
+    };
+    put("mg", mg); put("rv", rv);
+
+    const mgEx = mg.excess;
+    const smallEx = M_SIM === 127 ? mgEx : maglevExcessAt(127);
+    const mgSpread = loadBars($("#mgLoad"), mg.a, active);
+    const rvSpread = loadBars($("#rvLoad"), rv.a, active);
+    legend($("#legendLab"), POOL.map((_, i) => i).filter(i => active.includes(i) || prev.includes(i)),
+           new Set(POOL.map((_, i) => i).filter(i => !active.includes(i))));
+
+    $("#mgColTag").innerHTML = "M = " + fmt(M_SIM) + " &middot; table rebuilt";
+    $("#labNote").innerHTML =
+      `<b>Load spread</b> after the change (busiest minus quietest backend): Maglev <b>${mgSpread.toFixed(2)} pts</b>, ` +
+      `Rendezvous <b>${rvSpread.toFixed(2)} pts</b>. Maglev's <i>table</i> is exactly balanced by construction &mdash; ` +
+      `${fmt(Math.floor(M_SIM / active.length))} or ${fmt(Math.ceil(M_SIM / active.length))} slots each &mdash; so its spread here is ` +
+      (M_SIM >= 16381 ? "just hash noise across 20,000 flows" : "quantisation from the small table plus hash noise") + `. ` +
+      `<br><b>Needless churn</b> at M&nbsp;=&nbsp;${fmt(M_SIM)}: Maglev <b>${pct(mgEx, NKEYS)}</b> of all flows, Rendezvous <b>0.00%</b>.` +
+      (M_SIM === 127 ? "" :
+        ` The same change with a 127&#8209;slot table would cost Maglev <b>${pct(smallEx, NKEYS)}</b>.`) +
+      ` The big table is what buys near&#8209;minimal churn &mdash; and the big table is exactly what every instance has to hold and rebuild. ` +
+      `Rendezvous gets the zero for free.`;
+  }
+  $("#mSelect").addEventListener("change", (e) => { M_SIM = +e.target.value; runLab(); });
+  renderToggles();
+  runLab();
+
+  /* -- benchmark ------------------------------------------- */
+  $("#benchBtn").addEventListener("click", () => {
+    const out = $("#benchOut");
+    out.textContent = "running&hellip;";
+    setTimeout(() => {
+      const names = active.map(i => POOL[i].name);
+      const ITER = 200000;
+      const tbl = buildMaglev(names, M_SIM);
+      let sink = 0;
+      let t0 = performance.now();
+      for (let i = 0; i < ITER; i++) sink += mgLookup(tbl, keys[i % NKEYS], M_SIM);
+      const tMg = performance.now() - t0;
+      t0 = performance.now();
+      for (let i = 0; i < ITER; i++) sink += rvPick(keys[i % NKEYS], names);
+      const tRv = performance.now() - t0;
+      t0 = performance.now();
+      const tBuild = (() => { const s = performance.now(); buildMaglev(names, M_SIM); return performance.now() - s; })();
+      const ns = (ms) => (ms * 1e6 / ITER).toFixed(0);
+      out.innerHTML =
+        `<div>Maglev &nbsp; <b style="color:var(--ink)">${ns(tMg)} ns</b> / lookup &nbsp; <span style="color:var(--ink-3)">(1 hash + 1 array read)</span></div>` +
+        `<div>Rendezvous &nbsp; <b style="color:var(--ink)">${ns(tRv)} ns</b> / lookup &nbsp; <span style="color:var(--ink-3)">(${names.length} hashes)</span></div>` +
+        `<div style="margin-top:var(--step-2)">Maglev table build for ${names.length} backends, M=${fmt(M_SIM)}: <b style="color:var(--ink)">${tBuild.toFixed(1)} ms</b> &mdash; paid on every backend&#8209;set change, on every instance. Rendezvous pays <b style="color:var(--ink)">0 ms</b>.</div>` +
+        `<div style="visibility:hidden;height:0">${sink}</div>`;
+    }, 30);
+  });
+})();
+</script>
+</body>
+</html>
