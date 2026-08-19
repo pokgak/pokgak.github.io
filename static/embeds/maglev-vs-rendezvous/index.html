@@ -368,13 +368,32 @@ table.cmp tr:last-child th, table.cmp tr:last-child td { border-bottom: 0; }
 }
 </style>
 <style>
-  /* Embedded in an article: the host page supplies the title and the spacing. */
+  /* Embedded in a post: the host page supplies the title and the spacing. */
   html.embedded .masthead { display: none; }
   html.embedded .page { padding-top: var(--step-4); padding-bottom: var(--step-5); }
   html.embedded section:first-of-type { padding-top: 0; }
+
+  /* Single-section mode: just the interactive panel, sized as a figure. */
+  html[data-only="build"] .masthead, html[data-only="build"] .colophon,
+  html[data-only="build"] section:not(#build),
+  html[data-only="lab"] .masthead, html[data-only="lab"] .colophon,
+  html[data-only="lab"] section:not(#lab) { display: none; }
+  html[data-only] .sec-head, html[data-only] section > .prose { display: none; }
+  html[data-only] section { padding-top: 0; }
+  html[data-only] .page { max-width: 100%; padding: var(--step-3) var(--step-3) var(--step-3); }
+  html[data-only] .panel { margin-top: 0; }
+  html[data-only] body { background: var(--surface); }
 </style>
 
-<script>if (new URLSearchParams(location.search).has('embed') || window.self !== window.top) document.documentElement.classList.add('embedded');</script>
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var r = document.documentElement;
+    if (q.has('embed') || window.self !== window.top) r.classList.add('embedded');
+    var only = q.get('only');
+    if (only === 'build' || only === 'lab') r.setAttribute('data-only', only);
+  })();
+</script>
 </head>
 <body>
 <div class="page">
