@@ -174,6 +174,69 @@ function contentPageOptions(item, section, schemaType = 'BlogPosting') {
   };
 }
 
+// --- Raw HTML blocks (inline SVG, figures, embeds) ---
+
+// Markdown ends a raw HTML block at the first blank line, and any indented
+// lines after it become a code block instead. That silently shreds multi-line
+// inline SVG: the tail gets escaped and syntax-highlighted as source. So lift
+// top-level raw blocks out before rendering markdown, then put them back
+// verbatim afterwards.
+const RAW_BLOCK_TAGS = new Set([
+  'figure', 'svg', 'div', 'script', 'style', 'iframe', 'table', 'details', 'picture', 'video',
+]);
+const RAW_TOKEN = 'RAWBLOCKZ';
+
+function liftRawBlocks(md) {
+  const lines = md.split('\n');
+  const blocks = [];
+  const out = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^<([a-zA-Z][\w-]*)(\s|\/|>|$)/.exec(lines[i]);
+    const tag = m && m[1].toLowerCase();
+    if (!tag || !RAW_BLOCK_TAGS.has(tag)) {
+      out.push(lines[i]);
+      continue;
+    }
+
+    // Balance opens against closes for this tag only, so nested same-name
+    // elements are handled and an unbalanced block is left alone entirely.
+    const openRe = new RegExp(`<${tag}\\b`, 'gi');
+    const closeRe = new RegExp(`</${tag}\\s*>`, 'gi');
+    const buf = [];
+    let depth = 0;
+    let end = -1;
+
+    for (let j = i; j < lines.length; j++) {
+      const line = lines[j];
+      buf.push(line);
+      depth += (line.match(openRe) || []).length;
+      depth -= (line.match(closeRe) || []).length;
+      if (j === i && depth === 1 && /\/>\s*$/.test(line)) depth = 0; // <tag ... />
+      if (depth <= 0) { end = j; break; }
+    }
+
+    if (end === -1) { out.push(lines[i]); continue; } // unterminated: not ours
+    blocks.push(buf.join('\n'));
+    out.push('', `${RAW_TOKEN}${blocks.length - 1}${RAW_TOKEN}`, '');
+    i = end;
+  }
+
+  return { markdown: out.join('\n'), blocks };
+}
+
+function restoreRawBlocks(html, blocks) {
+  if (!blocks.length) return html;
+  const re = new RegExp(`(?:<p>\\s*)?${RAW_TOKEN}(\\d+)${RAW_TOKEN}(?:\\s*</p>)?`, 'g');
+  return html.replace(re, (_, n) => blocks[Number(n)]);
+}
+
+// Render markdown with raw HTML blocks preserved.
+function renderMarkdown(md) {
+  const { markdown, blocks } = liftRawBlocks(md);
+  return restoreRawBlocks(marked(markdown), blocks);
+}
+
 // --- Load content ---
 
 function loadTalks(dir) {
@@ -183,7 +246,7 @@ function loadTalks(dir) {
     const raw = fs.readFileSync(path.join(dir, file), 'utf-8');
     const { data, content } = matter(raw);
     const slug = slugFromFilename(file);
-    const html = marked(content);
+    const html = renderMarkdown(content);
     return {
       title: data.title || slug,
       date: data.date ? new Date(data.date) : new Date(0),
@@ -212,7 +275,7 @@ function loadContent(dir) {
     const { data, content } = matter(raw);
     const slug = slugFromFilename(file);
     const fixedContent = content.replace(/\]\(images\//g, '](/images/');
-    const html = marked(fixedContent);
+    const html = renderMarkdown(fixedContent);
     return {
       title: data.title || slug,
       date: data.date ? new Date(data.date) : new Date(0),
@@ -743,4 +806,7 @@ function build() {
   console.log('Build complete! Output in public/');
 }
 
-build();
+// Run the build when invoked directly; stay importable for tests.
+if (require.main === module) build();
+
+module.exports = { renderMarkdown, liftRawBlocks, restoreRawBlocks };
