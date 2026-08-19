@@ -737,6 +737,8 @@ function build() {
 
   // Copy static assets
   copyDirSync(path.join(STATIC_DIR, 'images'), path.join(PUBLIC_DIR, 'images'));
+  // Self-contained interactive pages, embedded into posts via <iframe>
+  copyDirSync(path.join(STATIC_DIR, 'embeds'), path.join(PUBLIC_DIR, 'embeds'));
 
   console.log('Build complete! Output in public/');
 }
