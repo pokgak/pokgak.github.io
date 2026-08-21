@@ -4,26 +4,26 @@ date: 2026-08-21T00:00:00+0800
 tags: [prometheus, grafana, alerting, promql, observability]
 ---
 
-An alert fires for a hardware fault. Two minutes later Grafana marks it resolved. Nobody touched the machine — it's still broken. If the alert is wired to a ticketing system or a pager, the "resolved" event propagates too, and closes the incident out from under whoever was fixing it.
+An alert fires for a hardware fault. Two minutes later Grafana marks it resolved. Nobody touched the machine, and it's still broken. If the alert is wired to a ticketing system or a pager, the "resolved" event goes out too, and closes the incident while someone is still fixing it.
 
-The cause is almost never a flaky evaluator. It's a mismatch between what the metric represents and what the alert assumes it represents.
+This is usually not a flaky evaluator. It's that the metric doesn't mean what the alert assumes it means.
 
 ## State gauges vs event-window metrics
 
-Two very different things get exported as "metrics":
+Two different things get exported as "metrics":
 
 | | State gauge | Event-window metric |
 |---|---|---|
 | Example shape | `thing_status{...} = 1` | `events_count{code="..."}` |
-| Meaning | the condition is true *right now* | an event happened *recently* |
+| Meaning | the condition is true right now | an event happened recently |
 | Lifetime | series exists as long as the target is scraped | series exists only while an event is inside the exporter's window |
-| Resolves when | condition stops being true | window drains — regardless of the condition |
+| Resolves when | condition stops being true | window drains, whatever the condition is doing |
 
-Alerting on a state gauge is straightforward: the value goes back to normal, the alert resolves, and that means something.
+Alerting on a state gauge behaves how you'd expect: the value goes back to normal, the alert resolves, and that tells you something.
 
-Event-window metrics are the trap. Many exporters count "events seen in the last N minutes" and attach a label identifying the event — an error code, a reason, a kind. That label **only exists while an event sits inside the window**. In steady state you get an unlabelled series at zero, or nothing at all.
+Event-window metrics are where this goes wrong. Many exporters count "events seen in the last N minutes" and attach a label identifying the event: an error code, a reason, a kind. That label only exists while an event sits inside the window. In steady state you get an unlabelled series at zero, or nothing at all.
 
-So a rule like this:
+So this rule:
 
 ```promql
 sum by (instance, device, code) (
@@ -31,21 +31,21 @@ sum by (instance, device, code) (
 )
 ```
 
-is not asking "is device X in error state 42?" It's asking "did an event with code 42 arrive in the last 5 minutes?" Those are only the same question for the first 5 minutes.
+is not asking "is device X in error state 42?". It's asking "did an event with code 42 arrive in the last 5 minutes?". Those are the same question for 5 minutes and then they aren't.
 
-## Two distinct resolve mechanisms
+## Two ways it resolves early
 
-Worth separating, because they need different fixes.
+These need different fixes, so it's worth telling them apart.
 
-**1. Missing series.** The label selector matches a series that stops being exported. The alert instance has no data at all — not a false condition, an *absent* one. Grafana treats a firing instance whose series disappeared as stale and resolves it after `missing_series_evals_to_resolve` evaluations (default 2). At a 1-minute group interval that's a 2-minute resolve.
+**Missing series.** The selector matches a series that stops being exported. The alert instance has no data at all: not a false condition, an absent one. Grafana treats a firing instance whose series disappeared as stale and resolves it after `missing_series_evals_to_resolve` evaluations, which defaults to 2. At a 1-minute group interval that's a 2-minute resolve.
 
-**2. Window drain.** The underlying metric is a persistent counter, so the series never disappears, but a short `increase(...)` or `max_over_time(...)` falls back to zero once the events age out. The condition evaluates false and the alert resolves normally.
+**Window drain.** The underlying metric is a persistent counter, so the series never disappears, but a short `increase(...)` or `max_over_time(...)` drops back to zero once the events age out. The condition goes false and the alert resolves normally.
 
-Both look identical in the UI: the alert was firing, now it isn't, nothing was fixed.
+Both look the same in the UI: it was firing, now it isn't, nothing was fixed.
 
-## Telling which one you have
+## Working out which one you have
 
-Compare the lifetime of the labelled series against a plain state metric from the same exporter on the same target:
+Compare how long the labelled series lives against a plain state metric from the same exporter on the same target:
 
 ```promql
 # does the alerting series still exist?
@@ -56,63 +56,63 @@ count(some_other_gauge{instance="..."})
 count(up{instance="..."} == 1)
 ```
 
-If the second and third keep reporting while the first goes to nothing, the exporter is healthy and you're looking at a window artefact — not a scrape outage, not an agent crash. That distinction matters, because "the exporter died" and "the label expired" have completely different fixes and you'll waste an afternoon on the wrong one.
+If the last two keep reporting while the first goes to nothing, the exporter is fine and the label just expired. That's worth checking early, because "the exporter died" and "the label expired" look identical from the alert side and have nothing in common as fixes.
 
-Then check whether the resolve timing lines up suspiciously well with `exporter window + (group interval × missing_series_evals_to_resolve)`. If it does, that's your answer.
+Then see whether the resolve time matches `exporter window + (group interval × missing_series_evals_to_resolve)`. If it lines up, that's your answer.
 
-## The knobs, and what each actually does
+## What each setting actually does
 
 ```promql
 max_over_time(some_events_count{code="42"}[2h])
 ```
 
-Widening the range selector is the **load-bearing** change. It's the only one that keeps the series *existing*: as long as one sample falls inside the window, `max_over_time` still produces a value for that label set. Everything else merely delays a resolve that's already happening.
+Widening the range selector is the change that matters. It's the only one that keeps the series existing: as long as one sample falls inside the window, `max_over_time` still returns a value for that label set. The other settings only delay a resolve that's already happening.
 
-If you're using Grafana's managed alert rules, the rule's query time range must be at least as long as the range selector — otherwise the query silently sees less data than you asked for. Bump both together.
+With Grafana's managed alert rules, the rule's query time range has to be at least as long as the range selector, or the query quietly sees less data than you asked for. Change both together.
 
-| Setting | What it does | What it does *not* do |
+| Setting | What it does | What it doesn't do |
 |---|---|---|
-| range selector (`[2h]`) | keeps the series alive and the condition true | nothing, if the time range is shorter |
-| `keep_firing_for` | holds a firing alert open after the condition goes false | resurrect a series that vanished mid-window |
-| `missing_series_evals_to_resolve` | how many empty evaluations before a stale instance resolves | help at all when the series is present but zero |
-| `for` (pending period) | delays *firing*, filters noise | affect resolve behaviour |
+| range selector (`[2h]`) | keeps the series alive and the condition true | anything, if the query time range is shorter |
+| `keep_firing_for` | holds a firing alert open after the condition goes false | bring back a series that vanished |
+| `missing_series_evals_to_resolve` | how many empty evaluations before a stale instance resolves | help when the series is present but zero |
+| `for` (pending period) | delays firing, filters noise | change resolve behaviour |
 
-Reach for `keep_firing_for` and `missing_series_evals_to_resolve` as defence in depth — they cover the case where the exporter itself drops out — but don't treat them as the fix. A 30-minute `keep_firing_for` on a 5-minute window still resolves in 35 minutes.
+`keep_firing_for` and `missing_series_evals_to_resolve` are worth setting as a backstop, since they cover the exporter dropping out entirely. They aren't the fix on their own. A 30-minute `keep_firing_for` on a 5-minute window still resolves in 35 minutes.
 
-## Pick the window deliberately
+## Pick the window on purpose
 
-Widening the lookback redefines what "resolved" means: the alert now clears only after a clean window with no events. So choose it from the failure mode, not from a default:
+Widening the lookback changes what "resolved" means: the alert now clears only after a clean window with no events. So pick it from the failure mode rather than taking a default:
 
-- **Hard failures needing physical intervention** (a device dropping off the bus, uncorrectable memory errors) — hours. The condition doesn't self-heal, and you want the alert outliving the repair.
-- **Transient-but-worth-knowing events** (a process getting killed, a retry storm) — long enough that the alert survives until someone triages it. An alert that vanishes before a human reads it is a metric, not an alert.
-- **Genuinely live conditions** (thermal throttling, saturation) — leave the window short. Resolving *is* correct here, because the condition really did stop. Add a modest `keep_firing_for` so it doesn't flap on the edge.
+- **Hard failures needing someone to physically intervene** (a device dropping off the bus, uncorrectable memory errors): hours. The condition won't fix itself, and you want the alert to outlive the repair.
+- **Transient events that still need a look** (a process getting killed, a retry storm): long enough that the alert is still there when someone triages. If it clears before anyone reads it, it wasn't doing anything.
+- **Conditions that really are live** (thermal throttling, saturation): leave the window short. Resolving is correct here, because the condition did stop. Add a small `keep_firing_for` so it doesn't flap on the edge.
 
-The trap is applying the same window everywhere. A window that's right for "GPU fell off the bus" is badly wrong for "GPU is hot right now."
+The mistake is using one window for all of them. What's right for "device fell off the bus" is wrong for "device is hot right now".
 
-## Prefer state, where a state signal exists
+## Alert on state when there is a state signal
 
-The deeper fix is to alert on a state signal when one is available, and treat the event metric as forensic detail. Plenty of exporters publish both: a health/status gauge that persists while the condition is true, alongside the event counter. Alert on the gauge; use the event stream to attach the error code and history.
+Where a state signal exists, alert on that and use the event metric for the detail. Plenty of exporters publish both: a health or status gauge that stays up while the condition is true, alongside the event counter. Alert on the gauge, and pull the error code and history from the events.
 
-An event metric can tell you something happened. It can never tell you the thing stopped mattering. Don't ask it to.
+An event metric can tell you something happened. It can't tell you it stopped.
 
-## Downstream: auto-resolve is not a free action
+## Auto-resolve is a write, not a colour change
 
-If alert notifications feed anything stateful — a ticket tracker, an on-call system, a vendor integration, a chatbot posting updates — then a resolve is a *write*, not just a UI colour change. A premature resolve can:
+If alert notifications feed anything stateful (a ticket tracker, an on-call system, a vendor integration, a bot posting updates) then a resolve is a write. An early one can:
 
-- close a ticket while the repair is still in progress
+- close a ticket while the repair is still going
 - cancel an escalation before anyone acknowledged it
-- mark a machine healthy in an automated remediation loop, putting a broken node straight back into service
+- mark a machine healthy in an automated remediation loop, putting a broken node back into service
 
-This is the part that turns an alerting-config detail into an incident. When auditing rules built on event metrics, check what consumes the resolve event, not just whether the fire was correct.
+That's what turns an alerting config detail into an incident. When reviewing rules built on event metrics, check what consumes the resolve, not just whether the fire was right.
 
 ## Checklist
 
 For any alert rule whose selector pins a label naming an event, error code, or reason:
 
-- [ ] Is this a state gauge or an event-window metric? Check the exporter docs for the phrase "in the last N" — that's a window.
+- [ ] Is this a state gauge or an event-window metric? Look for "in the last N" in the exporter docs; that's a window.
 - [ ] Does the labelled series exist in steady state, or only during an event?
-- [ ] Is the range selector at least as long as the condition realistically persists?
+- [ ] Is the range selector at least as long as the condition realistically lasts?
 - [ ] Is the rule's query time range >= the range selector?
-- [ ] Is there dwell (`keep_firing_for`, `missing_series_evals_to_resolve`) as a backstop?
+- [ ] Is there a `keep_firing_for` / `missing_series_evals_to_resolve` backstop?
 - [ ] Is there a state gauge you should be alerting on instead?
-- [ ] What downstream system acts on the resolve, and is it safe if the resolve is wrong?
+- [ ] What acts on the resolve downstream, and is it safe if the resolve is wrong?
