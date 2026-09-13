@@ -40,41 +40,192 @@ Two more terms appear in networking tools:
 
 Suppose Pod A runs on node 1 and Pod B runs on node 2:
 
-```text
-Pod A
-  │  ordinary Pod packet addressed to Pod B
-  ▼
-Cilium on node 1
-  │  wraps it in a VXLAN/UDP envelope addressed to node 2
-  ▼
-Linux routing
-  │  chooses tailscale0
-  ▼
-Tailscale encrypted tunnel
-  │
-  ▼
-Cilium on node 2 unwraps it
-  │
-  ▼
-Pod B
-```
+<figure class="not-prose" style="margin:2rem 0">
+<svg viewBox="40 0 640 680" role="img" aria-labelledby="packet-flow-title packet-flow-desc" style="width:100%;height:auto;display:block;overflow:visible">
+  <title id="packet-flow-title">A packet travelling from Pod A to Pod B on another node</title>
+  <desc id="packet-flow-desc">An animated packet moves from Pod A through Cilium, Linux routing, the encrypted Tailscale tunnel, and Cilium on the second node before reaching Pod B.</desc>
+  <style>
+    .pf-stage { fill: currentColor; fill-opacity: .04; stroke: currentColor; stroke-opacity: .28; stroke-width: 1.5; }
+    .pf-arrow { stroke: currentColor; stroke-opacity: .28; stroke-width: 2; }
+    .pf-packet { animation: pf-travel 8s ease-in-out infinite; transform-origin: center; }
+    .pf-pulse { animation: pf-pulse 8s ease-in-out infinite; }
+    @keyframes pf-travel {
+      0%, 8% { transform: translateY(0); }
+      18%, 25% { transform: translateY(110px); }
+      35%, 42% { transform: translateY(220px); }
+      52%, 59% { transform: translateY(330px); }
+      69%, 76% { transform: translateY(440px); }
+      88%, 100% { transform: translateY(550px); }
+    }
+    @keyframes pf-pulse {
+      0%, 100% { opacity: .35; }
+      45%, 55% { opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pf-packet, .pf-pulse { animation: none; }
+    }
+  </style>
+  <defs>
+    <marker id="pf-arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="currentColor" opacity=".4"/>
+    </marker>
+  </defs>
+  <g fill="currentColor" font-family="ui-sans-serif, system-ui, sans-serif">
+    <g text-anchor="middle">
+      <rect class="pf-stage" x="80" y="20" width="450" height="72" rx="8"/>
+      <text x="305" y="50" font-size="20" font-weight="650">Pod A</text>
+      <text x="305" y="74" font-size="16" opacity=".65">creates a packet for Pod B</text>
+      <rect class="pf-stage" x="80" y="130" width="450" height="72" rx="8"/>
+      <text x="305" y="160" font-size="20" font-weight="650">Cilium on node 1</text>
+      <text x="305" y="184" font-size="16" opacity=".65">wraps it in a VXLAN/UDP envelope</text>
+      <rect class="pf-stage" x="80" y="240" width="450" height="72" rx="8"/>
+      <text x="305" y="270" font-size="20" font-weight="650">Linux routing</text>
+      <text x="305" y="294" font-size="16" opacity=".65">chooses the outgoing interface</text>
+      <rect class="pf-stage pf-pulse" x="80" y="350" width="450" height="72" rx="8" stroke="#2aa198"/>
+      <text x="305" y="380" font-size="20" font-weight="650">Tailscale encrypted tunnel</text>
+      <text x="305" y="404" font-size="16" opacity=".65">carries it securely to node 2</text>
+      <rect class="pf-stage" x="80" y="460" width="450" height="72" rx="8"/>
+      <text x="305" y="490" font-size="20" font-weight="650">Cilium on node 2</text>
+      <text x="305" y="514" font-size="16" opacity=".65">opens the VXLAN envelope</text>
+      <rect class="pf-stage" x="80" y="570" width="450" height="72" rx="8"/>
+      <text x="305" y="600" font-size="20" font-weight="650">Pod B</text>
+      <text x="305" y="624" font-size="16" opacity=".65">receives the original packet</text>
+    </g>
+    <g class="pf-arrow" marker-end="url(#pf-arrowhead)">
+      <line x1="305" y1="94" x2="305" y2="122"/>
+      <line x1="305" y1="204" x2="305" y2="232"/>
+      <line x1="305" y1="314" x2="305" y2="342"/>
+      <line x1="305" y1="424" x2="305" y2="452"/>
+      <line x1="305" y1="534" x2="305" y2="562"/>
+    </g>
+    <line x1="610" y1="57" x2="610" y2="607" stroke="currentColor" stroke-opacity=".12" stroke-width="4" stroke-linecap="round"/>
+    <g class="pf-packet">
+      <rect x="570" y="37" width="80" height="40" rx="20" fill="#268bd2"/>
+      <text x="610" y="62" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">packet</text>
+    </g>
+    <text x="610" y="662" text-anchor="middle" font-size="15" opacity=".5">repeats</text>
+  </g>
+</svg>
+<figcaption style="font-size:0.8rem;opacity:0.65;text-align:center;margin-top:0.5rem">The application sees one Pod-to-Pod connection. Cilium and Tailscale handle the extra transport layers underneath it.</figcaption>
+</figure>
 
 Cilium uses UDP destination port **8472** for the outer VXLAN envelope. The application does not know about VXLAN or Tailscale; it only sees the original inner packet.
+
+### What “wrapping” adds to the packet
+
+Each outer layer supplies information needed by the layer below it. The animation highlights the layers from the original application data outward:
+
+<figure class="not-prose" style="margin:2rem 0">
+<svg viewBox="0 0 720 470" role="img" aria-labelledby="encap-title encap-desc" style="width:100%;height:auto;display:block;overflow:visible">
+  <title id="encap-title">Layers added around application data for cross-node delivery</title>
+  <desc id="encap-desc">Nested boxes show application data inside TCP, the inner Pod IP packet, inner Ethernet, VXLAN, UDP, and the outer node IP packet. The layers highlight from inside to outside.</desc>
+  <style>
+    .ec-layer { fill-opacity: .08; stroke-width: 1.5; animation: ec-highlight 7s ease-in-out infinite; }
+    .ec-1 { animation-delay: 0s; }
+    .ec-2 { animation-delay: .6s; }
+    .ec-3 { animation-delay: 1.2s; }
+    .ec-4 { animation-delay: 1.8s; }
+    .ec-5 { animation-delay: 2.4s; }
+    .ec-6 { animation-delay: 3s; }
+    .ec-7 { animation-delay: 3.6s; }
+    @keyframes ec-highlight {
+      0%, 9%, 28%, 100% { fill-opacity: .08; stroke-width: 1.5; }
+      14%, 22% { fill-opacity: .32; stroke-width: 3; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ec-layer { animation: none; fill-opacity: .14; }
+    }
+  </style>
+  <g font-family="ui-sans-serif, system-ui, sans-serif">
+    <rect class="ec-layer ec-7" x="30" y="25" width="660" height="370" rx="14" fill="#6c71c4" stroke="#6c71c4"/>
+    <text x="48" y="52" font-size="13" font-weight="700" fill="currentColor">Outer node IP</text>
+    <text x="672" y="52" text-anchor="end" font-size="11" fill="currentColor" opacity=".6">which node?</text>
+    <rect class="ec-layer ec-6" x="65" y="65" width="590" height="295" rx="12" fill="#268bd2" stroke="#268bd2"/>
+    <text x="83" y="91" font-size="13" font-weight="700" fill="currentColor">UDP</text>
+    <text x="637" y="91" text-anchor="end" font-size="11" fill="currentColor" opacity=".6">port 8472</text>
+    <rect class="ec-layer ec-5" x="100" y="105" width="520" height="220" rx="10" fill="#2aa198" stroke="#2aa198"/>
+    <text x="118" y="131" font-size="13" font-weight="700" fill="currentColor">VXLAN</text>
+    <text x="602" y="131" text-anchor="end" font-size="11" fill="currentColor" opacity=".6">this carries a virtual network</text>
+    <rect class="ec-layer ec-4" x="135" y="145" width="450" height="145" rx="8" fill="#859900" stroke="#859900"/>
+    <text x="153" y="171" font-size="13" font-weight="700" fill="currentColor">Inner Ethernet</text>
+    <rect class="ec-layer ec-3" x="170" y="185" width="380" height="70" rx="7" fill="#b58900" stroke="#b58900"/>
+    <text x="188" y="211" font-size="13" font-weight="700" fill="currentColor">Inner Pod IP</text>
+    <rect class="ec-layer ec-2" x="280" y="202" width="255" height="38" rx="6" fill="#cb4b16" stroke="#cb4b16"/>
+    <text x="298" y="226" font-size="12" font-weight="700" fill="currentColor">TCP</text>
+    <rect class="ec-layer ec-1" x="365" y="210" width="150" height="22" rx="5" fill="#dc322f" stroke="#dc322f"/>
+    <text x="440" y="226" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">application data</text>
+    <text x="360" y="430" text-anchor="middle" font-size="12" fill="currentColor" opacity=".65">sender: add layers from inside → outside · receiver: remove them outside → inside</text>
+  </g>
+</svg>
+<figcaption style="font-size:0.8rem;opacity:0.65;text-align:center;margin-top:0.5rem">The original data remains at the center. Cross-node delivery adds addressing and transport information around it.</figcaption>
+</figure>
 
 ## What actually happened
 
 The journey broke at **Linux routing**, after Cilium had created the outer envelope:
 
-```text
-Cilium created the VXLAN packet
-  │
-  ▼
-Linux routing read its internal packet mark
-  │
-  ├─ expected: Tailscale route → tailscale0 → node 2
-  │
-  └─ actual:   normal route → physical LAN gateway → nowhere useful
-```
+<figure class="not-prose" style="margin:2rem 0">
+<svg viewBox="0 0 720 450" role="img" aria-labelledby="route-choice-title route-choice-desc" style="width:100%;height:auto;display:block;overflow:visible">
+  <title id="route-choice-title">The wrong route before the fix and the correct route after it</title>
+  <desc id="route-choice-desc">A VXLAN packet reaches Linux routing. Before the fix, an orange packet follows the physical LAN route and is lost. After the fix, a green packet follows Tailscale table 52 to tailscale0 and reaches node 2.</desc>
+  <style>
+    .rc-box { fill: currentColor; fill-opacity: .04; stroke: currentColor; stroke-opacity: .3; stroke-width: 1.5; }
+    .rc-path { fill: none; stroke-width: 3; stroke-linecap: round; }
+    .rc-moving-before { offset-path: path("M 360 88 L 360 175 L 555 295"); animation: rc-move 6s ease-in-out infinite; }
+    .rc-moving-after { offset-path: path("M 360 88 L 360 175 L 165 295"); animation: rc-move 6s 3s ease-in-out infinite; opacity: 0; }
+    @keyframes rc-move {
+      0% { offset-distance: 0%; opacity: 0; }
+      8%, 72% { opacity: 1; }
+      80%, 100% { offset-distance: 100%; opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .rc-moving-before, .rc-moving-after { animation: none; opacity: 0; }
+    }
+  </style>
+  <defs>
+    <marker id="rc-good-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#2aa198"/>
+    </marker>
+    <marker id="rc-bad-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L7,3 z" fill="#cb4b16"/>
+    </marker>
+  </defs>
+  <g fill="currentColor" font-family="ui-sans-serif, system-ui, sans-serif">
+    <rect class="rc-box" x="215" y="20" width="290" height="68" rx="8"/>
+    <text x="360" y="49" text-anchor="middle" font-size="16" font-weight="650">Cilium creates VXLAN packet</text>
+    <text x="360" y="72" text-anchor="middle" font-size="12" opacity=".62">packet mark: 0x1d080400</text>
+    <line x1="360" y1="88" x2="360" y2="126" stroke="currentColor" stroke-opacity=".3" stroke-width="2"/>
+    <rect class="rc-box" x="215" y="126" width="290" height="68" rx="8"/>
+    <text x="360" y="155" text-anchor="middle" font-size="16" font-weight="650">Linux policy routing</text>
+    <text x="360" y="178" text-anchor="middle" font-size="12" opacity=".62">reads the packet mark</text>
+    <path class="rc-path" d="M350 194 C310 225 225 245 165 285" stroke="#2aa198" marker-end="url(#rc-good-arrow)"/>
+    <path class="rc-path" d="M370 194 C410 225 495 245 555 285" stroke="#cb4b16" marker-end="url(#rc-bad-arrow)"/>
+    <rect x="40" y="292" width="250" height="105" rx="9" fill="#2aa198" fill-opacity=".11" stroke="#2aa198" stroke-width="2"/>
+    <text x="165" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#2aa198">AFTER FIX · CORRECT</text>
+    <text x="165" y="350" text-anchor="middle" font-size="14">Tailscale table 52</text>
+    <text x="165" y="375" text-anchor="middle" font-size="12" opacity=".65">tailscale0 → node 2</text>
+    <rect x="430" y="292" width="250" height="105" rx="9" fill="#cb4b16" fill-opacity=".11" stroke="#cb4b16" stroke-width="2"/>
+    <text x="555" y="322" text-anchor="middle" font-size="14" font-weight="700" fill="#cb4b16">BEFORE FIX · WRONG</text>
+    <text x="555" y="350" text-anchor="middle" font-size="14">Normal routing table</text>
+    <text x="555" y="375" text-anchor="middle" font-size="12" opacity=".65">physical LAN gateway → lost</text>
+    <g class="rc-moving-before">
+      <circle r="10" fill="#cb4b16"/>
+      <circle r="4" fill="#ffffff"/>
+    </g>
+    <g class="rc-moving-after">
+      <circle r="10" fill="#2aa198"/>
+      <circle r="4" fill="#ffffff"/>
+    </g>
+    <g font-size="11" opacity=".58">
+      <circle cx="72" cy="427" r="6" fill="#2aa198"/>
+      <text x="85" y="431">corrected packet</text>
+      <circle cx="480" cy="427" r="6" fill="#cb4b16"/>
+      <text x="493" y="431">misrouted packet</text>
+    </g>
+  </g>
+</svg>
+<figcaption style="font-size:0.8rem;opacity:0.65;text-align:center;margin-top:0.5rem">The packet contents did not change. The fix changed which routing rule handled the VXLAN envelope first.</figcaption>
+</figure>
 
 This explains the confusing evidence: Cilium said it had sent the packet “to overlay,” but no matching packet appeared on `tailscale0`. Cilium had completed its part; Linux chose the wrong exit afterward.
 
