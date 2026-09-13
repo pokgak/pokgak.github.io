@@ -8,8 +8,6 @@ tags: [kubernetes, cilium, tailscale, vxlan, networking, troubleshooting, nixos]
 
 The cause was not CloudNativePG, VXLAN, or MTU. It was a bit-level collision between a Cilium security identity encoded in the packet mark and a Tailscale policy-routing mark.
 
-This is the troubleshooting path and durable fix from [boxcompute/sandbox#435](https://github.com/boxcompute/sandbox/issues/435).
-
 ## The topology and constraints
 
 - Two Kubernetes nodes communicate over Tailscale.
@@ -245,17 +243,8 @@ Only after the ordinary-Pod tests passed:
 - The controller returned to an ordinary Pod IP on the core node, Ready with zero restarts.
 - The PostgreSQL cluster reported healthy and continuous archiving remained healthy.
 - `pg_isready`, `pg_is_in_recovery() = false`, and a simple SQL expression passed.
-- The Sandbox API was Available and healthy.
-- A fresh authenticated, read-only API request returned HTTP 200 without creating a Sandbox.
 
 Temporary listeners, capture Pods, identity probes, and the test namespace were removed after qualification.
-
-## Git history
-
-- [PR #436 — Fix Cilium VXLAN routing over Tailscale](https://github.com/boxcompute/sandbox/pull/436)
-- [PR #437 — Start Cilium routing policy during activation](https://github.com/boxcompute/sandbox/pull/437)
-- [PR #438 — Restore CNPG Pod networking](https://github.com/boxcompute/sandbox/pull/438)
-- [ADR 0044](https://github.com/boxcompute/sandbox/blob/main/docs/adr/0044-separate-core-and-sandbox-cluster-nodes.md)
 
 ## Takeaways
 
