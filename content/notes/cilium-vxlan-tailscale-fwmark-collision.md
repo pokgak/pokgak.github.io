@@ -14,6 +14,8 @@ The short version:
 - Linux therefore sent the packet toward the normal LAN router instead of through Tailscale.
 - A narrow routing rule made Cilium's wrapped packets take the Tailscale path before the conflicting rule could see them.
 
+That fixed the missing new connections, but a later fragment-drop alert exposed a second interaction between the same layers: Tailscale had learned Cilium's router addresses as possible peer endpoints. Its own UDP transport then entered Cilium's VXLAN overlay, which was itself carried over Tailscale. A second narrow rule prevented that recursive path without changing the already-correct MTUs.
+
 ## A small networking glossary
 
 - **Pod:** a running Kubernetes workload. Each Pod gets its own cluster-internal IP address.
@@ -473,9 +475,102 @@ Only after the ordinary-Pod tests passed:
 
 Temporary listeners, capture Pods, identity probes, and the test namespace were removed after qualification.
 
+## A second failure: Tailscale tried to travel through itself
+
+Several hours after the fwmark fix, `CiliumOverlayFragmentDrops` fired again. It was tempting to conclude that the earlier MTU correction had regressed. The live state contradicted that explanation:
+
+```text
+tailscale0         1280
+Cilium links       1230
+Pod endpoint links 1230
+remote Pod routes  1180
+configuration drift   0
+```
+
+The priority-5205 VXLAN rule was active on both nodes, marked UDP/8472 lookups still selected Tailscale table 52, and packet captures showed outer VXLAN packets no larger than 1230 bytes with 1180-byte inner packets. There was no outer IPv4 fragmentation.
+
+The alert itself was also narrower than “the network MTU is wrong.” It meant that Cilium received a non-first IPv4 fragment but could not find the first fragment's cached transport ports. Only `core-01` ingress was affected. The five-minute rate was bursty and peaked at **10.43 drops per second**; `sandbox-01` had no matching series.
+
+### The fragment map identified the traffic class
+
+Cilium keeps a fragment map so later fragments can reuse information learned from the first fragment. On `core-01`, 7,935 of 8,192 entries were occupied. Of those, 4,448 had exactly this tuple:
+
+```text
+10.42.1.36:41641 -> 10.42.0.91:41641 UDP
+```
+
+Those IPs were not application Pods. They were the Cilium router addresses on the two nodes. UDP port **41641** is Tailscale's transport port.
+
+The same tuple appeared inside VXLAN captures. Tailscale endpoint discovery had learned the Cilium router addresses and was attempting to send its own encrypted transport between them. Linux routed those addresses through Cilium, producing this loop:
+
+```text
+Tailscale UDP/41641
+  -> Cilium Pod-CIDR route
+  -> VXLAN UDP/8472
+  -> tailscale0
+  -> Tailscale carrying its own transport
+```
+
+The intended stack was “Pod traffic inside Cilium VXLAN inside Tailscale.” The accidental stack was “Tailscale transport inside Cilium VXLAN inside Tailscale.” This recursive traffic heavily occupied the fragment map and coincided with the fragment-cache misses on `core-01`.
+
+The evidence did not distinguish every individual miss caused by fragment reordering or loss from one caused by LRU eviction in the nearly full map. It did establish the offending traffic class and the recursive route. Flushing the map would only erase evidence and provide temporary relief, so it was left to age naturally.
+
+### Block only the recursive local transport
+
+The durable fix added a rule immediately before the existing VXLAN rule:
+
+```bash
+ip -4 rule add priority 5204 \
+  iif lo \
+  to 10.42.0.0/16 \
+  ipproto udp sport 41641 dport 41641 \
+  prohibit
+```
+
+Each selector matters:
+
+- **priority 5204:** evaluate it before the priority-5205 VXLAN exception;
+- **`iif lo`:** match traffic originating from the host, not packets forwarded from Pods;
+- **Pod CIDR destination:** reject only attempts to use a Cilium address as the Tailscale underlay endpoint;
+- **UDP source and destination port 41641:** match Tailscale transport, not ordinary application UDP;
+- **`prohibit`:** make this invalid endpoint candidate fail instead of entering Cilium recursively.
+
+The existing priority-5205 rule remained responsible for legitimate Cilium UDP/8472 envelopes to the peer's Tailscale `/32`. Forwarded Pod traffic also remained routable because it does not match `iif lo`.
+
+The NixOS service now owns both rules and reinstalls them together around Tailscale restarts:
+
+```nix
+ip -4 rule add priority 5204 iif lo \
+  to 10.42.0.0/16 \
+  ipproto udp sport 41641 dport 41641 prohibit
+
+ip -4 rule add priority 5205 \
+  to ${peerAddress}/32 \
+  ipproto udp dport 8472 lookup 52
+```
+
+This change was merged in [PR #451](https://github.com/boxcompute/sandbox/pull/451).
+
+### Qualifying the recursion fix
+
+The rule was activated one node at a time. Qualification checked both what should fail and what must keep working:
+
+- a matching locally originated UDP/41641 route lookup returned `prohibit`;
+- the marked UDP/8472 lookup still selected `tailscale0` and table 52;
+- forwarded Pod traffic still resolved through the Cilium route;
+- both nodes and both Cilium health endpoints remained reachable;
+- the 1280/1230/1180 MTU chain and configuration-drift value remained unchanged;
+- a bounded Cilium drop monitor was clean;
+- 15 consecutive metric samples over 7½ minutes were zero, the five-minute drop rate reached zero, and the alert became inactive.
+
+No fragment map was flushed. The dominant recursive entries on `core-01` aged down naturally while producing no new drops. A later independent check again found both nodes Ready, Cilium health 2/2, direct node-to-node Tailscale transport over native IPv6, and no renewed fragment-drop rate.
+
 ## Takeaways
 
 - **Internal packet labels are shared.** Two independent networking systems can accidentally assign different meanings to the same bits.
+- **An underlay must not select an overlay address as its own transport path.** Otherwise the tunnel can recursively carry itself.
+- **An MTU alert is a starting point, not a diagnosis.** Confirm live MTUs, configuration drift, direction, rate, routes, and the actual traffic tuple before changing packet sizes.
+- **Inspect state tables, not only packet captures.** The fragment map revealed the dominant UDP/41641 router-to-router tuple that short monitor windows missed.
 - **Follow the whole packet journey.** `to-overlay` means Cilium decided to wrap a packet; it does not prove Linux sent the wrapper through the intended interface.
 - **Ask Linux about the real packet.** A basic route lookup can look correct while the packet's mark triggers another policy rule. Include its destination, protocol, port, and mark in the test lookup.
 - **Reproduce with an ordinary Pod.** This separated the infrastructure defect from CloudNativePG immediately.
