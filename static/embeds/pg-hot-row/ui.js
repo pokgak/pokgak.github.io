@@ -139,7 +139,7 @@
   const PRESETS = {
     before: { label: 'One queue', p: { concA: 100, concB: 0, hotShare: 0.75, lockTimeoutMs: 0, slruBuffers: 16, apiRate: 250, maxConnections: 1000 }, pin: false },
     after: { label: 'Two queues', p: { concA: 100, concB: 100, hotShare: 0.75, lockTimeoutMs: 0, slruBuffers: 16, apiRate: 250, maxConnections: 1000 }, pin: false },
-    incident: { label: 'Two queues + long txn', p: { concA: 100, concB: 100, hotShare: 0.75, lockTimeoutMs: 0, slruBuffers: 16, apiRate: 250, maxConnections: 1000 }, pin: true },
+    longtxn: { label: 'Two queues + long txn', p: { concA: 100, concB: 100, hotShare: 0.75, lockTimeoutMs: 0, slruBuffers: 16, apiRate: 250, maxConnections: 1000 }, pin: true },
   };
 
   const HISTORY_S = 90, SAMPLE_S = 0.5, N_SAMPLES = HISTORY_S / SAMPLE_S;

@@ -1,7 +1,7 @@
 ---
 title: "Simulating a Postgres hot-row convoy and MultiXact collapse"
 date: 2026-09-28T22:00:00+0800
-tags: [postgres, databases, concurrency, incidents, simulation]
+tags: [postgres, databases, concurrency, simulation]
 description: "An interactive model of how a hot row, foreign key locks and a long-running transaction turn into MultiXact LWLock contention and connection exhaustion."
 ---
 
@@ -81,7 +81,7 @@ description: "An interactive model of how a hot row, foreign key locks and a lon
 @media (prefers-reduced-motion: reduce){.phr-slot{transition:none}}
 </style>
 
-A model of a production incident I helped debug: a background task pipeline took down the main Postgres database, and DB CPU stayed low the whole time. The widgets below rebuild the failure from its parts so you can change the inputs and watch it happen.
+A model of how a background task pipeline can take down a Postgres database while DB CPU stays low the whole time. The widgets below build the failure from its parts so you can change the inputs and watch it happen.
 
 The chain, in one line: **many transactions on one hot row → foreign key locks turn the parent row's lock into a big MultiXact → a long-running transaction keeps old MultiXacts in play → MultiXact lookups miss a tiny cache and queue on one LWLock → everything holds its connection longer → connections run out.**
 
@@ -166,7 +166,7 @@ Two task queues dispatch background work. Most tasks update the same hot row, a 
 
 ## What the model leaves out
 
-- The numbers are picked to show the shape of the failure, not measured from a real database. The collapse in the real incident took tens of minutes, not seconds.
+- The numbers are picked to show the shape of the failure, not measured from a real database. In a real database the collapse can take tens of minutes, not seconds.
 - A cache miss here is a coin flip based on working set vs cache size. Real SLRU behaviour depends on which pages each lookup touches, on dirty page writeback, and on MultiXact offsets as well as members.
 - There's one hot row and one parent row. Real systems have several parents per insert (user, team, account), each with its own MultiXact.
 - Transaction and connection handling is simplified: no pool queues, no per-instance connection caps, no autovacuum.
