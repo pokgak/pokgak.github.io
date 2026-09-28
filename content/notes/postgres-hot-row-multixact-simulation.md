@@ -81,7 +81,7 @@ description: "An interactive model of how a hot row, foreign key locks and a lon
 @media (prefers-reduced-motion: reduce){.phr-slot{transition:none}}
 </style>
 
-A model of a production incident I helped debug: a billing pipeline took down the main Postgres database, and DB CPU stayed low the whole time. The widgets below rebuild the failure from its parts so you can change the inputs and watch it happen.
+A model of a production incident I helped debug: a background task pipeline took down the main Postgres database, and DB CPU stayed low the whole time. The widgets below rebuild the failure from its parts so you can change the inputs and watch it happen.
 
 The chain, in one line: **many transactions on one hot row → foreign key locks turn the parent row's lock into a big MultiXact → a long-running transaction keeps old MultiXacts in play → MultiXact lookups miss a tiny cache and queue on one LWLock → everything holds its connection longer → connections run out.**
 
@@ -104,7 +104,7 @@ The chain, in one line: **many transactions on one hot row → foreign key locks
 
 ## The simulation
 
-Two task queues dispatch billing work. Most tasks update the same `Inference` row. An API reads the parent `Wallet` row on every request. Everything shares one connection budget.
+Two task queues dispatch background work. Most tasks update the same hot row, a per-day counter. Each of those tasks also inserts a child row that references a parent row, and an API reads that parent row on every request. Everything shares one connection budget.
 
 <figure class="phr not-prose" id="phr-sim">
 <noscript><p>This simulation needs JavaScript.</p></noscript>
@@ -117,10 +117,10 @@ Two task queues dispatch billing work. Most tasks update the same `Inference` ro
 ### How the model works
 
 - **Tasks.** Each queue slot takes a task and a connection. 75% of tasks (adjustable) are for the hot row. The rest touch other rows for 40 ms and leave.
-- **Hot task.** It inserts a child row first, which takes `KEY SHARE` on the `Wallet` row and joins its MultiXact (a new MultiXact of size N+1). Then it queues for the hot `Inference` row lock, does 2 ms of work plus 3 MultiXact lookups while holding it, and commits.
+- **Hot task.** It inserts a child row first, which takes `KEY SHARE` on the parent row and joins its MultiXact (a new MultiXact of size N+1). Then it queues for the hot row lock, does 2 ms of work plus 3 MultiXact lookups while holding it, and commits.
 - **MultiXact working set.** The members written since the oldest running transaction started. A lookup misses the cache with probability `1 − cache / working set`.
 - **SLRU LWLock.** One FIFO server. A hit costs 0.01 ms and a miss 1 ms. Each waiter adds 0.4% overhead, standing in for LWLock wakeup and retry costs.
-- **API.** Poisson arrivals. Each request takes a connection and does 4 MultiXact lookups (the tuple versions it checks on the `Wallet` row). Clients time out after 10 s and retry twice, and **the server keeps running the abandoned query** and holding its connection.
+- **API.** Poisson arrivals. Each request takes a connection and does 4 MultiXact lookups (the tuple versions it checks on the parent row). Clients time out after 10 s and retry twice, and **the server keeps running the abandoned query** and holding its connection.
 - **lock_timeout** aborts a transaction that waits too long for the hot row lock, and the task retries after 1 s. It doesn't cover LWLock waits, just like the real setting.
 - **Long transaction.** A session with an old snapshot. It holds the horizon still, so the working set only grows.
 
@@ -150,7 +150,7 @@ Two task queues dispatch billing work. Most tasks update the same `Inference` ro
 **6. Try the fixes on the two-queue setup.**
 - **`lock_timeout` 100 ms:** M stays around 50, the working set drops to about 4k, and throughput goes back to about 490/s with 200 slots. Now open a long transaction: it still collapses. `lock_timeout` limits heavyweight lock waits, not LWLock waits.
 - **1024 member buffers (PG17):** the long transaction takes about 20 s longer to cause trouble, then it degrades anyway. More cache buys time.
-- **Fewer hot tasks:** move *Tasks hitting the hot row* to 10% (in the real incident, skipping the writes for $0 events). The hot row still runs at full speed, but only about 20 lockers queue on it, and the working set drops under 1k.
+- **Fewer hot tasks:** move *Tasks hitting the hot row* to 10% (for example, skipping writes for events that change nothing). The hot row still runs at full speed, but only about 20 lockers queue on it, and the working set drops under 1k.
 - None of these survive a long transaction for long, because the working set keeps growing for as long as it stays open. What actually works is ending it early: `idle_in_transaction_session_timeout` and `statement_timeout`, plus an alert on the age of the oldest transaction.
 
 ## Signs of this in a real system
@@ -168,5 +168,5 @@ Two task queues dispatch billing work. Most tasks update the same `Inference` ro
 
 - The numbers are picked to show the shape of the failure, not measured from a real database. The collapse in the real incident took tens of minutes, not seconds.
 - A cache miss here is a coin flip based on working set vs cache size. Real SLRU behaviour depends on which pages each lookup touches, on dirty page writeback, and on MultiXact offsets as well as members.
-- There's one hot row and one parent row. Real systems have several parents per insert (user, team, wallet), each with its own MultiXact.
+- There's one hot row and one parent row. Real systems have several parents per insert (user, team, account), each with its own MultiXact.
 - Transaction and connection handling is simplified: no pool queues, no per-instance connection caps, no autovacuum.

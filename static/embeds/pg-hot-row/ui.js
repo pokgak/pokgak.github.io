@@ -86,7 +86,7 @@
       g.replaceChildren();
       const box = el('g', {}, g);
       el('rect', { x: 8, y: 20, width: 160, height: 74, rx: 6, class: 'phr-box' }, box);
-      txt(box, 20, 42, 'Wallet row (parent)', { class: 'phr-t-strong' });
+      txt(box, 20, 42, 'Parent row', { class: 'phr-t-strong' });
       txt(box, 20, 62, n === 1 ? 'xmax = txn 1' : `xmax = MultiXact #${n}`, { class: 'phr-t' });
       txt(box, 20, 80, `${n} lock holder${n === 1 ? '' : 's'}`, { class: 'phr-t-dim' });
 
@@ -243,12 +243,12 @@
     }
     txt(svg, 12, 148, 'Each square is one concurrent', { class: 'phr-t-dim' });
     txt(svg, 12, 162, 'dispatch. Most tasks hit the', { class: 'phr-t-dim' });
-    txt(svg, 12, 176, 'same Inference row.', { class: 'phr-t-dim' });
+    txt(svg, 12, 176, 'same hot row.', { class: 'phr-t-dim' });
 
     // Hot row.
     const midX = 232;
     el('rect', { x: midX, y: 8, width: 200, height: 76, rx: 6, class: 'phr-box' }, svg);
-    txt(svg, midX + 10, 26, 'Hot Inference row', { class: 'phr-t-strong' });
+    txt(svg, midX + 10, 26, 'Hot row', { class: 'phr-t-strong' });
     const lockIcon = el('circle', { cx: midX + 186, cy: 21, r: 5, class: 'phr-lock' }, svg);
     txt(svg, midX + 10, 44, 'row lock queue (heavyweight)', { class: 'phr-t-dim' });
     el('rect', { x: midX + 10, y: 52, width: 180, height: 10, rx: 2, class: 'phr-track' }, svg);
@@ -257,7 +257,7 @@
 
     // Parent row MultiXact.
     el('rect', { x: midX, y: 96, width: 200, height: 70, rx: 6, class: 'phr-box' }, svg);
-    txt(svg, midX + 10, 114, 'Wallet row: xmax → MultiXact', { class: 'phr-t-strong' });
+    txt(svg, midX + 10, 114, 'Parent row: xmax → MultiXact', { class: 'phr-t-strong' });
     txt(svg, midX + 10, 131, 'members (txns holding KEY SHARE)', { class: 'phr-t-dim' });
     el('rect', { x: midX + 10, y: 138, width: 180, height: 10, rx: 2, class: 'phr-track' }, svg);
     const mxBar = el('rect', { x: midX + 10, y: 138, width: 0, height: 10, rx: 2, class: 'phr-fill-fk' }, svg);
@@ -299,7 +299,7 @@
     void connTrack;
 
     el('rect', { x: rX, y: 178, width: 174, height: 106, rx: 6, class: 'phr-box' }, svg);
-    txt(svg, rX + 10, 196, 'API (reads Wallet row)', { class: 'phr-t-strong' });
+    txt(svg, rX + 10, 196, 'API (reads parent row)', { class: 'phr-t-strong' });
     txt(svg, rX + 10, 216, 'p95 latency', { class: 'phr-t-dim' });
     const apiP95 = txt(svg, rX + 10, 238, '', { class: 'phr-t-big' });
     txt(svg, rX + 96, 216, 'errors', { class: 'phr-t-dim' });
@@ -313,7 +313,7 @@
     // --- stat tiles ---
     const tileDefs = [
       ['time', 'simulated time'],
-      ['commits', 'billing commits/s'],
+      ['commits', 'task commits/s'],
       ['miss', 'SLRU miss rate'],
       ['aborts', 'lock_timeout aborts/s'],
     ];
@@ -326,7 +326,7 @@
 
     // --- charts ---
     const charts = [
-      { key: 'commits', title: 'Billing commits/s', max: () => 700, fmt: v => fmt(v), cls: 'phr-line-hold' },
+      { key: 'commits', title: 'Task commits/s', max: () => 700, fmt: v => fmt(v), cls: 'phr-line-hold' },
       { key: 'ws', title: 'MultiXact working set', log: [1e3, 1e7], fmt: fmt, cls: 'phr-line-ws', ref: 'cache', refLabel: 'cache' },
       { key: 'lw', title: 'LWLock waiters', max: () => 1000, fmt: fmt, cls: 'phr-line-fk' },
       { key: 'conns', title: 'DB connections', max: () => Math.max(params.maxConnections, 300), fmt: fmt, cls: 'phr-line-api', ref: 'maxc', refLabel: 'max' },
