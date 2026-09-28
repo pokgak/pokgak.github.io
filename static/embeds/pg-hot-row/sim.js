@@ -17,7 +17,7 @@
     thrash: 0.004,       // extra cost per LWLock waiter (wakeups, retries)
     lockTimeoutMs: 0,    // 0 = off. Only covers the heavyweight row lock wait.
     retryBackoffS: 1,    // Cloud Tasks waits before retrying a failed task
-    apiRate: 250,        // API requests/s, each reads the parent Wallet row
+    apiRate: 250,        // API requests/s, each reads the parent row
     apiLookups: 4,       // MultiXact lookups per API request (tuple versions checked)
     apiMs: 3,
     clientTimeoutS: 10,  // API client gives up and retries; server keeps going
