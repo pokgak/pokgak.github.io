@@ -8,15 +8,19 @@ Recently, [my company got DDoS'ed](https://pokgak.xyz/articles/we-got-ddosed/) a
 
 ## Current Setup
 
-![AWS NLB routing through three ingress-nginx instances to five backend services](images/lb-nlb-ingress-nginx.png)
+<figure>
+  <video class="blog-video" controls playsinline preload="metadata" poster="/images/exploring-alb-ingress-controller-poster.png" aria-label="Animated comparison of NLB with ingress-nginx and direct ALB routing" aria-describedby="alb-routing-animation-description">
+    <source src="/videos/exploring-alb-ingress-controller.mp4" type="video/mp4">
+    <a href="/videos/exploring-alb-ingress-controller.mp4">Download the ALB routing animation</a>.
+  </video>
+  <figcaption id="alb-routing-animation-description">First, a request follows the current path from an NLB through ingress-nginx to a backend service. The diagram then changes to an ALB, whose listener rules route requests directly to backend services without the ingress-nginx hop. The final comparison shows the tradeoff: an ALB has a 100-rule soft quota, rule evaluations after 10 free rules can increase LCU usage, and an LCU includes 25 new TLS connections per second for ALB versus 50 for NLB. The simpler path is not necessarily the lower-cost choice.</figcaption>
+</figure>
 
 Our current setup uses a AWS NLB per country to accepts the connection from the internet. The NLB then forwards the requests to a target group consisting all the ingress-nginx controller pods. The ingress-nginx pods will then route the traffic from NLB to the backend services based on the configured Ingress configurations.
 
 For arguments sake, let's assume that AWS NLB is reliable and can scale infinitely. Our bottleneck then is the ingress-nginx pods. We can setup the ingress-nginx pods to autoscale based on the traffic but I've seen issues with connections getting disrupted when the autoscaling happens. What if we can eliminate this bottleneck altogether and just route directly from AWS LB to our backend services?
 
 ## Proposed Setup
-
-![AWS ALB routing directly to five backend services without ingress-nginx](images/lb-alb.png)
 
 Our proposed setup uses the ALB directly and route traffic to the backend services through its listener rules. By default the aws-load-balancer controller will provision one ALB for each Ingress resource but we can share the ALB for multiple Ingress by specifying the same `alb.ingress.kubernetes.io/group.name`. In my case there will be one group name for each country resulting in separate ALB created for each respectively. Each Ingress resource will create a separate listener rule based on the host and path configuration specified in the Ingress.
 
