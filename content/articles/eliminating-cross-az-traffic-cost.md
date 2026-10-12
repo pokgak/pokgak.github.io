@@ -10,7 +10,13 @@ Imagine going through your AWS bills and noticing that **APS1-DataTransfer-Regio
 
 ## The Traffic Flow
 
-![Before-and-after traffic flow across three availability zones: cross-zone paths are replaced by zone-local load balancer, ingress-nginx, and pod paths](images/cross-az-traffic.png)
+<figure>
+<video class="blog-video" controls playsinline preload="metadata" poster="/images/eliminating-cross-az-traffic-cost-poster.png" aria-label="Animated AWS cross-AZ request path optimization" aria-describedby="cross-az-animation-description">
+<source src="/videos/eliminating-cross-az-traffic-cost.mp4" type="video/mp4">
+<a href="/videos/eliminating-cross-az-traffic-cost.mp4">Download the cross-AZ traffic optimization animation</a>.
+</video>
+<figcaption id="cross-az-animation-description">Animation steps: a request first crosses availability zones between the client, NLB, ingress-nginx, and backend pod; AZ-affine DNS then favors an NLB IP in the client's zone; disabling cross-zone load balancing keeps the NLB-to-ingress hop local; and routing ingress traffic through the Service ClusterIP with <code>trafficDistribution: PreferClose</code> favors a local backend when one is available. The application path avoids cross-AZ hops while healthy local endpoints are available, but every zone needs healthy ingress targets, <code>PreferClose</code> can fall back across zones, and skewed traffic or pod capacity can overload one zone.</figcaption>
+</figure>
 
 In this article I will use the above diagram as our example network flow. Our example scenario will use the AWS Network Load Balancer (NLB) as the load balancer (LB), then routes the traffic to the ingress-nginx pods running inside our cluster. Finally, ingress-controller pods will route the traffic to the backend services serving the API.
 
