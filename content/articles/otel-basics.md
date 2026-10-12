@@ -3,7 +3,7 @@ title: "OpenTelemetry Basics"
 date: 2022-08-13T17:43:00+08:00
 tags: [observability, opentelemetry, otel-slack, honeycomb]
 images:
-- "https://cncf-branding.netlify.app/img/projects/opentelemetry/horizontal/color/opentelemetry-horizontal-color.png"
+- "/images/otel-basics-poster.png"
 ---
 
 I got to work on integrating [OpenTelemetry](https://opentelemetry.io/) in an application that our team maintains recently so I'm starting a series documenting my learnings throughout this journey.
@@ -137,7 +137,13 @@ TBH I'm still not clear what is the difference betwen using `NodeSDK` vs manuall
 
 To start manually instrumenting your application, you'll have to create a root span. A root span is the first span you create once the request enters your application. 
 
-![Nested spans in a controller application: entryPoint contains calculateSomething and doSomething, while calculateSomething contains callApi](images/request-flow.png)
+<figure>
+<video class="blog-video" controls playsinline preload="metadata" poster="/images/otel-basics-poster.png" aria-label="Animation showing one request becoming an OpenTelemetry trace" aria-describedby="otel-trace-animation-description">
+  <source src="/videos/otel-basics.mp4" type="video/mp4">
+  <a href="/videos/otel-basics.mp4">Download the OpenTelemetry trace animation</a>.
+</video>
+<figcaption id="otel-trace-animation-description">One request enters <code>entryPoint</code>, which opens the root span. It then opens <code>calculateSomething</code>, which opens and closes nested <code>callApi</code>; <code>calculateSomething</code> closes; sibling <code>doSomething</code> opens and closes; and <code>entryPoint</code> closes last. The final waterfall shows each span's parent-child relationship, start time, and duration.</figcaption>
+</figure>
 
 Now, if you have a normal HTTP request/response-based application, it is easy to figure out where to start and end your root spans. All your incoming requests will most likely be handled by a controller and each endpoint will be handled by a method. In this type of application, your root span can be started once the request hits the application in the method in your controller and ends before you send the response.
 
