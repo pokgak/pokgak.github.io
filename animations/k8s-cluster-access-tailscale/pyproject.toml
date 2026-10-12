@@ -1,0 +1,10 @@
+[project]
+name = "k8s-cluster-access-tailscale-animation"
+version = "0.1.0"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+  "manimgx==0.1.1",
+]
+
+[tool.uv]
+package = false

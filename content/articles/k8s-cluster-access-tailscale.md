@@ -3,10 +3,16 @@ title: "Access internal kubernetes services from anywhere using Tailscale"
 date: 2023-09-12T02:05:00+08:00
 tags: [kubernetes, tailscale, external-dns, networking]
 images:
-- "images/k8s-external-dns-tailscale.png"
+- "images/k8s-cluster-access-tailscale-poster.png"
 ---
 
-![Six-step request flow connecting a Tailscale user to an internal Kubernetes Service through Cloudflare DNS, external-dns, and a Tailscale subnet router](images/k8s-external-dns-tailscale.png)
+<figure>
+  <video class="blog-video" controls playsinline preload="metadata" poster="/images/k8s-cluster-access-tailscale-poster.png" aria-label="Animated six-step flow from a remote Tailscale client to a Kubernetes Pod" aria-describedby="tailscale-kubernetes-flow-description">
+    <source src="/videos/k8s-cluster-access-tailscale.mp4" type="video/mp4">
+    <a href="/videos/k8s-cluster-access-tailscale.mp4">Download the Tailscale Kubernetes request-flow animation</a>.
+  </video>
+  <figcaption id="tailscale-kubernetes-flow-description">Before any request, external-dns creates the Cloudflare A record; it does not receive request traffic. The request then: (1) resolves <code>prometheus.k8s.pokgak.xyz</code> with Cloudflare DNS; (2) receives ClusterIP <code>10.43.170.163</code>; (3) matches that address to the advertised <code>10.43.0.0/16</code> route; (4) travels through Tailscale to the subnet router; (5) is forwarded to the Kubernetes ClusterIP Service; and (6) is load-balanced to a Pod. The result is private Service access from any authorized Tailscale client.</figcaption>
+</figure>
 
 I recently setup a local kubernetes in my home network to play with and one of the issues that I faced is that it is hard to access the services inside the cluster from my laptop. I don't have a load-balancer in my setup so everytime I want to access a service from my laptop, I'll have to run `kubectl port-forward` first before using the localhost address to access it. It works but it's annoying.
 
