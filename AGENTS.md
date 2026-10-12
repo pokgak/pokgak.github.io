@@ -14,8 +14,10 @@ existing interactive visualization when its controls are part of the lesson.
 - Never render into `public/`; the build deletes and regenerates that directory.
 - Render at 1280×720 and 30 fps unless the visual demonstrably needs more.
   Target 1–2 MB per animation and review any file larger than 5 MB.
-- Keep blog animations silent and self-explanatory. Motion must remain opt-in;
-  never autoplay.
+- Keep blog animations silent and self-explanatory. Do not add an HTML
+  `autoplay` attribute. The site starts `.blog-video` elements muted only when
+  they are mostly in view, pauses them when they leave, and disables that
+  behavior for readers who prefer reduced motion.
 - ManimGX skips SVG `<text>` when importing with `SVGMobject`. Convert important
   labels to paths or recreate them with ManimGX text objects.
 
@@ -104,8 +106,9 @@ video frames.
   rely on a caption track alone.
 - Use native controls and preserve keyboard operation. Do not add custom
   overlays unless they meet the same keyboard and screen-reader behavior.
-- Never autoplay. Avoid flashing more than three times per second, honor
-  reduced-motion preferences, meet text/background contrast requirements, and
+- Keep viewport autoplay muted and controlled by the shared site script so it
+  pauses off-screen and honors reduced-motion preferences. Avoid flashing more
+  than three times per second, meet text/background contrast requirements, and
   never use color as the only way to distinguish a state.
 
 ## Verification
