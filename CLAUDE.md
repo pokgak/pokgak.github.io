@@ -82,6 +82,19 @@ Place images in `static/images/` and reference them in markdown as:
 
 The build script rewrites `images/` → `/images/` automatically.
 
+### Videos
+
+Place H.264 MP4 files in `static/videos/` and use the same Markdown image syntax:
+
+```markdown
+![Accessible description of the animation](videos/filename.mp4)
+```
+
+The build renders MP4 references as native, interactive video players with
+playback controls, inline mobile playback, metadata-only preloading, and no
+autoplay. It rewrites `videos/` → `/videos/` and copies the directory into the
+built site.
+
 ## Repo Structure
 
 ```
@@ -96,7 +109,8 @@ The build script rewrites `images/` → `/images/` automatically.
 │   └── experiments/          # Agent-written research logs — scientific style
 ├── static/
 │   ├── styles.css            # Tailwind entrypoint and syntax theme
-│   └── images/               # Images copied to public/images/ during build
+│   ├── images/               # Images copied to public/images/ during build
+│   └── videos/               # MP4 files copied to public/videos/ during build
 ├── public/                   # Build output (gitignored)
 │   ├── index.html            # Home page
 │   ├── index.xml             # RSS feed

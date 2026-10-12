@@ -18,6 +18,10 @@ renderer.code = function (code, lang) {
 };
 renderer.image = function (href, title, text) {
   const titleAttribute = title ? ` title="${escapeXml(title)}"` : '';
+  if (path.extname(href.split(/[?#]/)[0]).toLowerCase() === '.mp4') {
+    const labelAttribute = text ? ` aria-label="${escapeXml(text)}"` : '';
+    return `<video class="blog-video" controls playsinline preload="metadata"${labelAttribute}${titleAttribute}><source src="${escapeXml(href)}" type="video/mp4"><a href="${escapeXml(href)}">Download the video</a>.</video>`;
+  }
   const dimensions = imageDimensions(href);
   const dimensionAttributes = dimensions ? ` width="${dimensions.width}" height="${dimensions.height}"` : '';
   return `<img src="${escapeXml(href)}" alt="${escapeXml(text)}"${titleAttribute}${dimensionAttributes} loading="lazy" decoding="async">`;
@@ -111,6 +115,10 @@ function imageDimensions(href) {
 
 function escapeMarkdownText(str) {
   return str.replace(/([\\[\]])/g, '\\$1');
+}
+
+function normalizeAssetPaths(content) {
+  return content.replace(/\]\((images|videos)\//g, '](/$1/');
 }
 
 function jsonLd(data) {
@@ -246,7 +254,8 @@ function loadTalks(dir) {
     const raw = fs.readFileSync(path.join(dir, file), 'utf-8');
     const { data, content } = matter(raw);
     const slug = slugFromFilename(file);
-    const html = renderMarkdown(content);
+    const fixedContent = normalizeAssetPaths(content);
+    const html = renderMarkdown(fixedContent);
     return {
       title: data.title || slug,
       date: data.date ? new Date(data.date) : new Date(0),
@@ -260,7 +269,7 @@ function loadTalks(dir) {
       lang: normalizeLang(data.lang),
       slug,
       html,
-      content,
+      content: fixedContent,
     };
   }).filter(item => !item.draft);
   items.sort((a, b) => b.date - a.date);
@@ -274,7 +283,7 @@ function loadContent(dir) {
     const raw = fs.readFileSync(path.join(dir, file), 'utf-8');
     const { data, content } = matter(raw);
     const slug = slugFromFilename(file);
-    const fixedContent = content.replace(/\]\(images\//g, '](/images/');
+    const fixedContent = normalizeAssetPaths(content);
     const html = renderMarkdown(fixedContent);
     return {
       title: data.title || slug,
@@ -800,6 +809,7 @@ function build() {
 
   // Copy static assets
   copyDirSync(path.join(STATIC_DIR, 'images'), path.join(PUBLIC_DIR, 'images'));
+  copyDirSync(path.join(STATIC_DIR, 'videos'), path.join(PUBLIC_DIR, 'videos'));
   // Self-contained interactive pages, embedded into posts via <iframe>
   copyDirSync(path.join(STATIC_DIR, 'embeds'), path.join(PUBLIC_DIR, 'embeds'));
 

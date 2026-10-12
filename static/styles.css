@@ -31,6 +31,10 @@
     @apply mx-auto rounded-lg;
   }
 
+  .prose video.blog-video {
+    @apply my-8 w-full rounded-lg bg-black;
+  }
+
   .prose a {
     @apply underline decoration-gray-400 underline-offset-2 transition-colors hover:decoration-gray-800 dark:decoration-gray-500 dark:hover:decoration-gray-200;
   }
