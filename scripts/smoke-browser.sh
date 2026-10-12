@@ -92,4 +92,21 @@ robots_txt="$(curl -fsS "$BASE_URL/robots.txt")"
 grep -q '^Sitemap: https://pokgak.xyz/sitemap.xml$' <<<"$robots_txt"
 echo "PASS: robots.txt is served"
 
+browser set media light
+browser open "$BASE_URL/articles/explain-k8s-dns/"
+browser wait --load domcontentloaded
+browser scrollintoview 'video.blog-video'
+browser wait --fn '!document.querySelector("video.blog-video").paused'
+assert_equal "true" "$(browser eval 'document.querySelector("video.blog-video").muted')" "in-view video autoplays muted"
+browser scrollintoview 'footer'
+browser wait --fn 'document.querySelector("video.blog-video").paused'
+echo "PASS: out-of-view video pauses"
+
+browser set media light reduced-motion
+browser open "$BASE_URL/articles/explain-k8s-dns/"
+browser wait --load domcontentloaded
+browser scrollintoview 'video.blog-video'
+browser wait 750
+assert_equal "true" "$(browser eval 'document.querySelector("video.blog-video").paused')" "reduced motion disables autoplay"
+
 echo "Browser smoke tests passed."
