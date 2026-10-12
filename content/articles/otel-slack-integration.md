@@ -3,7 +3,7 @@ title: "Instrumenting a Slack bot with OpenTelemetry"
 date: 2022-08-13T17:43:00+08:00
 tags: [Observability, otel-slack]
 images:
-- images/slack-span-lifetime.png
+- images/otel-slack-integration-poster.png
 ---
 
 *Note: I'm using pseudocode in the code example in this article to keep the article brief. Please refer to the official Slack and OpenTelemetry documentation for the actual code.*
@@ -12,7 +12,13 @@ I've talked about the basics of OpenTelemetry in my previous article. In this on
 
 At the end of this article, this is roughly how the span lifetime and events created will look like:
 
-![A user span begins at firstUserEvent, records nextEvent and nextEventB, then ends at finishingEvent](images/slack-span-lifetime.png)
+<figure>
+<video class="blog-video" controls playsinline preload="metadata" width="1280" height="720" poster="/images/otel-slack-integration-poster.png" aria-label="Animation of the Slack bot OpenTelemetry span lifecycle" aria-describedby="otel-slack-animation-description">
+<source src="/videos/otel-slack-integration.mp4" type="video/mp4">
+<a href="/videos/otel-slack-integration.mp4">Download the Slack bot OpenTelemetry animation</a>.
+</video>
+<figcaption id="otel-slack-animation-description"><strong>Animation sequence:</strong> A user's first Slack event creates and stores one open span. Later actions reuse that span and add named events. The finishing event ends the span and removes it from the store. The final comparison shows the article's alternative: one linked span per action measures bot work without including the user's time between clicks.</figcaption>
+</figure>
 
 ## Slack BoltJS Socket Mode
 
