@@ -21,6 +21,23 @@ While investigating where does the traffic coming from I compared the load balan
 3. ingress controller pod to distributor
 4. distributor to ingester
 
+<figure>
+<video class="blog-video" controls playsinline preload="metadata" poster="/images/hidden-cost-lgtm-poster.png" aria-label="Animation comparing default and availability-zone-aware routing for one LGTM telemetry batch" aria-describedby="hidden-cost-lgtm-animation-description">
+  <source src="/videos/hidden-cost-lgtm.mp4" type="video/mp4">
+  <a href="/videos/hidden-cost-lgtm.mp4">Download the LGTM network-cost animation.</a>
+</video>
+<figcaption id="hidden-cost-lgtm-animation-description">
+  <strong>Animation sequence.</strong>
+  <ol>
+    <li>One telemetry batch starts at a collector in AZ A. With client affinity off, it reaches a load balancer node in AZ B, recording the first cross-AZ transfer.</li>
+    <li>The load balancer forwards to ingress in AZ B without crossing zones. Default round-robin service routing then sends the batch to a distributor in AZ C, recording a second cross-AZ transfer.</li>
+    <li>With a replication factor of three, the distributor sends a copy to one ingester in each AZ. Two copies cross zones, bringing this illustrative route to four cross-AZ transfer events.</li>
+    <li>The same batch is replayed with AZ affinity and topology-aware routing. The first three hops remain in AZ A, while two replicated writes still cross to ingesters in AZ B and AZ C.</li>
+  </ol>
+  <p><strong>Conclusion:</strong> affinity and topology-aware routing remove avoidable transfers, but cross-AZ ring replication remains. The actual amplification depends on placement and replication factor.</p>
+</figcaption>
+</figure>
+
 ### Collector to Load Balancer Node: client routing policy
 
 In my setup, the services are exposed through a load balancer and given a DNS name like `loki.example.com`. The collectors are configured to send the telemetry data to that URL. Here is my fist mistake, I didnt' enable "Availability Zone affinity" for the client routing policy. When enabled, this will route traffic from the collector to the load balancer node in the same AZ avoiding being charged for cross AZ traffic.
