@@ -75,6 +75,19 @@ check('markdown that merely mentions a tag is untouched', () => {
   assert(html.includes('&lt;svg&gt;'), 'inline code should stay escaped');
 });
 
+check('MP4 image syntax renders an interactive native video player', () => {
+  const html = renderMarkdown('![A packet moving through the network](/videos/packet-flow.mp4)\n');
+  assert(html.includes('<video'), 'expected a video element');
+  assert(html.includes('controls'), 'native playback controls should be enabled');
+  assert(html.includes('playsinline'), 'video should play inline on mobile');
+  assert(html.includes('preload="metadata"'), 'video should not be eagerly downloaded');
+  assert(html.includes('aria-label="A packet moving through the network"'), 'video needs an accessible name');
+  assert(html.includes('<source src="/videos/packet-flow.mp4" type="video/mp4">'), 'MP4 source is missing');
+  assert(html.includes('href="/videos/packet-flow.mp4"'), 'fallback download link is missing');
+  assert(!html.includes('<img'), 'MP4 should not render as an image');
+  assert(!html.includes('autoplay'), 'video must not autoplay');
+});
+
 if (failures) {
   console.error(`\n${failures} markdown test(s) failed.`);
   process.exit(1);
