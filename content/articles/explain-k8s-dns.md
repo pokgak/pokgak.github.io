@@ -6,7 +6,10 @@ tags: [interview, kubernetes, dns, networking]
 
 This will be the first in my interview questions series. I'll compile interesting questions that I got from my experience interviewing for DevOps/SRE role in Malaysia.
 
-![Kubernetes DNS request flow from a pod through CoreDNS, kube-proxy, and iptables to a Service endpoint](images/k8s-dns.png)
+<figure>
+<video class="blog-video" controls playsinline preload="metadata" poster="/images/explain-k8s-dns-poster.png" aria-label="Animation of a Kubernetes Service request and response" aria-describedby="k8s-dns-animation-description"><source src="/videos/explain-k8s-dns.mp4" type="video/mp4"><a href="/videos/explain-k8s-dns.mp4">Download the Kubernetes DNS animation</a>.</video>
+<figcaption id="k8s-dns-animation-description"><strong>Silent animation sequence:</strong> 1. The <code>foo</code> Pod calls the short name <code>bar</code>. 2. Its resolver expands that name to <code>bar.app.svc.cluster.local</code>. 3. CoreDNS returns the Service ClusterIP <code>10.96.0.42</code>. 4. iptables applies DNAT, changing the request destination to the selected Pod IP <code>10.244.2.17</code>. 5. The request reaches the <code>bar</code> Pod. 6. On the response, reverse NAT restores the Service ClusterIP as the source, so <code>foo</code> receives a reply from the address it called.</figcaption>
+</figure>
 
 ## Calling a service by its cluster-internal DNS
 
