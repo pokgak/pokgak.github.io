@@ -27,6 +27,27 @@ manimgx render animations/<content-slug>/scene.py \
   -r 1280x720 --fps 30 -o static/videos/<content-slug>.mp4
 ```
 
+## Typography
+
+The blog uses Tailwind's `ui-sans-serif, system-ui, sans-serif` stack. Use the
+bundled Noto Sans face as its deterministic ManimGX equivalent:
+
+```python
+body = m.Text("Body", font="sans-serif", weight=m.NORMAL)
+label = m.Text("Label", font="sans-serif", weight=m.MEDIUM)
+heading = m.Text("Heading", font="sans-serif", weight=m.SEMIBOLD)
+code = m.Text("10.0.0.1", font="monospace", weight=m.NORMAL)
+```
+
+- Set `font="sans-serif"` on every prose or UI `Text` object. Omitting `font`
+  selects New Computer Modern serif, which does not match the blog.
+- Use normal (400) for body text, medium (500) for labels, and semibold (600)
+  for headings. Reserve bold for a deliberate high-emphasis moment.
+- Use `font="monospace"` only for code, commands, addresses, and identifiers.
+- Do not request host fonts such as `system-ui`, Arial, or Inter. They are not
+  deterministic across render environments; ManimGX's generic sans and mono
+  families resolve to its bundled Noto Sans and DejaVu Sans Mono fonts.
+
 ## Embedding
 
 For a simple silent animation whose adjacent prose is already a complete text
