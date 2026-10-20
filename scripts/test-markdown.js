@@ -69,6 +69,19 @@ check('fenced code blocks are still highlighted', () => {
   assert(html.includes('&#39;') || html.includes('const'), 'code content missing');
 });
 
+check('Mermaid fences are prepared for Pele instead of highlighted', () => {
+  const html = renderMarkdown('```mermaid\nflowchart LR\n  A[Input] --> B[Output]\n```\n');
+  assert(html.includes('<pre class="mermaid"'), 'expected a Pele mount point');
+  assert(html.includes('flowchart LR'), 'diagram source is missing');
+  assert(!html.includes('hljs'), 'Mermaid source should not be syntax highlighted');
+});
+
+check('Mermaid source remains escaped before Pele mounts', () => {
+  const html = renderMarkdown('```mermaid\nflowchart LR\n  A[<script>] --> B\n```\n');
+  assert(html.includes('&lt;script&gt;'), 'diagram source must be HTML escaped');
+  assert(!html.includes('<script>'), 'diagram source was inserted as markup');
+});
+
 check('markdown that merely mentions a tag is untouched', () => {
   const html = renderMarkdown('Use the `<svg>` element.\n');
   assert(html.includes('<code'), 'inline code should stay inline code');

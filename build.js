@@ -8,6 +8,9 @@ const hljs = require('highlight.js');
 const renderer = new marked.Renderer();
 renderer.code = function (code, lang) {
   lang = (lang || '').split(/\s/)[0];
+  if (lang === 'mermaid') {
+    return `<pre class="mermaid" tabindex="0">${escapeXml(code)}</pre>`;
+  }
   let highlighted;
   if (lang && hljs.getLanguage(lang)) {
     highlighted = hljs.highlight(code, { language: lang }).value;
@@ -312,6 +315,7 @@ function baseLayout(title, content, {
   structuredData = null,
 } = {}) {
   const pageTitle = title;
+  const hasMermaid = content.includes('class="mermaid"');
   return `<!DOCTYPE html>
 <html lang="${escapeXml(normalizeLang(lang))}">
 <head>
@@ -351,7 +355,21 @@ function baseLayout(title, content, {
   <footer class="max-w-2xl mx-auto w-full px-6 py-8 text-sm text-gray-500 dark:text-gray-400">
     <a href="/index.xml" class="hover:text-gray-700 dark:hover:text-gray-200 transition-colors">RSS</a>
   </footer>
+  ${hasMermaid ? '<script src="/scripts/pele.js"></script>' : ''}
   <script>
+    ${hasMermaid ? `(() => {
+      if (!window.pele) return;
+      document.querySelectorAll('pre.mermaid').forEach(diagram => {
+        const source = diagram.textContent;
+        diagram.removeAttribute('tabindex');
+        window.pele.mount(diagram, source, {
+          onRender: () => {
+            const svg = diagram.querySelector('svg.pele');
+            if (svg && !svg.hasAttribute('aria-labelledby')) svg.setAttribute('aria-label', 'Diagram');
+          },
+        });
+      });
+    })();` : ''}
     (() => {
       const root = document.documentElement;
       const toggle = document.getElementById('theme-toggle');
@@ -855,6 +873,11 @@ function build() {
   copyDirSync(path.join(STATIC_DIR, 'videos'), path.join(PUBLIC_DIR, 'videos'));
   // Self-contained interactive pages, embedded into posts via <iframe>
   copyDirSync(path.join(STATIC_DIR, 'embeds'), path.join(PUBLIC_DIR, 'embeds'));
+
+  // Pele is loaded only by pages containing a Mermaid fence.
+  const scriptsDir = path.join(PUBLIC_DIR, 'scripts');
+  ensureDir(scriptsDir);
+  fs.copyFileSync(require.resolve('pele/global'), path.join(scriptsDir, 'pele.js'));
 
   console.log('Build complete! Output in public/');
 }
