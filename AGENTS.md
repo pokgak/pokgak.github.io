@@ -66,10 +66,19 @@ not the media (avoid labels such as "animation" or "video").
 For a complex animation, use preserved raw HTML to associate the player with an
 equivalent text description. Add a poster or caption track when applicable:
 
+- Generate the poster from a representative frame of the finished animation,
+  after typography and layout are final. Do not reuse a legacy hand-drawn
+  diagram by default.
+- Choose an informative state rather than a blank or title-only opening frame.
+- Store it as `static/images/<content-slug>-poster.png` and target less than
+  200 KB where practical.
+- Replace the old diagram embed instead of showing both. Delete the old image
+  only after `rg` confirms that no content or metadata still references it.
+
 ```html
 <figure>
 <video class="blog-video" controls playsinline preload="metadata"
-  poster="/images/<content-slug>.png"
+  poster="/images/<content-slug>-poster.png"
   aria-label="A request moving through the Kubernetes network"
   aria-describedby="<content-slug>-description">
   <source src="/videos/<content-slug>.mp4" type="video/mp4">
