@@ -31,6 +31,14 @@
     @apply mx-auto rounded-lg;
   }
 
+  @media (max-width: 640px) {
+    .prose table {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+  }
+
   .prose video.blog-video {
     @apply my-8 w-full rounded-lg bg-black;
   }
